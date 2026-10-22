@@ -188,6 +188,11 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 .endbox{text-align:center}
 .endbox .big{font-size:56px}
 .score{font-size:40px;font-weight:800;color:var(--accent2)}
+.heard{font-size:16px;min-height:24px;margin-top:6px;color:var(--sub)}
+.heard b{color:var(--ink)}
+.heard.ok b{color:var(--accent2)}.heard.ng b{color:var(--accent)}
+.verdict{font-size:22px;font-weight:800;margin-top:6px}
+.verdict.ok{color:var(--accent2)}.verdict.ng{color:var(--accent)}
 @media (max-width:720px){.lesson,.lgrid{grid-template-columns:1fr}.lesson .coverbox,.lgrid .coverbox{max-width:340px;margin:0 auto;width:100%}}
 @media (max-width:640px){
   .stats{grid-template-columns:repeat(2,1fr)}
@@ -202,7 +207,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v2.1.0</span></div>
+    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v2.2.1</span></div>
     <div class="learners" id="learners"></div>
   </header>
 
@@ -253,7 +258,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
         <li><b>어제 배운 것</b>: 뜻 맞추기 듣기 → 말하기 퀴즈 (한국어 듣고 영어로 말하기)</li>
         <li><b>간격 복습</b>: 3일·7일·30일·90일 전에 배운 것을 말하기 퀴즈로 다시. 90일 복습까지 통과하면 ★ 완벽 암기</li>
         <li><b>토요일</b>은 이번 주 시험, <b>일요일</b>은 쉬는 날. 틀린 문장이 많이 쌓이면 새 진도 대신 ‘복습 데이’가 돼요.</li>
-        <li>마이크가 목소리를 들어야 다음으로 넘어가요. 발음이 완벽하지 않아도 괜찮으니 꼭 소리 내서 말해요!</li>
+        <li>마이크가 목소리를 들어야 다음으로 넘어가요. 말하기 퀴즈는 앱이 영어를 알아듣고 자동으로 채점해요. 또박또박 말해요!</li>
       </ol>
     </div>
   </section>
@@ -353,6 +358,8 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
       <div id="parentBox" class="set hide">
         <div class="r"><b>말하기 확인</b><div class="seg" id="voiceSeg"></div></div>
         <div class="r"><b>마이크 민감도</b><div class="seg" id="sensSeg"></div></div>
+        <div class="r"><b>퀴즈 채점</b><div class="seg" id="gradeSeg"></div></div>
+        <div class="r"><b>채점 기준</b><div class="seg" id="strictSeg"></div></div>
         <div class="r"><b>30일마다 보상</b><input type="text" id="rewardInput" placeholder="예: 좋아하는 간식 / 주말 영화" style="flex:1;min-width:200px"></div>
         <div class="r"><b>다음 새 진도 일차</b>
           <div style="display:flex;gap:6px;align-items:center"><input type="number" id="nextInput" min="1" max="366" style="width:90px"><button class="btn ghost sm" id="nextSave">적용</button></div>
@@ -489,7 +496,23 @@ async function idbGet(store,key){try{const db=await idb();return await new Promi
 async function idbKeys(store){try{const db=await idb();return await new Promise(r=>{const q=db.transaction(store).objectStore(store).getAllKeys();q.onsuccess=()=>r(q.result||[]);q.onerror=()=>r([])})}catch(e){return []}}
 async function idbDel(store,key){try{const db=await idb();db.transaction(store,'readwrite').objectStore(store).delete(key)}catch(e){}}
 async function scanDir(h,depth=0){for await(const e of h.values()){if(e.kind==='file')addFile(e.name,e);else if(depth<4)await scanDir(e,depth+1)}}
-async function useDir(h){FILES.clear();$('folderMsg').textContent='음원을 찾는 중…';await scanDir(h);afterLoad();$('reconnectBtn').classList.add('hide');if(!FILES.size)toast('이 폴더에서 음원을 찾지 못했어요')}
+async function useDir(h){
+  FILES.clear();$('folderMsg').textContent='음원을 찾는 중…';await scanDir(h);$('reconnectBtn').classList.add('hide');
+  if(!FILES.size){afterLoad();toast('이 폴더에서 음원을 찾지 못했어요');return}
+  // 폴더 연결은 앱을 다시 열면 풀리니까, 음원을 앱 안에 저장해 둬요 (한 번만)
+  try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}
+  const have=new Set(await idbKeys('audio'));const keys=[...FILES.keys()].filter(k=>!k.endsWith('-s'));let i=0;
+  for(const k of [...FILES.keys()])if(k.endsWith('-s'))FILES.delete(k);
+  for(const k of keys){
+    try{
+      if(have.has(k)){const b=await idbGet('audio',k);if(b){FILES.set(k,b);continue}}
+      const f=await FILES.get(k).getFile();const blob=new Blob([await f.arrayBuffer()],{type:'audio/mpeg'});
+      await idbPut('audio',k,blob);FILES.set(k,blob);
+    }catch(e){}
+    if(++i%10===0)$('folderMsg').textContent=`앱 안에 저장하는 중… ${i}/${keys.length} (처음 한 번만)`;
+  }
+  afterLoad();toast('음원을 앱 안에 저장했어요. 다음부터는 연결할 필요 없어요');
+}
 function afterLoad(){for(const k in META){if(META[k].img)URL.revokeObjectURL(META[k].img);delete META[k]}segDay=0;
   updateFolderMsg();renderAll();if(FILES.size)buildIndex()}
 $('pickBtn').onclick=async()=>{
@@ -517,6 +540,7 @@ async function takeInput(list){
 $('dirInput').onchange=e=>{takeInput(e.target.files);e.target.value=''};
 $('fileInput').onchange=e=>{takeInput(e.target.files);e.target.value=''};
 (async()=>{
+  if((await idbKeys('audio')).length)return; // 앱 안에 저장된 음원이 있으면 폴더 연결 필요 없음
   const h=await idbGet('h','dir');
   if(h&&h.queryPermission){
     const p=await h.queryPermission({mode:'read'});
@@ -666,7 +690,7 @@ function waitVoice(need,ui,recKey){
 /* ---------- 오늘 공부 계획 ---------- */
 const nItems=n=>(CLIPS[n]||[]).length||6;
 function clipSec(n,k){let s=0;(CLIPS[n]||[]).forEach(c=>{const ko=c[1]-c[0],en=c[2]!=null?c[3]-c[2]:1.5;
-  if(k==='m')s+=ko+3*en+2*(en*1.3+0.7)+1.2;else if(k==='f')s+=3*(en/1.15+0.35);else s+=en+2.4+ko+0.8});return Math.round(s/S.rate)}
+  if(k==='m')s+=ko+3*en+2*(en*1.3+0.7)+1.2;else if(k==='f')s+=2*(ko+0.7+5*(en+0.65));else s+=en+2.4+ko+0.8});return Math.round(s/S.rate)}
 function taskSec(t){
   if(t.type==='listen'){if(FILES.size&&!FILES.has(t.n+'-'+t.k))return clipSec(t.n,t.k);return DUR[t.n][KI[t.k]]}
   if(t.type==='repeat')return nItems(t.n)*6;
@@ -819,7 +843,7 @@ async function startSession(){
 }
 function sessTick(){if(SESS){const P=L().plan;P.secs=(P.secs||0)+(performance.now()-SESS.t0)/1000;SESS.t0=performance.now();save()}}
 function exitSession(){
-  if(!SESS)return;sessTick();SESS.tok++;SESS=null;stopSeg();sAudio.pause();
+  if(!SESS)return;stopRec();sessTick();SESS.tok++;SESS=null;stopSeg();sAudio.pause();
   $('sess').classList.add('hide');document.body.style.overflow='';renderAll();
 }
 $('sExit').onclick=()=>{if(confirm('그만할까요? 지금 하던 단계는 다음에 처음부터 다시 해요.'))exitSession()};
@@ -885,7 +909,7 @@ async function runClipListen(t,tok){
   const n=t.n,isNew=t.g==='new';
   const items=await getItems(n);const meta=await getMeta(n);
   if(!items.length){toast('문장을 읽지 못했어요. 복습하기 음원을 확인해 주세요');return false}
-  const guide={m:'한국어 → 영어 3번. 영어가 나온 뒤 쉬는 동안 소리 내어 따라 해요.',f:'빠르게 3바퀴! 입으로 같이 따라 말해요.',q:'영어를 듣고, 쉬는 동안 우리말 뜻을 소리 내어 말해요. 그다음 정답이 나와요.'}[t.k];
+  const guide={m:'한국어 → 영어 3번. 영어가 나온 뒤 쉬는 동안 소리 내어 따라 해요.',f:'한 문장을 한국어 1번 → 영어 5번, 두 번씩 반복해요. 입으로 같이 따라 말해요!',q:'영어를 듣고, 쉬는 동안 우리말 뜻을 소리 내어 말해요. 그다음 정답이 나와요.'}[t.k];
   $('sMain').innerHTML=`<div class="stitle">${esc(GROUP[t.g]||'')} · ${n}일차</div><div class="sh">${esc(t.title)}</div><p class="sguide">${guide}</p>
     <div class="lplayer" style="margin:0 0 14px"><div class="rowp"><button class="bp" id="lpPlay">❚❚</button><div style="flex:1"><div class="pbar"><i id="lpBar"></i></div><div class="time" id="lpTime" style="opacity:1;color:var(--sub);margin-top:4px"></div></div></div>
     <div class="sbtns"><button class="btn green big" id="lpNext" disabled>끝까지 들으면 다음으로 ▶</button></div></div>
@@ -897,7 +921,7 @@ async function runClipListen(t,tok){
   items.forEach((x,i)=>{const L1=enLen(n,i)/S.rate;
     if(t.k==='m'){steps.push({i,a:'ko'},{i,a:'en'},{i,w:L1*1.3+0.7},{i,a:'en'},{i,w:L1*1.3+0.7},{i,a:'en'},{i,w:1.2})}
     else if(t.k==='q'){steps.push({i,a:'en'},{i,w:2.4,show:'en'},{i,a:'ko',show:'ko'},{i,w:0.8})}});
-  if(t.k==='f')for(let r=0;r<3;r++)items.forEach((x,i)=>steps.push({i,a:'en',mul:1.15},{i,w:0.35}));
+  if(t.k==='f')items.forEach((x,i)=>{for(let r=0;r<2;r++){steps.push({i,a:'ko'},{i,w:0.7});for(let k=0;k<5;k++)steps.push({i,a:'en'},{i,w:0.65})}}); // 원래 음원처럼: 한국어 → 영어 5번, 두 번씩
   const live=()=>SESS&&SESS.tok===tok;
   for(let s=0;s<steps.length;s++){
     while(paused&&live())await sleep(150);
@@ -927,6 +951,7 @@ function micUI(){
       if(s==='play')wrap.querySelector('#micS').innerHTML='잘 들어요';if(s==='listen'&&!ui.nagged)wrap.querySelector('#micS').innerHTML=ui.prompt||'소리 내서 말해요!'},
     level(v){const r=wrap.querySelector('#micR');r.style.opacity=v>0.25?Math.min(1,v):0;r.style.transform=`scale(${1+v*0.25})`},
     progress(v){wrap.querySelector('#micP').style.width=(v*100)+'%'},
+    heard(txt,final){let h=wrap.querySelector('.heard');if(!h){h=document.createElement('div');h.className='heard';wrap.appendChild(h)}h.innerHTML='들린 말: <b>'+esc(txt||'')+'</b>'},
     nag(){ui.nagged=true;wrap.querySelector('#micS').innerHTML='소리가 안 들려요 🙉<small>입으로 크게 말해야 다음으로 넘어가요</small>'},
     done(msg){ui.state('ok');wrap.querySelector('#micS').innerHTML=msg||'잘했어요! 👏';wrap.querySelector('#micP').style.width='100%';wrap.querySelector('#micR').style.opacity=0}
   };
@@ -939,8 +964,61 @@ async function speak(ui,need,recKey,tok){
   }
   return waitVoice(need,ui,recKey);
 }
+/* ---------- 음성 인식 자동 채점 ---------- */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+function micRelease(){try{if(MIC.stream)MIC.stream.getTracks().forEach(x=>x.stop());if(MIC.ctx)MIC.ctx.close()}catch(e){}MIC.ok=false;MIC.stream=null;MIC.ctx=null}
+const CONTR={"i'm":"i am","you're":"you are","it's":"it is","what's":"what is","that's":"that is","don't":"do not","can't":"can not","cannot":"can not","i'd":"i would","i'll":"i will","let's":"let us","there's":"there is","here's":"here is","he's":"he is","she's":"she is","isn't":"is not","aren't":"are not","won't":"will not","didn't":"did not","doesn't":"does not","wasn't":"was not","we're":"we are","they're":"they are","i've":"i have","you've":"you have","you'll":"you will","we'll":"we will","where's":"where is","how's":"how is","who's":"who is","couldn't":"could not","wouldn't":"would not","shouldn't":"should not","haven't":"have not","hasn't":"has not","you'd":"you would","we've":"we have","ok":"okay","mr":"mister","mrs":"missus","ms":"miss","dr":"doctor"};
+function words(s){
+  s=String(s).toLowerCase().replace(/[’‘`]/g,"'").replace(/\([^)]*\)/g,' ').replace(/[^a-z0-9' ]+/g,' ');
+  return s.split(/\s+/).filter(Boolean).flatMap(w=>{w=w.replace(/^'+|'+$/g,'');const c=CONTR[w];return (c||w.replace(/'/g,'')).split(' ')}).filter(Boolean);
+}
+function matchScore(expected,got){
+  const a=words(expected),b=words(got);if(!a.length)return 1;if(!b.length)return 0;
+  const dp=Array(b.length+1).fill(0);
+  for(let i=1;i<=a.length;i++){let prev=0;for(let j=1;j<=b.length;j++){const tmp=dp[j];dp[j]=a[i-1]===b[j-1]?prev+1:Math.max(dp[j],dp[j-1]);prev=tmp}}
+  const lcs=dp[b.length];const extra=Math.max(0,b.length-a.length-1)*0.5; // 쓸데없이 많이 말하면 조금 감점
+  return Math.max(0,(lcs-extra)/a.length);
+}
+const STRICT={easy:0.55,mid:0.7,hard:0.85};
+const passLine=()=>STRICT[S.strict||'mid'];
+/* 한 번 듣기: {alts:[...], err} */
+function recognizeOnce(ui,tok){
+  return new Promise(res=>{
+    let r;try{r=new SR()}catch(e){res({alts:[],err:'unsupported'});return}
+    r.lang='en-US';r.interimResults=true;r.maxAlternatives=5;r.continuous=false;
+    let finals=null,err=null,done=false;
+    r.onresult=e=>{const x=e.results[e.results.length-1];ui.heard(x[0].transcript,false);if(x.isFinal){finals=[...x].map(a=>a.transcript)}};
+    r.onerror=e=>{err=e.error};
+    r.onend=()=>{if(done)return;done=true;if(SESS&&SESS.rec===r)SESS.rec=null;res({alts:finals||[],err})};
+    if(SESS)SESS.rec=r;
+    ui.state('listen');
+    const guard=setTimeout(()=>{if(!done){try{r.abort()}catch(e){}setTimeout(()=>{if(!done){done=true;res({alts:finals||[],err:err||'timeout'})}},800)}},15000);
+    r.addEventListener&&r.addEventListener('end',()=>clearTimeout(guard));
+    try{r.start()}catch(e){done=true;clearTimeout(guard);res({alts:[],err:'start'})}
+  });
+}
+/* 말할 때까지 계속 듣기. 결과 {text,score} 또는 {skip:true} 또는 {fallback:true} */
+async function listenAnswer(ui,expected,tok){
+  let silent=0;
+  while(SESS&&SESS.tok===tok){
+    if(SESS.skipNow){SESS.skipNow=false;return {skip:true}}
+    while(segPlaying||performance.now()-lastPlayEnd<350){await sleep(100);if(!SESS||SESS.tok!==tok)return null}
+    const {alts,err}=await recognizeOnce(ui,tok);
+    if(!SESS||SESS.tok!==tok)return null;
+    if(SESS.skipNow){SESS.skipNow=false;return {skip:true}}
+    if(SESS.replayNow){SESS.replayNow=false;continue}
+    if(['not-allowed','service-not-allowed','network','audio-capture','unsupported','language-not-supported','start'].includes(err)){SESS.noSR=err;return {fallback:true}}
+    if(!alts.length){silent++;if(silent>=2)ui.nag();continue}
+    let best={text:alts[0],score:-1};for(const a of alts){const s=matchScore(expected,a);if(s>best.score)best={text:a,score:s}}
+    return best;
+  }
+  return null;
+}
+function stopRec(){if(SESS&&SESS.rec){try{SESS.rec.abort()}catch(e){}}}
+
 /* 따라 말하기 */
 async function runRepeat(t,tok){
+  if(S.voice&&!MIC.ok)await micInit();
   const n=t.n;const items=await getItems(n);if(!items.length){toast('문장을 읽지 못했어요');return false}
   for(let i=0;i<items.length;i++){
     if(!SESS||SESS.tok!==tok)return false;
@@ -965,17 +1043,26 @@ async function runQuiz(t,tok){
   for(let q=0;q<total;q++){
     if(!SESS||SESS.tok!==tok)return false;
     const [n,i]=t.items[q];const items=await getItems(n);const it=items[i];if(!it)continue;
-    $('sMain').innerHTML=`<div class="stitle">${esc(GROUP[t.g])}</div><div class="sh">${esc(t.title)}</div><p class="sguide">한국어를 듣고 <b>영어로 소리 내서</b> 말해요. 모르면 “패스”라고 말하고 ❌를 눌러요.</p>
+    $('sMain').innerHTML=`<div class="stitle">${esc(GROUP[t.g])}</div><div class="sh">${esc(t.title)}</div><p class="sguide">${useSR()?'한국어를 듣고 <b>영어로 또박또박</b> 말해요. 앱이 듣고 채점해요. 모르면 ‘모르겠어요’를 눌러요.':'한국어를 듣고 <b>영어로 소리 내서</b> 말해요. 모르면 “패스”라고 말하고 ❌를 눌러요.'}</p>
       <div class="qcard"><div class="cnt">${q+1} / ${total} · ${n}일차 ${esc(TITLES[n-1])}</div>
       <div class="ko">${esc(it.ko)}</div>
       <div class="ans hidden" id="ans"><div class="en">${esc(it.en)}</div></div>
       <div id="micBox"></div><div class="sbtns" id="qBtns"><button class="btn ghost" id="again">🔁 한국어 다시 듣기</button><button class="btn ghost" id="hintB">💡 첫 단어</button></div></div>`;
     const ui=micUI();ui.prompt='영어로 말해요!';$('micBox').appendChild(ui.el);ui.state('play');
-    $('again').onclick=()=>playKo(n,i,it.ko);
-    $('hintB').onclick=()=>{$('hintB').textContent='💡 '+it.en.split(/\s+/)[0]+' …';$('hintB').disabled=true};
+    $('again').onclick=async()=>{if(SESS){SESS.replayNow=true;stopRec()}await playKo(n,i,it.ko)};
+    $('hintB').onclick=()=>{$('hintB').textContent='💡 '+it.en.split(/\s+/)[0]+' …';$('hintB').disabled=true;if(SESS)SESS.hinted=true};
+    if(useSR())$('qBtns').insertAdjacentHTML('beforeend','<button class="btn ghost" id="skipB">🙋 모르겠어요</button>'),$('skipB').onclick=()=>{if(SESS){SESS.skipNow=true;stopRec()}};
+    if(SESS)SESS.hinted=false;
     await playKo(n,i,it.ko);
     if(!SESS||SESS.tok!==tok)return false;
+    if(useSR()){
+      const r=await autoQuizItem(n,i,it,ui,tok);
+      if(r===null)return false;
+      if(r!=='fallback'){if(r)good++;continue}
+      ui.state('play');
+    }
     const need=Math.min(1.4,Math.max(0.35,enLen(n,i)*0.5));
+    if(S.voice&&!MIC.ok)await micInit();
     const ok=await speak(ui,need,`${L().id}|${today()}|${n}-${i}|퀴즈`,tok);
     if(!ok)return false;
     ui.done('정답을 들어 봐요');
@@ -993,6 +1080,7 @@ async function runQuiz(t,tok){
     $('qBtns').innerHTML='';
     const ui2=micUI();ui2.prompt='정답을 따라 말해요!';$('micBox').innerHTML='';$('micBox').appendChild(ui2.el);
     await playEn(n,i,it.en);
+    if(S.voice&&!MIC.ok)await micInit();
     const ok2=await speak(ui2,Math.min(1.4,Math.max(0.35,enLen(n,i)*0.5)),`${L().id}|${today()}|${n}-${i}|다시`,tok);
     if(!ok2)return false;ui2.done('좋아요! 다음에 또 나와요');await sleep(700);
   }
@@ -1006,6 +1094,44 @@ async function runQuiz(t,tok){
     await new Promise(r=>$('qNext').onclick=r);
   }
   return true;
+}
+function useSR(){return (S.grade||'auto')==='auto'&&!!SR&&!(SESS&&SESS.noSR)}
+/* 자동 채점 한 문제: true(정답)/false(오답)/'fallback'/null(중단) */
+async function autoQuizItem(n,i,it,ui,tok){
+  const live=()=>SESS&&SESS.tok===tok;
+  micRelease(); // 음성 인식이 마이크를 쓰도록 비워 두기
+  ui.prompt='영어로 말해요!';
+  const r=await listenAnswer(ui,it.en,tok);
+  if(!live()||r===null)return null;
+  if(r.fallback){toast('음성 인식을 쓸 수 없어서 직접 체크로 바꿔요 ('+SESS.noSR+')');return 'fallback'}
+  const key=`${L().id}|${today()}|${n}-${i}|퀴즈`;
+  const ok=!r.skip&&r.score>=passLine();
+  idbPut('rec',key,{text:r.skip?'(모르겠어요)':r.text,score:r.skip?0:Math.round(r.score*100),ok,hint:!!SESS.hinted});
+  $('qBtns').innerHTML='';
+  $('ans').classList.remove('hidden');
+  const h=ui.el.querySelector('.heard');if(h)h.className='heard '+(ok?'ok':'ng');
+  ui.el.insertAdjacentHTML('beforeend',`<div class="verdict ${ok?'ok':'ng'}">${ok?'⭕ 정답! 👏':r.skip?'정답을 듣고 따라 말해 봐요':'❌ 아쉬워요. 정답을 들어 봐요'}</div>`);
+  if(ok)ui.done('잘했어요!');else{ui.state('play');ui.el.querySelector('#micI').textContent='🔊';ui.el.querySelector('#micS').innerHTML='정답을 들어 봐요';ui.el.querySelector('#micC').style.background='var(--soft)'}
+  recordResult(n,i,ok);
+  await playEn(n,i,it.en);
+  if(!live())return null;
+  if(ok){await sleep(900);return true}
+  // 틀리면 정답을 맞게 따라 말할 때까지 (최대 3번)
+  for(let k=0;k<3;k++){
+    $('micBox').innerHTML='';const u2=micUI();u2.prompt='정답을 따라 말해요!';$('micBox').appendChild(u2.el);
+    $('qBtns').innerHTML='<button class="btn ghost" id="again3">🔁 정답 다시 듣기</button>';
+    $('again3').onclick=async()=>{if(SESS){SESS.replayNow=true;stopRec()}await playEn(n,i,it.en)};
+    const r2=await listenAnswer(u2,it.en,tok);
+    if(!live()||r2===null)return null;
+    if(r2.fallback||r2.skip)break;
+    const ok2=r2.score>=passLine();
+    idbPut('rec',`${L().id}|${today()}|${n}-${i}|다시${k+1}`,{text:r2.text,score:Math.round(r2.score*100),ok:ok2});
+    const hh=u2.el.querySelector('.heard');if(hh)hh.className='heard '+(ok2?'ok':'ng');
+    if(ok2){u2.done('좋아요! 다음에 또 나와요');await sleep(900);break}
+    u2.el.insertAdjacentHTML('beforeend','<div class="verdict ng">한 번 더! 잘 듣고 따라 해요</div>');
+    await sleep(500);await playEn(n,i,it.en);if(!live())return null;
+  }
+  return false;
 }
 function showEnd(){
   sessTick();
@@ -1187,6 +1313,8 @@ function renderSettings(){
   seg('pRate',RATES,()=>S.rate,v=>{S.rate=v;audio.playbackRate=v;sAudio.playbackRate=v},v=>v+'x');
   seg('voiceSeg',[true,false],()=>S.voice,v=>S.voice=v,v=>v?'켜기 (권장)':'끄기');
   seg('sensSeg',['low','mid','high'],()=>S.sens,v=>S.sens=v,v=>({low:'둔하게',mid:'보통',high:'예민하게'})[v]);
+  seg('gradeSeg',['auto','self'],()=>S.grade||'auto',v=>S.grade=v,v=>v==='auto'?'음성 인식 자동 채점':'아이가 직접 체크');
+  seg('strictSeg',['easy','mid','hard'],()=>S.strict||'mid',v=>S.strict=v,v=>({easy:'너그럽게',mid:'보통',hard:'엄격하게'})[v]);
   $('rewardInput').value=S.reward||'';$('nextInput').value=L().next;
   $('pinHint').textContent=S.pin?'부모님 비밀번호를 넣으면 열려요.':'처음이에요. 쓰고 싶은 비밀번호(숫자)를 넣고 ‘열기’를 누르면 그 번호로 정해져요.';
 }
@@ -1221,8 +1349,10 @@ async function renderRecList(){
   for(const k of keys){const [, ,ni,kind]=k.split('|');const [n,i]=ni.split('-').map(Number);const it=(LYR[n]||[])[i];
     const blob=await idbGet('rec',k);if(!blob)continue;
     const r=document.createElement('div');r.className='rr';
-    r.innerHTML=`<span style="min-width:110px"><b>${n}일차 ${i+1}번</b> · ${kind}</span><span style="flex:1;min-width:160px">${it?esc(it.en):''}</span>`;
-    const a=document.createElement('audio');a.controls=true;a.src=URL.createObjectURL(blob);r.appendChild(a);box.appendChild(r)}
+    r.innerHTML=`<span style="min-width:110px"><b>${n}일차 ${i+1}번</b> · ${esc(kind)}</span><span style="flex:1;min-width:160px">${it?esc(it.en):''}</span>`;
+    if(blob instanceof Blob){const a=document.createElement('audio');a.controls=true;a.src=URL.createObjectURL(blob);r.appendChild(a)}
+    else r.insertAdjacentHTML('beforeend',`<span style="flex-basis:100%;color:${blob.ok?'var(--accent2)':'var(--accent)'}">${blob.ok?'⭕':'❌'} 들린 말: <b>${esc(blob.text||'')}</b> (${blob.score}%)${blob.hint?' · 힌트 씀':''}</span>`);
+    box.appendChild(r)}
 }
 (async()=>{ // 14일 지난 녹음 정리
   const lim=addDays(today(),-14);for(const k of await idbKeys('rec')){const d=String(k).split('|')[1];if(d&&d<lim)idbDel('rec',k)}
