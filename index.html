@@ -211,7 +211,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v3.5.0</span></div>
+    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v3.6.0</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div class="courses" id="courses">
@@ -1184,6 +1184,8 @@ const HOMOM=new Map();HOMO.forEach(g=>g.forEach(w=>HOMOM.set(w,g)));
 const stem=w=>w.length<=3?w:w.replace(/(ies|ied)$/,'y').replace(/(ing|ed|es|s)$/,'');
 function tokEq(x,y){if(x===y)return true;const g=HOMOM.get(x);if(g&&g.includes(y))return true;
   if(x.length>=4&&stem(x)===stem(y))return true;const L0=Math.max(x.length,y.length);
+  const sk=w=>w.replace(/ph/g,'f').replace(/ck|q|c(?=[aou])/g,'k').replace(/[aeiouyhw]/g,'').replace(/t/g,'d').replace(/z/g,'s').replace(/(.)\1+/g,'$1');
+  if(x.length>=3&&y.length>=3&&sk(x).length>=2&&sk(x)===sk(y))return true;
   return (L0>=5&&lev(x,y)<=1)||(L0>=8&&lev(x,y)<=2)}
 function lev(a,b){const d=Array.from({length:a.length+1},(_,i)=>[i]);for(let j=1;j<=b.length;j++)d[0][j]=j;
   for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]}
@@ -1342,15 +1344,28 @@ async function runIpyEx(t,tok){
   }
   return true;
 }
+/* 인식 → 한 번 더 → 그래도 다르면 정답을 보여 주고 직접 확인. {ok,text,score,skip,retry,judged} / {fallback} / null */
+async function gradeSR(ui,en,need,tok){
+  let r=await listenAnswer(ui,en,tok,need);if(!SESS||SESS.tok!==tok||r===null)return null;
+  if(r.fallback||r.skip||r.score>=need)return r;
+  const m=ui.el.querySelector('#micS');if(m)m.innerHTML='잘 못 알아들었어요 🤔<small>또박또박 한 번 더 말해 봐요</small>';ui.nagged=true;
+  const r2=await listenAnswer(ui,en,tok,need);if(!SESS||SESS.tok!==tok||r2===null)return null;ui.nagged=false;
+  if(r2.fallback||r2.skip)return {...r2,retry:true};
+  const b=r2.score>r.score?r2:r;if(b.score>=need)return {...b,retry:true};
+  // 휴대폰 인식기가 아이 발음을 잘 못 알아들을 때가 많아요 → 정답을 보고 스스로 판단 (녹음 대신 들린 말이 기록에 남아요)
+  ui.heard(b.text,true);if(m)m.innerHTML='휴대폰이 잘 못 알아들었어요 🙉<small>정답을 보고, 맞게 말했으면 ⭕를 눌러요</small>';
+  if($('ans'))$('ans').classList.remove('hidden');
+  const box=$('qBtns');const keep=box?box.innerHTML:'';
+  if(box)box.innerHTML='<button class="okbtn" id="okJ">⭕ 맞게 말했어요</button><button class="ngbtn" id="ngJ">❌ 틀렸어요</button>';
+  const yes=await new Promise(res=>{if(!box){res(false);return}$('okJ').onclick=()=>res(true);$('ngJ').onclick=()=>res(false)});
+  if(box)box.innerHTML=keep;if(!SESS||SESS.tok!==tok)return null;
+  return {...b,score:yes?1:Math.min(b.score,need-0.01),retry:true,judged:true};
+}
 /* 한 문장 말하게 하고 채점: {ok, text, ms} / null(중단) */
 async function sayAndGrade(ui,it,tok,pl){
   const t0=performance.now();
-  if(useSR()){micRelease();const need=it.flag==='?'?STRICT.easy:pl;let r=await listenAnswer(ui,it.en,tok,need);if(!SESS||SESS.tok!==tok||r===null)return null;
-    if(!r.fallback&&!r.skip&&r.score<need){ // 인식기가 잘못 들었을 수도 있으니 한 번 더 기회
-      const m=ui.el.querySelector('#micS');if(m)m.innerHTML='잘 못 알아들었어요 🤔<small>또박또박 한 번 더 말해 봐요</small>';ui.nagged=true;
-      const r2=await listenAnswer(ui,it.en,tok,need);if(!SESS||SESS.tok!==tok||r2===null)return null;ui.nagged=false;
-      if(!r2.fallback&&(r2.skip||r2.score>r.score))r={...r2,retry:true}}
-    if(!r.fallback){const ok=!r.skip&&r.score>=need;const h=ui.el.querySelector('.heard');if(h)h.className='heard '+(ok?'ok':'ng');return {ok,text:r.skip?'(모르겠어요)':r.text,ms:performance.now()-t0,skip:!!r.skip,retry:!!r.retry}}}
+  if(useSR()){micRelease();const need=it.flag==='?'?STRICT.easy:pl;const r=await gradeSR(ui,it.en,need,tok);if(!SESS||SESS.tok!==tok||r===null)return null;
+    if(!r.fallback){const ok=!r.skip&&r.score>=need;const h=ui.el.querySelector('.heard');if(h)h.className='heard '+(ok?'ok':'ng');return {ok,text:r.skip?'(모르겠어요)':r.text,ms:performance.now()-t0,skip:!!r.skip,retry:!!r.retry,judged:!!r.judged}}}
   if(S.voice&&!MIC.ok)await micInit();
   const sp=await speak(ui,Math.min(1.4,Math.max(0.35,1)),null,tok);if(!sp)return null;
   ui.done('정답을 보고 맞게 말했는지 골라요');if($('ans'))$('ans').classList.remove('hidden');$('qBtns').innerHTML=`<button class="okbtn" id="okB">⭕ 맞게 말했어요</button><button class="ngbtn" id="ngB">❌ 틀렸어요</button>`;
@@ -1426,7 +1441,7 @@ async function runStep3(t,tok){
     $('ans').classList.remove('hidden');$('qBtns').innerHTML='';
     ui.el.insertAdjacentHTML('beforeend',`<div class="verdict ${r.ok?'ok':'ng'}">${pt===5?'5점 · 자연스러워요! 🎉':pt===3?'3점 · 맞았어요, 조금 더 빨리!':'1점 · 정답을 듣고 따라 해요'}</div>`);
     if(r.ok)ui.done('잘했어요!');
-    if(r.text&&!r.self)idbPut('rec',`${L().id}|${today()}|${n}-${i}|마스터`,{text:r.text,score:pt*20,ok:r.ok});
+    if(r.text&&!r.self)idbPut('rec',`${L().id}|${today()}|${n}-${i}|마스터`,{text:r.text+(r.judged?' (직접 확인)':''),score:pt*20,ok:r.ok});
     t.q=q+1;t.sum=sum;keep();
     await playEn(n,i,it.en);await sleep(pt===5?500:900);
   }
@@ -1518,13 +1533,14 @@ async function autoQuizItem(n,i,it,ui,tok){
   const live=()=>SESS&&SESS.tok===tok;
   micRelease(); // 음성 인식이 마이크를 쓰도록 비워 두기
   ui.prompt='영어로 말해요!';
-  const r=await listenAnswer(ui,it.en,tok);
+  const pl0=it.flag==='?'?STRICT.easy:passLine();
+  const r=await gradeSR(ui,it.en,pl0,tok);
   if(!live()||r===null)return null;
   if(r.fallback){if(!r.manual)toast('음성 인식을 쓸 수 없어서 직접 체크로 바꿔요 ('+SESS.noSR+')');return 'fallback'}
   const key=`${L().id}|${today()}|${n}-${i}|퀴즈`;
   const pl=it.flag==='?'?STRICT.easy:passLine();
   const ok=!r.skip&&r.score>=pl;
-  idbPut('rec',key,{text:r.skip?'(모르겠어요)':r.text,score:r.skip?0:Math.round(r.score*100),ok,hint:!!SESS.hinted});
+  idbPut('rec',key,{text:(r.skip?'(모르겠어요)':r.text)+(r.judged?' (직접 확인)':''),score:r.skip?0:Math.round(r.score*100),ok,hint:!!SESS.hinted});
   $('qBtns').innerHTML='';
   $('ans').classList.remove('hidden');
   const h=ui.el.querySelector('.heard');if(h)h.className='heard '+(ok?'ok':'ng');
