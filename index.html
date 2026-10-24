@@ -219,7 +219,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v4.1.0</span></div>
+    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v4.1.1</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div class="courses" id="courses">
@@ -1083,8 +1083,6 @@ function exitSession(){
   $('sess').classList.add('hide');document.body.style.overflow='';renderAll();
 }
 $('moreBtn').onclick=()=>{
-  if(S.pin){const v=prompt('하나 더 하려면 부모님 비밀번호를 넣어 주세요');if(v===null)return;if(v!==S.pin){toast('비밀번호가 달라요');return}}
-  else if(!confirm(kidMode()?'다음 묶음(새 문장)을 하나 더 할까요?':'다음 단계를 하나 더 할까요?'))return;
   if(addMoreIpy()){renderAll();toast('추가했어요! ‘이어서 하기’를 눌러요')}};
 $('sExit').onclick=()=>{if(confirm('그만할까요? 다음에 하던 곳부터 이어서 해요.'))exitSession()};
 function sessHeader(){
