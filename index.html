@@ -219,7 +219,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v4.0.0</span></div>
+    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v4.1.0</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div class="courses" id="courses">
@@ -266,6 +266,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button class="btn acc big" id="startBtn">▶ 오늘 공부 시작</button>
         <span class="hint" id="startHint" style="margin:0"></span>
+        <button class="btn ghost hide" id="moreBtn">➕ 하나 더 하기</button>
       </div>
     </div>
     <div id="missionBox"></div>
@@ -342,6 +343,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
         <div>
           <div class="sent-tools">
             <b>문장 <span id="sentCount" style="color:var(--sub);font-weight:400"></span></b>
+            <div class="learners hide" id="grpChips" style="width:100%"></div>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
               <div class="seg" id="maskSeg"></div>
               <div class="seg"><button id="prToggle">발음</button></div>
@@ -835,6 +837,16 @@ function addNewLesson(P,add,n){
   add({type:'repeat',n,g:'new',title:'한 문장씩 따라 말하기',sub:'듣고 → 소리 내서 따라 말하기'});
   add({type:'listen',n,k:'f',g:'new',title:'스피드 반복 듣기',sub:'따라 말하면서 들어요',last:true});
 }
+/* 공부가 잘되는 날: 엄마가 골라서 새 진도를 하나 더 (아이 모드는 한 묶음, 책 모드는 남은 STEP) */
+function addMoreIpy(){
+  const l=L(),P=getPlan();let cur=l.cur;
+  if(!cur){if(l.next>TOTAL())return false;cur=l.cur={n:l.next,k:0,tries:[],s3:{sum:0,cnt:0}}}
+  const add=t2=>{t2.id='t'+P.tasks.length+'x';P.tasks.push(t2)};
+  if(kidMode()){if(!cur.G)cur.G=LB().ipyNew||5;cur.g=cur.g||0;const grs=kidGroups(cur.n,cur.G);const idx=grs[cur.g]||[];
+    kidParts(cur.n,cur.g).slice(cur.k).forEach(([type])=>add({type,n:cur.n,idx,kid:true,g:'new',title:KIDNAME[type][0],sub:`${lab(cur.n)} · ${ttl(cur.n)} · ${cur.g+1}/${grs.length}묶음 · ${KIDNAME[type][1]}`}))}
+  else partsFor(cur.n).slice(cur.k,cur.k+2).forEach(([type,h])=>{const [,title,sub]=STEPNAME[type];add({type,n:cur.n,h,g:'new',title:title+halfLabel(cur.n,h),sub:`${lab(cur.n)} · ${ttl(cur.n)} · ${sub}`})});
+  P.capped=false;P.extra=(P.extra||0)+1;save();return true;
+}
 /* 입영작: 복습은 그 과에서 최대 10문장 (전에 틀린 문장 먼저) */
 function sampleReview(n){
   const st=L().stats,k=nItems(n),idx=IPYV()>=2?unitIdx(n,'st'):[...Array(k).keys()];
@@ -1003,6 +1015,8 @@ function renderToday(){
     $('startBtn').textContent=allDone?'✓ 다 했어요':doneN?'▶ 이어서 하기':'▶ 오늘 공부 시작';
     $('startBtn').disabled=allDone||!P.tasks.length;
     $('startHint').textContent=!FILES.size&&!allDone&&P.tasks.length?'먼저 위에서 음원 폴더를 연결해 주세요':'';
+    const canMore=isIpy()&&IPYV()>=2&&allDone&&(L().cur||L().next<=TOTAL());
+    $('moreBtn').classList.toggle('hide',!canMore);$('moreBtn').textContent=kidMode()?'➕ 한 묶음 더 하기':'➕ 한 단계 더 하기';
   }
   let lastG='';
   P.tasks.forEach((x,i)=>{
@@ -1068,6 +1082,10 @@ function exitSession(){
   if(!SESS)return;stopRec();sessTick();SESS.tok++;SESS=null;try{WL&&WL.release()}catch(e){}WL=null;stopSeg();sAudio.pause();
   $('sess').classList.add('hide');document.body.style.overflow='';renderAll();
 }
+$('moreBtn').onclick=()=>{
+  if(S.pin){const v=prompt('하나 더 하려면 부모님 비밀번호를 넣어 주세요');if(v===null)return;if(v!==S.pin){toast('비밀번호가 달라요');return}}
+  else if(!confirm(kidMode()?'다음 묶음(새 문장)을 하나 더 할까요?':'다음 단계를 하나 더 할까요?'))return;
+  if(addMoreIpy()){renderAll();toast('추가했어요! ‘이어서 하기’를 눌러요')}};
 $('sExit').onclick=()=>{if(confirm('그만할까요? 다음에 하던 곳부터 이어서 해요.'))exitSession()};
 function sessHeader(){
   const P=L().plan;const n=P.tasks.length,d=P.tasks.filter(x=>x.done).length;
@@ -1081,7 +1099,7 @@ async function runNext(){
   sessHeader();
   if(i<0){showEnd();return}
   sessTick();
-  if((P.secs||0)>=LIMITF()){P.capped=true;save();showEnd(true);return} // 시간이 다 되면 오늘은 여기까지
+  if((P.secs||0)>=LIMITF()&&!P.extra){P.capped=true;save();showEnd(true);return} // 시간이 다 되면 오늘은 여기까지
   const t=P.tasks[i];const tok=++SESS.tok;
   $('sMain').scrollTop=0;window.scrollTo(0,0);$('sess').scrollTop=0;
   let ok=false;
@@ -1692,6 +1710,7 @@ function renderLearners(){
 
 /* ---------- 진도표 ---------- */
 function renderCal(){
+  if(kidMode())return renderCalKid();
   const l=L(),box=$('calendar');box.innerHTML='';
   const N=TOTAL();
   for(let s=1;s<=N;s+=30){
@@ -1705,9 +1724,26 @@ function renderCal(){
       b.className='cell'+(x?' s'+Math.min(6,x.st):'')+(d===l.next?' nextup':'');if(sk){b.style.opacity='.35';b.style.textDecoration='line-through'}
       b.textContent=x&&x.st>=6?'★':d;
       b.title=`${lab(d)} ${ttl(d)}`+(sk?' · 건너뜀 (어른 주제)':'')+(x?(x.st>=6?' · ★ 완벽 암기':` · 다음 복습 ${x.due} (${STAGE_NAME[x.st]})`):'');
-      b.onclick=()=>{if(isIpy())S.ib=d;else S.browse=d;showTab('browse')};
+      b.onclick=()=>{if(isIpy()){S.ib=d;S.ibg=-1}else S.browse=d;showTab('browse')};
       g.appendChild(b);
     }
+    sec.appendChild(g);box.appendChild(sec);
+  }
+}
+/* 아이 모드 진도표: 하루 공부(묶음) 단위로 */
+function renderCalKid(){
+  const l=L(),box=$('calendar');box.innerHTML='';const N=TOTAL(),cu=l.cur;let day=0;
+  for(let s=1;s<=N;s+=10){
+    const e=Math.min(N,s+9);const sec=document.createElement('div');sec.className='month';
+    let lc=0;for(let d=s;d<=e;d++)if(l.lessons[d])lc++;
+    sec.innerHTML=`<h3>${lab(s)}~${lab(e)} · 배움 ${lc}/${e-s+1}</h3>`;
+    const g=document.createElement('div');g.className='grid';
+    for(let d=s;d<=e;d++){const x=l.lessons[d];const G=cu&&cu.n===d&&cu.G?cu.G:LB().ipyNew||5;const grs=kidGroups(d,G);
+      grs.forEach((idx,gi)=>{day++;const b=document.createElement('button');
+        const done=!!x||(cu&&cu.n===d&&gi<(cu.g||0)),now=cu&&cu.n===d&&gi===(cu.g||0)||(!cu&&d===l.next&&gi===0);
+        b.className='cell'+(x?' s'+Math.min(6,x.st):done?' s1':'')+(now?' nextup':'');b.style.fontSize='11px';
+        b.textContent=x&&x.st>=6?'★':`${d}-${gi+1}`;b.title=`${lab(d)} ${ttl(d)} · ${gi+1}일째 (${idx.length}문장)`;
+        b.onclick=()=>{S.ib=d;S.ibg=gi;showTab('browse')};g.appendChild(b)})}
     sec.appendChild(g);box.appendChild(sec);
   }
 }
@@ -1721,7 +1757,7 @@ $('search').oninput=e=>{
     if(!(t.toLowerCase().includes(ql)||String(d)===q||hits.length))return;
     const b=document.createElement('button');b.className='li';const x=L().lessons[d];
     b.innerHTML=`<span class="d">${isIpy()?lab(d):pad(d)+'일'}</span><span>${esc(t)}${hits.slice(0,2).map(it=>`<br><small style="color:var(--sub)">${esc(it.en)} — ${esc(it.ko)}</small>`).join('')}</span><span class="s">${x?(x.st>=6?'★':'배움'):''}</span>`;
-    b.onclick=()=>{if(isIpy())S.ib=d;else S.browse=d;showTab('browse')};box.appendChild(b)}
+    b.onclick=()=>{if(isIpy()){S.ib=d;S.ibg=-1}else S.browse=d;showTab('browse')};box.appendChild(b)}
   if(!box.children.length)box.innerHTML='<p class="hint">검색 결과가 없어요</p>';
 };
 
@@ -1753,7 +1789,11 @@ function renderBrowseIpy(){
     el.innerHTML=`<div class="no">▶</div><div class="t"><b>${L0.files?(fi===0?'무기 · 예문 폭탄 음원':'STEP 문장 음원'):'원본 음원'}</b><small>${L0.files?IPYBOOK[L0.b]+' '+f.f+'번 파일':'번호 → 영어 문장'}</small></div><span class="dur">${fmt(f.dur||0)}</span><button class="play" ${hasFile(d,'o',fi)?'':'disabled'}>▶</button>`;
     el.querySelector('.play').onclick=()=>startQueue([{day:d,k:'o',fi}],{});$('steps').appendChild(el)});
   $('memo').value=L().memo[d]||'';$('coverWrap').innerHTML='';
-  const items=ipyItems(d);$('sentCount').textContent=items.length+'개';
+  const all=ipyItems(d);let items=all;const gc=$('grpChips');gc.classList.toggle('hide',!kidMode());
+  if(kidMode()){const cu=L().cur,G=cu&&cu.n===d&&cu.G?cu.G:LB().ipyNew||5,grs=kidGroups(d,G);if(S.ibg==null||S.ibg>=grs.length)S.ibg=-1;
+    gc.innerHTML='';[-1,...grs.keys()].forEach(g=>{const b=document.createElement('button');b.className='chip'+(S.ibg===g?' on':'');b.textContent=g<0?'전체':`${g+1}일째`;b.onclick=()=>{S.ibg=g;renderBrowseIpy()};gc.appendChild(b)});
+    if(S.ibg>=0)items=grs[S.ibg].map(i=>({...all[i],_i:i}))}
+  $('sentCount').textContent=items.length+'개';
   const nb=sentList(items,d,true);$('sents').className=nb.className;$('sents').replaceChildren(...nb.childNodes);save();
 }
 function sentList(items,d,masked){
@@ -1764,7 +1804,10 @@ function sentList(items,d,masked){
     setField(el.querySelector('.en'),it.en,mEn);prEl.textContent=it.pr;
     if(mEn){prEl.style.display='none';el.querySelector('.en').addEventListener('click',()=>prEl.style.display='',{once:true})}
     setField(el.querySelector('.ko'),it.ko,masked&&S.mask==='ko');
-    el.querySelector('.say').onclick=async()=>{document.querySelectorAll('.sent.now').forEach(z=>z.classList.remove('now'));el.classList.add('now');await playEn(d,i,it.en);el.classList.remove('now')};
+    const ii=it._i!=null?it._i:i;if(it._i!=null)el.querySelector('.n').textContent=it._i+1;
+    const playMe=async()=>{document.querySelectorAll('.sent.now').forEach(z=>z.classList.remove('now'));el.classList.add('now');await playEn(d,ii,it.en);el.classList.remove('now')};
+    el.querySelector('.say').onclick=playMe;
+    el.querySelector('.en').style.cursor='pointer';el.querySelector('.en').addEventListener('click',playMe); // 영어 문장을 눌러도 소리가 나요
     box.appendChild(el)});
   return box;
 }
@@ -1792,9 +1835,10 @@ async function openCard(d){
 }
 $('modalX').onclick=()=>{$('modal').classList.add('hide');stopSeg()};
 $('modal').onclick=e=>{if(e.target.id==='modal'){$('modal').classList.add('hide');stopSeg()}};
-$('prevDay').onclick=()=>{if(isIpy())S.ib--;else S.browse--;renderBrowse()};
-$('nextDay').onclick=()=>{if(isIpy())S.ib++;else S.browse++;renderBrowse()};
-$('dayInput').onchange=e=>{if(isIpy())S.ib=+e.target.value;else S.browse=+e.target.value;renderBrowse()};
+const kgN=d=>{const cu=L().cur;return kidGroups(d,cu&&cu.n===d&&cu.G?cu.G:LB().ipyNew||5).length};
+$('prevDay').onclick=()=>{if(isIpy()){if(kidMode()&&S.ibg>0)S.ibg--;else if(kidMode()&&S.ibg===0&&S.ib>1){S.ib--;S.ibg=kgN(S.ib)-1}else{S.ib--;S.ibg=-1}}else S.browse--;renderBrowse()};
+$('nextDay').onclick=()=>{if(isIpy()){if(kidMode()&&S.ibg>=0&&S.ibg<kgN(S.ib)-1)S.ibg++;else if(kidMode()&&S.ibg>=0){S.ib++;S.ibg=0}else{S.ib++;S.ibg=-1}}else S.browse++;renderBrowse()};
+$('dayInput').onchange=e=>{if(isIpy()){S.ib=+e.target.value;S.ibg=-1}else S.browse=+e.target.value;renderBrowse()};
 $('memo').oninput=e=>{const k=isIpy()?S.ib:S.browse;const v=e.target.value;if(v)L().memo[k]=v;else delete L().memo[k];save()};
 $('prToggle').onclick=()=>{if(isIpy()){S.hidePr=!S.hidePr;save();renderBrowseIpy();return}S.hidePr=!prHiddenFor(S.browse)?true:false;if(!S.hidePr&&L().lessons[S.browse]&&L().lessons[S.browse].d<today()){toast('이미 배운 날은 발음 글자를 꺼 둬요. 귀로 익혀요!');S.hidePr=true}save();renderSents(S.browse)};
 function renderMaskSeg(){seg('maskSeg',['none','en','ko'],()=>S.mask,v=>{S.mask=v;renderSents(S.browse);const c=document.querySelector('#coverWrap .cover');if(c)c.classList.toggle('blur',v==='en')},v=>({none:'모두 보기',en:'영어 가리기',ko:'뜻 가리기'})[v])}
