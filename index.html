@@ -231,7 +231,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v7.1.0</span></div>
+    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v7.1.1</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div class="courses" id="courses">
@@ -382,8 +382,8 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
     <div class="card" id="bikeCard">
       <b style="font-size:18px">🚲 자전거 듣기</b> <small style="color:var(--sub)">화면을 꺼도 계속 나와요 · 진도에는 안 들어가요</small>
       <div class="row" style="margin-top:10px">
-        <div class="f">범위<select id="bkRange"><option value="today">오늘 공부 (새것 + 복습)</option><option value="recent">최근 7일 배운 것</option><option value="all">배운 것 전체 (섞어서)</option></select></div>
-        <div class="f">한 문장<select id="bkRep"><option value="1">1번</option><option value="2" selected>2번</option><option value="3">3번</option></select></div>
+        <div class="f">범위<select id="bkRange"><option value="wrong">틀린 것 위주 (많이 틀린 순)</option><option value="today">오늘 공부 (새것 + 복습)</option><option value="recent">최근 7일 배운 것</option><option value="all">배운 것 전체 (섞어서)</option></select></div>
+        <div class="f">한 문장<select id="bkRep"><option value="1">1번</option><option value="2">2번</option><option value="3" selected>3번</option><option value="4">4번</option><option value="5">5번</option><option value="6">6번</option><option value="7">7번</option><option value="8">8번</option><option value="9">9번</option><option value="10">10번</option></select></div>
         <div class="f">따라 말할 틈<select id="bkGap"><option value="1" selected>있음 (따라 말하기)</option><option value="0">짧게 (흘려듣기)</option></select></div>
         <button class="btn acc" id="bkMake">🚲 만들어서 재생</button>
       </div>
@@ -2157,7 +2157,11 @@ function renderMaskSeg(){seg('maskSeg',['none','en','ko'],()=>S.mask,v=>{S.mask=
 /* ---------- 몰아듣기 / 아래 플레이어 ---------- */
 /* 🚲 자전거 듣기: 고른 문장의 원어민 소리를 이어 붙여 mp3처럼 한 파일로 → 화면 꺼도 재생 */
 function bikeItems(){const r=$('bkRange').value,l=L(),out=[],seen=new Set();const push=(n,i)=>{const k=n+'-'+i;if(!seen.has(k)){seen.add(k);out.push([n,i])}};
-  if(r==='today'){const P=getPlan();for(const x of [...P.tasks].sort((a,b)=>(a.g==='new'?0:1)-(b.g==='new'?0:1))){if(x.items)x.items.forEach(([n,i])=>typeof i==='number'&&push(n,i));else if(x.idx&&x.n)x.idx.forEach(i=>push(x.n,i))}}
+  if(r==='wrong'){const stt=l.stats,sc={};Object.keys(l.wrong||{}).forEach(k=>{sc[k]=(sc[k]||0)+100});
+    Object.entries(stt).forEach(([k,v])=>{if(v[1]>0)sc[k]=(sc[k]||0)+v[1]*10-v[0]});
+    Object.keys(sc).sort((a,b)=>sc[b]-sc[a]).forEach(k=>{const [n,i]=parseKey(k);if(typeof i==='number'&&ipyL(n))push(n,i)});
+    if(!out.length)toast('아직 틀린 게 없어요 · 오늘 공부로 만들어요')}
+  if(r==='today'||(r==='wrong'&&!out.length)){const P=getPlan();for(const x of [...P.tasks].sort((a,b)=>(a.g==='new'?0:1)-(b.g==='new'?0:1))){if(x.items)x.items.forEach(([n,i])=>typeof i==='number'&&push(n,i));else if(x.idx&&x.n)x.idx.forEach(i=>push(x.n,i))}}
   else{const t=today();const ns=Object.entries(l.lessons).filter(([n,x])=>r==='all'||x.d>=addDays(t,-7)).map(([n])=>+n);if(l.cur&&l.cur.hist)l.cur.hist.flat().forEach(i=>push(l.cur.n,i));
     ns.forEach(n=>eligIdx(n).forEach(i=>push(n,i)));if(r==='all')shuffle(out)}
   return out.slice(0,150)}
