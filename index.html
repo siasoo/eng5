@@ -231,7 +231,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v6.9.3</span></div>
+    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v7.1.0</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div class="courses" id="courses">
@@ -379,7 +379,18 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 
   <!-- 몰아듣기 -->
   <section id="tab-bulk" class="hide">
-    <div class="card">
+    <div class="card" id="bikeCard">
+      <b style="font-size:18px">🚲 자전거 듣기</b> <small style="color:var(--sub)">화면을 꺼도 계속 나와요 · 진도에는 안 들어가요</small>
+      <div class="row" style="margin-top:10px">
+        <div class="f">범위<select id="bkRange"><option value="today">오늘 공부 (새것 + 복습)</option><option value="recent">최근 7일 배운 것</option><option value="all">배운 것 전체 (섞어서)</option></select></div>
+        <div class="f">한 문장<select id="bkRep"><option value="1">1번</option><option value="2" selected>2번</option><option value="3">3번</option></select></div>
+        <div class="f">따라 말할 틈<select id="bkGap"><option value="1" selected>있음 (따라 말하기)</option><option value="0">짧게 (흘려듣기)</option></select></div>
+        <button class="btn acc" id="bkMake">🚲 만들어서 재생</button>
+      </div>
+      <div id="bkOut" style="margin-top:10px"></div>
+      <p class="hint">이어폰은 한쪽만 끼거나 작은 소리로 들어요. 타는 중엔 화면을 보지 마세요.</p>
+    </div>
+    <div class="card" id="bulkCard">
       <div class="row">
         <div class="f">단계<select id="bMode"></select></div>
         <div class="f">시작 일차<input type="number" id="bFrom" min="1" max="365" value="1"></div>
@@ -944,7 +955,10 @@ function addMoreIpy(){
   P.capped=false;P.extra=(P.extra||0)+1;save();return true;
 }
 /* 입영작: 복습은 그 과에서 최대 10문장 (전에 틀린 문장 먼저) */
-function sampleReview(n,st){
+function pickRetry(n,wrong,pool){const stt=L().stats,items=(ipyL(n)||{}).items||[];const w=[...new Set(wrong)];
+  const rest=pool.filter(i=>!w.includes(i)).sort((a,b)=>(((stt[n+'-'+b]||[0,0])[1])-((stt[n+'-'+a]||[0,0])[1]))||(((items[b]||[''])[0].length)-((items[a]||[''])[0].length)));
+  return w.concat(rest.slice(0,w.length)).sort((a,b)=>a-b)}
+function sampleReview(n,st){{const x=L().lessons[n];if(x&&x.rq&&x.rq.length)return x.rq.map(i=>[n,i])} // 다시 도전: 틀린 것 + 같은 수의 어려운 것
   const l=L(),stt=l.stats,k=nItems(n);let idx=IPYV()>=2&&!kidMode()?unitIdx(n,'st'):kidMode()?eligIdx(n):[...Array(k).keys()];if(!idx.length)idx=[...Array(k).keys()];
   const bad=idx.filter(i=>(stt[n+'-'+i]||[0,0])[1]>0);
   // 30일·90일 복습: 그 단 문장 전부
@@ -1024,13 +1038,14 @@ async function runWdSay(t,tok){const A=t.items;if(SESS)SESS.kind='first';let sum
     if($('skipB'))$('skipB').onclick=()=>{if(SESS){SESS.skipNow=true;stopRec()}};
     await say(it.ko,'ko-KR');if(!SESS||SESS.tok!==tok)return false;
     const r=await sayAndGrade(ui,it,tok,passLine());if(!r)return false;
-    recordResult(n,i,r.ok);if(r.ok)sum++;else(t.fails=t.fails||[]).push([n,i]);if(t.units){t.res=t.res||{};const z=(t.res[n]=t.res[n]||[0,0]);z[1]++;if(r.ok)z[0]++}
+    recordResult(n,i,r.ok);if(r.ok)sum++;else{(t.fails=t.fails||[]).push([n,i]);(t.wrAll=t.wrAll||[]).push([n,i])}if(t.units){t.res=t.res||{};const z=(t.res[n]=t.res[n]||[0,0]);z[1]++;if(r.ok)z[0]++}
     $('ans').classList.remove('hidden');$('qBtns').innerHTML='';
     ui.el.insertAdjacentHTML('beforeend',`<div class="verdict ${r.ok?'ok':'ng'}">${r.ok?'맞았어요! 🎉':'정답을 듣고 기억해요 · 끝에 다시 나와요'}</div>`);if(r.ok)ui.done('잘했어요!');
     t.q=q+1;t.sum=sum;keep();await playEn(n,i,it.en);await sleep(r.ok?500:900)}
   if(t.fails&&t.fails.length){const ok=await wdAgain(t,t.fails,tok);if(!ok)return false;t.fails=[]}
   t.score=Math.round(sum/A.length*100);
-  if(t.units)for(const u of t.units){const z=(t.res||{})[u.n]||[1,1];advance(u.n,Math.round(z[0]/z[1]*100))}
+  if(t.units)for(const u of t.units){const z=(t.res||{})[u.n]||[1,1];const x=L().lessons[u.n];const ok=advance(u.n,Math.round(z[0]/z[1]*100));
+    if(x){const wr=(t.wrAll||[]).filter(p=>p[0]===u.n).map(p=>p[1]);if(ok===false&&wr.length)x.rq=pickRetry(u.n,wr,A.filter(p=>p[0]===u.n).map(p=>p[1]));else if(ok)delete x.rq}}
   save();return true}
 /* 영어단어 하루 분량 = 복습 + 새 단어 = 정한 개수 (새 단어는 최소 7개) */
 function buildPlanWd(P,l,t,wd,wkOK){const add=t2=>{t2.id='t'+P.tasks.length;P.tasks.push(t2)};l.cur=null;
@@ -1088,7 +1103,7 @@ function buildPlanIpy(force){
   else if(cur&&kidMode()){P.newN=cur.n;
     const idx=curGroup(cur);const grs=unitGroups(cur.n);
     if(cur.g>0&&cur.k===0&&S.course!=='wd'){const pv=grs[cur.g-1],rp=pv.length>10?2:4;add({type:'step2',n:cur.n,idx:pv,reps:rp,g:'review',title:'어제 배운 문장 다시 읽기',sub:`${lab(cur.n)} · ${pv.length}문장 · ${rp}번씩`})}
-    kidParts(cur.n,cur.g).slice(cur.k).forEach(([type])=>add({type,n:cur.n,idx,kid:true,g:'new',title:KIDNAME[type][0],sub:`${lab(cur.n)} · ${ttl(cur.n)} · ${cur.g+1}/${grs.length}묶음 · ${KIDNAME[type][1]}`}));
+    kidParts(cur.n,cur.g).slice(cur.k).forEach(([type])=>{const rq=cur.k>0&&cur.rq&&cur.rq.length?cur.rq:null;add({type,n:cur.n,idx:rq||idx,grp:idx,kid:true,g:'new',title:KIDNAME[type][0]+(rq?' · 다시 도전':''),sub:rq?`${lab(cur.n)} · 틀린 문장 + 어려운 문장 ${rq.length}개만 · ${KIDNAME[type][1]}`:`${lab(cur.n)} · ${ttl(cur.n)} · ${cur.g+1}/${grs.length}묶음 · ${KIDNAME[type][1]}`})});
 }
   else if(cur){P.newN=cur.n;
     partsFor(cur.n).slice(cur.k).forEach(([type,h])=>{const [,title,sub]=STEPNAME[type];add({type,n:cur.n,h,g:'new',title:title+halfLabel(cur.n,h),sub:`${lab(cur.n)} · ${ttl(cur.n)} · ${sub}`})})}
@@ -1331,16 +1346,16 @@ async function runNext(){
   if(!SESS||SESS.tok!==tok||!ok)return;
   t.done=true;['q','rep','s1','sum','qs','bq','sq','fails'].forEach(k=>delete t[k]);
   if(t.type==='listen'&&t.last&&t.g==='new')markLearned(t.n);
-  if(t.type==='quiz'&&t.adv)advance(t.adv,t.sScore);
+  if(t.type==='quiz'&&t.adv){const x=L().lessons[t.adv];const ok=advance(t.adv,t.sScore);if(x){if(ok===false&&t.wr&&t.wr.length)x.rq=pickRetry(t.adv,t.wr.filter(i=>typeof i==='number'),t.items.map(z=>z[1]).filter(i=>typeof i==='number'));else if(ok)delete x.rq;save()}}
   if(t.type==='quiz'&&t.learn)markLearned(t.learn);
   if(t.type==='wds'&&t.items&&t.g==='new')wdFinish(t.items);
   if(t.kind==='cycle'){L().cycle=t.cycleTo}
   const cu=L().cur;
   if(t.g==='new'&&cu&&cu.n===t.n&&STEPNAME[t.type]){
     if(t.after&&t.kid){migCur(cu);cu.s3={sum:0,cnt:0};
-      if(t.after==='done'){const cg=t.idx&&t.idx.length?t.idx:curGroup(cu);cu.hist.push(cg);if(CHAIN())L().wdDay={d:today(),n:wdToday()+newCnt(t.n,cg)};cu.cg=null;cu.g=cu.hist.length;
+      if(t.after==='done'){const cg=t.grp&&t.grp.length?t.grp:t.idx&&t.idx.length?t.idx:curGroup(cu);delete cu.rq;cu.hist.push(cg);if(CHAIN())L().wdDay={d:today(),n:wdToday()+newCnt(t.n,cg)};cu.cg=null;cu.g=cu.hist.length;
         if(!remIdx(cu).length){markLearned(t.n);L().cur=null}else{cu.k=0;cu.cg=null}}
-      else cu.k=Math.max(0,kidParts(t.n,cu.g||0).findIndex(p=>p[0]===(t.after==='s3'?'step3':S.course==='wd'?'ipyex':'step2')));
+      else{if(t.wr&&t.wr.length)cu.rq=pickRetry(t.n,t.wr,t.grp||t.idx||curGroup(cu));cu.k=Math.max(0,kidParts(t.n,cu.g||0).findIndex(p=>p[0]===(t.after==='s3'?'step3':S.course==='wd'?'ipyex':'step2')))}
       P.tasks.filter(x=>!x.done&&x.g==='new'&&(t.after!=='done'||S.course!=='wd')).forEach(x=>x.done=true);wdMore()}
     else if(t.after){ // 책의 채점 기준: 80점↑ 완성 / 41~79 STEP 3 재도전 / 40↓ STEP 2부터
       if(t.after==='done'){markLearned(t.n);L().cur=null}
@@ -1787,7 +1802,7 @@ async function runStep3(t,tok){
     await say(it.ko,'ko-KR');if(!SESS||SESS.tok!==tok)return false;
     const r=await sayAndGrade(ui,it,tok,passLine());if(!r)return false;
     const fast=r.ms<4500+enLen(n,i)*1500;
-    const pt=!r.ok?1:((r.self||fast)&&!r.retry?5:3);sum+=pt;recordResult(n,i,r.ok);if(!r.ok&&S.course==='wd'){(t.fails=t.fails||[]).push([n,i])}
+    const pt=!r.ok?1:((r.self||fast)&&!r.retry?5:3);sum+=pt;recordResult(n,i,r.ok);if(!r.ok)(t.wr=t.wr||[]).push(i);if(!r.ok&&S.course==='wd'){(t.fails=t.fails||[]).push([n,i])}
     $('ans').classList.remove('hidden');$('qBtns').innerHTML='';
     ui.el.insertAdjacentHTML('beforeend',`<div class="verdict ${r.ok?'ok':'ng'}">${pt===5?'5점 · 자연스러워요! 🎉':pt===3?'3점 · 맞았어요, 조금 더 빨리!':'1점 · 정답을 듣고 따라 해요'}</div>`);
     if(r.ok)ui.done('잘했어요!');
@@ -1888,7 +1903,7 @@ async function runQuiz(t,tok){
     if(useSR()){
       const r=await autoQuizItem(n,i,it,ui,tok);
       if(r===null)return false;
-      if(r!=='fallback'){if(r)good++;else if(S.course==='wd')(t.fails=t.fails||[]).push([n,i]);if(!isWord(i)){sTotal++;if(r)sGood++}continue}
+      if(r!=='fallback'){if(r)good++;else{(t.wr=t.wr||[]).push(i);if(S.course==='wd')(t.fails=t.fails||[]).push([n,i])}if(!isWord(i)){sTotal++;if(r)sGood++}continue}
       ui.state('play');
     }
     const need=Math.min(1.4,Math.max(0.35,enLen(n,i)*0.5));
@@ -1907,7 +1922,7 @@ async function runQuiz(t,tok){
     recordResult(n,i,res);
     if(!isWord(i)){sTotal++;if(res)sGood++}
     if(res){good++;continue}
-    if(S.course==='wd')(t.fails=t.fails||[]).push([n,i]);
+    (t.wr=t.wr||[]).push(i);if(S.course==='wd')(t.fails=t.fails||[]).push([n,i]);
     // 틀리면 정답을 한 번 따라 말하고 넘어가기
     $('qBtns').innerHTML='';
     const ui2=micUI();ui2.prompt='정답을 따라 말해요!';$('micBox').innerHTML='';$('micBox').appendChild(ui2.el);
@@ -2140,7 +2155,37 @@ $('prToggle').onclick=()=>{if(isIpy()){S.hidePr=!S.hidePr;save();renderBrowseIpy
 function renderMaskSeg(){seg('maskSeg',['none','en','ko'],()=>S.mask,v=>{S.mask=v;renderSents(S.browse);const c=document.querySelector('#coverWrap .cover');if(c)c.classList.toggle('blur',v==='en')},v=>({none:'모두 보기',en:'영어 가리기',ko:'뜻 가리기'})[v])}
 
 /* ---------- 몰아듣기 / 아래 플레이어 ---------- */
-function renderBulkModes(){$('bMode').innerHTML=isIpy()?'<option value="o">원본 음원</option>':MODES.map(m=>`<option value="${m.k}">${m.name}</option>`).join('');$('bMode').value=isIpy()?'o':'r';$('bFrom').max=$('bTo').max=TOTAL()}
+/* 🚲 자전거 듣기: 고른 문장의 원어민 소리를 이어 붙여 mp3처럼 한 파일로 → 화면 꺼도 재생 */
+function bikeItems(){const r=$('bkRange').value,l=L(),out=[],seen=new Set();const push=(n,i)=>{const k=n+'-'+i;if(!seen.has(k)){seen.add(k);out.push([n,i])}};
+  if(r==='today'){const P=getPlan();for(const x of [...P.tasks].sort((a,b)=>(a.g==='new'?0:1)-(b.g==='new'?0:1))){if(x.items)x.items.forEach(([n,i])=>typeof i==='number'&&push(n,i));else if(x.idx&&x.n)x.idx.forEach(i=>push(x.n,i))}}
+  else{const t=today();const ns=Object.entries(l.lessons).filter(([n,x])=>r==='all'||x.d>=addDays(t,-7)).map(([n])=>+n);if(l.cur&&l.cur.hist)l.cur.hist.flat().forEach(i=>push(l.cur.n,i));
+    ns.forEach(n=>eligIdx(n).forEach(i=>push(n,i)));if(r==='all')shuffle(out)}
+  return out.slice(0,150)}
+let bikeUrl=null;
+async function bikeMake(){const list=bikeItems();if(!list.length){toast('들을 문장이 없어요. 먼저 오늘 공부를 시작해 보세요');return}
+  const rep=+$('bkRep').value,gapOn=$('bkGap').value==='1',SR=16000;$('bkMake').disabled=true;const msg=t=>$('bkOut').innerHTML=`<small>${t}</small>`;
+  try{const ctx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:SR});const seg={};const byKey={};
+    list.forEach(([n,i],k)=>{const c=clip(n,i);if(c&&c[2]!=null&&c[4])(byKey[c[4]]=byKey[c[4]]||[]).push([k,c[2],c[3]])});
+    const keys=Object.keys(byKey);let done=0;
+    for(const key of keys){msg(`소리 모으는 중… ${Math.round(done/keys.length*100)}%`);let f=await getFile(key,'key');if(!f){done++;continue}
+      const ab=await f.arrayBuffer();f=null;const buf=await new Promise(res=>{try{const pr=ctx.decodeAudioData(ab,res,()=>res(null));if(pr&&pr.catch)pr.catch(()=>res(null))}catch(e){res(null)}});
+      if(buf){const d=buf.getChannelData(0),R=buf.sampleRate;for(const [k,s,e] of byKey[key]){const a=Math.max(0,Math.floor((s-0.08)*R)),b=Math.min(d.length,Math.ceil((e+0.15)*R));seg[k]=d.slice(a,b)}}
+      done++;await sleep(0)}
+    try{ctx.close()}catch(e){}
+    const parts=[],sil=s=>new Float32Array(Math.round(s*SR));let n=0;parts.push(sil(0.5));
+    list.forEach((_,k)=>{const x=seg[k];if(!x)return;n++;const dur=x.length/SR;for(let r=0;r<rep;r++){parts.push(x);parts.push(sil(gapOn?Math.max(1.2,dur*1.15+0.3):0.5))}parts.push(sil(gapOn?0.8:0.4))});
+    if(!n){msg('음원이 연결된 문장이 없어요');return}
+    let len=0;parts.forEach(p=>len+=p.length);const wav=new DataView(new ArrayBuffer(44+len*2));const ws=(o,s)=>{for(let i=0;i<s.length;i++)wav.setUint8(o+i,s.charCodeAt(i))};
+    ws(0,'RIFF');wav.setUint32(4,36+len*2,true);ws(8,'WAVE');ws(12,'fmt ');wav.setUint32(16,16,true);wav.setUint16(20,1,true);wav.setUint16(22,1,true);wav.setUint32(24,SR,true);wav.setUint32(28,SR*2,true);wav.setUint16(32,2,true);wav.setUint16(34,16,true);ws(36,'data');wav.setUint32(40,len*2,true);
+    let o=44;for(const p of parts)for(let i=0;i<p.length;i++){const v=Math.max(-1,Math.min(1,p[i]));wav.setInt16(o,v<0?v*0x8000:v*0x7fff,true);o+=2}
+    if(bikeUrl)URL.revokeObjectURL(bikeUrl);bikeUrl=URL.createObjectURL(new Blob([wav],{type:'audio/wav'}));
+    const min=Math.round(len/SR/60);
+    $('bkOut').innerHTML=`<b>${CNAME()} ${n}개 · 약 ${min||1}분</b><audio id="bkAudio" controls loop src="${bikeUrl}" style="width:100%;margin-top:6px"></audio><small style="color:var(--sub)">끝나면 처음부터 다시 나와요. 잠금 화면에서도 멈추고 다시 틀 수 있어요.</small>`;
+    const a=$('bkAudio');a.playbackRate=S.rate;try{if('mediaSession' in navigator)navigator.mediaSession.metadata=new MediaMetadata({title:`🚲 ${CNAME()} 듣기 (${n}개)`,artist:'1일 5분 영어'})}catch(e){}
+    try{await a.play()}catch(e){}
+  }catch(e){msg('만들지 못했어요: '+(e&&e.message||e))}finally{$('bkMake').disabled=false}}
+$('bkMake').onclick=bikeMake;
+function renderBulkModes(){$('bikeCard').classList.toggle('hide',!isIpy());$('bulkCard').classList.toggle('hide',isIpy());$('bMode').innerHTML=isIpy()?'<option value="o">원본 음원</option>':MODES.map(m=>`<option value="${m.k}">${m.name}</option>`).join('');$('bMode').value=isIpy()?'o':'r';$('bFrom').max=$('bTo').max=TOTAL()}
 function bulk(k,days,shuf,loop){
   let q=[];days.forEach(d=>{if(k==='o')ipyFiles(d).forEach((key,fi)=>{if(FILES.has(key))q.push({day:d,k,fi})});else if(hasFile(d,k))q.push({day:d,k})});
   if(!q.length){toast(FILES.size?'해당 범위에 음원이 없어요':'먼저 음원 폴더를 연결해 주세요');return}
