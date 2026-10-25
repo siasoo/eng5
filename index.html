@@ -214,16 +214,24 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 .blk{font:inherit;font-size:19px;font-weight:700;border:2px solid var(--line);background:#fff;border-radius:12px;padding:8px 12px}
 .blk.on{border-color:var(--accent2);color:var(--accent2);background:var(--soft)}
 .blk.shake{animation:shk .35s;border-color:var(--accent)}@keyframes shk{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.rb{display:inline-block;border-radius:8px;padding:1px 7px;margin:2px 0;border:2px solid transparent}
+.rS{background:#f6d3ee;border-color:#d27bbd}.rV,.rQ{background:#cdebf3;border-color:#5aa9c2}.rA{background:#d6efce;border-color:#6db464}.rO{background:#fbe2bf;border-color:#e0a24c}.rC{background:#fff1b8;border-color:#d8b93a}.rX{background:#eee;border-color:#bbb}
+.slots{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:14px 0 12px}.slot{min-width:64px;display:flex;flex-direction:column;align-items:center}
+.slot .sb{min-height:40px;min-width:64px;border-radius:10px;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;padding:4px 10px}
+.slot small{font-size:12px;color:var(--sub);margin-top:3px}
+.slot .sb.rS,.slot .sb.rV,.slot .sb.rQ,.slot .sb.rA,.slot .sb.rO,.slot .sb.rC,.slot .sb.rX{border-style:solid}
+.slot .sb.empty{opacity:.55;color:transparent}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v5.2.0</span></div>
+    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v5.3.0</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div class="courses" id="courses">
     <button data-course="ipy">✍️ 입영작</button>
+    <button data-course="gj">📗 기적의 영어</button>
     <button data-course="trv">✈️ 여행영어</button>
     <button data-course="home">🏠 생활영어</button>
     <button data-course="eng">📘 1일 5분 영어</button>
@@ -521,8 +529,8 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 /* ---------- 과정: 1일 5분 영어 / 입영작 ---------- */
 let IPYD=null,IPYMAP=new Map(),IPYSIZE=new Map();   // 입영작·여행영어 데이터 (부모님이 불러온 파일, 이 기기에만 저장)
 const DS={};   // 과정별 데이터 {ipy, trv}
-const IPYBOOK={A:'영어로 잘 대답하기',B:'영어로 더 잘 대답하기',C:'영어로 잘 물어보기',D:'영어로 진짜 길게 말하기',T:'여행영어 패턴',E:'EBS 여행편',M:'엄마의 365일 영어 한마디'};
-const IPYC={ipy:['입영작','✍️'],trv:['여행영어','✈️'],home:['생활영어','🏠']};
+const IPYBOOK={G:'기적의 영어문장 만들기',A:'영어로 잘 대답하기',B:'영어로 더 잘 대답하기',C:'영어로 잘 물어보기',D:'영어로 진짜 길게 말하기',T:'여행영어 패턴',E:'EBS 여행편',M:'엄마의 365일 영어 한마디'};
+const IPYC={ipy:['입영작','✍️'],gj:['기적의 영어','📗'],trv:['여행영어','✈️'],home:['생활영어','🏠']};
 const CNAME=()=>(IPYC[S.course]||IPYC.ipy)[0];
 function setIpyData(d){
   const c=d.course||'ipy';
@@ -533,7 +541,7 @@ function setIpyData(d){
   d._rules=d.rules||{};d._order=null;
   if(d.pr&&d.lessons)d.lessons.forEach(x=>{if(!x.itemsAll||x.no==null)return;const k=x.b+x.no;
     // itemsAll 순서 = ex + st (어른 문장 포함) → 그 순번으로 발음을 붙여요
-    x.itemsAll.forEach((it,q)=>{it[10]=d.pr[k+':'+q]||''})});
+    x.itemsAll.forEach((it,q)=>{it[10]=d.pr[k+':'+q]||'';if(d.roles)it[11]=d.roles[k+':'+q]||null})});
   if(d.kidOrder&&d.lessons&&d.lessons[0]&&d.lessons[0].no!=null){const ix={};d.lessons.forEach((x,i)=>ix[x.b+x.no]=i);const o=d.kidOrder.map(k=>ix[k]).filter(x=>x!=null);if(o.length===d.lessons.length)d._order=o}
   DS[c]=d;IPYMAP=new Map();const sz=new Map();
   for(const D of Object.values(DS))(D.lessons||[]).forEach(x=>{if(x.files)x.files.forEach((f,j)=>{IPYMAP.set((f.n||f.f+'.mp3')+'|'+f.size,x.fk[j]);sz.set(f.size,sz.has(f.size)&&sz.get(f.size)!==x.fk[j]?null:x.fk[j])});else IPYMAP.set(x.f+'.mp3|'+x.size,'I:'+x.b+x.f)});
@@ -570,8 +578,8 @@ function addFile(name,obj){const p=parseName(name);if(p){FILES.set(p.day+'-'+p.k
 function updateFolderMsg(){
   $('ipyDataBtn').classList.toggle('hide',!isIpy());$('ipyDataBtn').textContent=CNAME()+' 데이터 다시 불러오기';
   if(isIpy()){let c=0,all=0;for(let d=1;d<=TOTAL();d++)for(const k of ipyFiles(d)){all++;if(FILES.has(k))c++}
-    if(S.course!=='ipy'){const miss=[...new Set(IPYD.lessons.flatMap(x=>x.files.map((f,j)=>FILES.has(x.fk[j])?null:(x.b==='E'?'EBS '+f.f.slice(0,2)+'_'+f.f.slice(2):x.b==='T'?'패턴책 '+f.f:'365일 '+f.f.slice(1)+'월')).filter(Boolean)))].sort();
-      $('folderMsg').innerHTML=`<b>${c===all?'✓ ':''}${CNAME()} 음원 ${c}/${all}개 연결됨</b>${miss.length?`<br><small>빠진 음원 ${miss.length}개: ${esc(miss.slice(0,12).join(', '))}${miss.length>12?' …':''}</small>`:''}`+`${c<all?(S.course==='trv'?'<br>빠진 파일을 ‘mp3 파일 고르기’로 더 골라 주세요. 이미 넣은 건 건너뛰어요.':'<br>엄마의 365일 영어 한마디 mp3 12개를 골라 주세요.'):''}`;return}
+    if(S.course!=='ipy'){const miss=[...new Set(IPYD.lessons.flatMap(x=>x.files.map((f,j)=>FILES.has(x.fk[j])?null:(x.b==='E'?'EBS '+f.f.slice(0,2)+'_'+f.f.slice(2):x.b==='T'?'패턴책 '+f.f:x.b==='G'?(f.label||f.f):'365일 '+f.f.slice(1)+'월')).filter(Boolean)))].sort();
+      $('folderMsg').innerHTML=`<b>${c===all?'✓ ':''}${CNAME()} 음원 ${c}/${all}개 연결됨</b>${miss.length?`<br><small>빠진 음원 ${miss.length}개: ${esc(miss.slice(0,12).join(', '))}${miss.length>12?' …':''}</small>`:''}`+`${c<all?(S.course==='trv'?'<br>빠진 파일을 ‘mp3 파일 고르기’로 더 골라 주세요. 이미 넣은 건 건너뛰어요.':(S.course==='gj'?'<br>기적의 영어문장 만들기 1~5권 mp3(168개)를 골라 주세요. 이미 넣은 건 건너뛰어요.':'<br>엄마의 365일 영어 한마디 mp3 12개를 골라 주세요.')):''}`;return}
     $('folderMsg').innerHTML=c?`<b>${c===all?'✓ ':''}입영작 음원 ${c}/${all}개 연결됨</b>${c<all?' — 네 권 폴더의 mp3를 모두 골라 주세요 (한꺼번에 골라도 돼요)':''}`:'입영작 음원 네 권(잘 대답하기·더 잘 대답하기·잘 물어보기·진짜 길게 말하기)의 mp3를 골라 주세요. 한꺼번에 골라도 앱이 어느 책인지 알아서 나눠요.';return}
   let n=0;for(const k of FILES.keys())if(!k.startsWith('I:'))n++;
   if(!n){$('folderMsg').innerHTML='<b>2복습하기</b> 폴더의 음원(365개)만 있으면 돼요. ‘음원 폴더 선택’으로 폴더를 고르거나, ‘mp3 파일 고르기’에서 전체 선택하세요. 한 번 고르면 앱 안에 저장돼요.';return}
@@ -642,7 +650,7 @@ function setCourse(c){
   S.course=c;save();stopSeg();if(!audio.paused)audio.pause();afterLoad();showTab('today');
 }
 document.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>setCourse(b.dataset.course));
-(async()=>{const d=await idbGet('h','ipydata');if(d){setIpyData(d);if(!S.course){S.course='ipy';save()}}const t2=await idbGet('h','trvdata');if(t2)setIpyData(t2);const t3=await idbGet('h','homedata');if(t3)setIpyData(t3);if(d||t2||t3)renderAll()})();
+(async()=>{const d=await idbGet('h','ipydata');if(d){setIpyData(d);if(!S.course){S.course='ipy';save()}}const t2=await idbGet('h','trvdata');if(t2)setIpyData(t2);const t3=await idbGet('h','homedata');if(t3)setIpyData(t3);const t4=await idbGet('h','gjdata');if(t4)setIpyData(t4);if(d||t2||t3||t4)renderAll()})();
 (async()=>{ // 앱 안에 저장된 음원 불러오기
   const keys=await idbKeys('audio');if(!keys.length)return;
   for(const k of keys){if(!FILES.has(k)){const b=await idbGet('audio',k);if(b)FILES.set(k,b)}}
@@ -711,7 +719,7 @@ async function getMeta(d){
   }catch(e){return null}
 }
 async function getItems(d){if(isIpy())return ipyItems(d);if(LYR[d]&&LYR[d].length)return LYR[d];const m=await getMeta(d);return (m&&m.items)||[]}
-const ipyItems=d=>(ipyL(d)?ipyL(d).items:[]).map(x=>({en:x[0],ko:x[1],pr:x[10]||'',flag:x[4],ec:x[5]||x[0],kc:x[6]||x[1],h:x[7]||[],part:x[8]||'st'}));
+const ipyItems=d=>(ipyL(d)?ipyL(d).items:[]).map(x=>({en:x[0],ko:x[1],pr:x[10]||'',roles:x[11]||null,flag:x[4],ec:x[5]||x[0],kc:x[6]||x[1],h:x[7]||[],part:x[8]||'st'}));
 let indexing=false;
 async function buildIndex(){
   if(indexing)return;indexing=true;
@@ -1423,7 +1431,7 @@ async function runRepeat(t,tok){
 }
 /* ---------- 입영작: 책의 공부 방법 ---------- */
 const unitIdx=(n,part)=>{const u=ipyL(n);const a=[];if(!u)return a;for(let i=0;i<u.items.length;i++)if((u.items[i][8]||'st')===part)a.push(i);return a};
-const chunkHTML=s=>esc(s).split(' / ').join(' <span style="color:var(--accent);font-weight:400">/</span> ');
+const chunkHTML=(s,roles)=>{const c=String(s).split(' / ');if(roles&&roles.length===c.length)return c.map((x,i)=>`<span class="rb r${roles[i]}">${esc(x)}</span>`).join(' ');return esc(s).split(' / ').join(' <span style="color:var(--accent);font-weight:400">/</span> ')};
 const hintHTML=h=>h&&h.length?`<div class="pr" style="margin-top:8px">${h.map(x=>'▶ '+esc(x[0])+' <b>'+esc(x[1])+'</b>').join(' &nbsp; ')}</div>`:'';
 function stepHead(t,guide){return `<div class="stitle">${(IPYC[S.course]||IPYC.ipy)[1]} ${CNAME()} · ${lab(t.n)} · ${esc(ttl(t.n))}</div><div class="sh">${esc(t.title)}</div><p class="sguide">${guide}</p>`}
 const mdk=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b class="kw">$1</b>');
@@ -1448,15 +1456,17 @@ async function runBlock(t,tok){
   if(t.bq&&t.bq.queue){queue=t.bq.queue;q0=t.bq.q;again=t.bq.again||[]}
   for(let q=q0;q<queue.length;q++){
     if(!SESS||SESS.tok!==tok)return false;const i=queue[q],it=items[i];t.bq={queue,q,again};keep();
-    const blocks=makeBlocks(it);let order=shuffle(blocks.slice());for(let z=0;z<5&&blocks.length>1&&order.join('|')===blocks.join('|');z++)order=shuffle(order);
+    const ec=String(it.ec||'').split(/\s*\/\s*/).filter(Boolean),RL=it.roles&&it.roles.length===ec.length&&ec.join(' ')===it.en.split(/\s+/).join(' ')?it.roles:null;
+    const blocks=RL?ec:makeBlocks(it);
+    if(blocks.length<2)continue; /* 단어 하나는 블록 맞추기 없이 넘어가요 */let order=shuffle(blocks.slice());for(let z=0;z<5&&blocks.length>1&&order.join('|')===blocks.join('|');z++)order=shuffle(order);
     $('sMain').innerHTML=stepHead(t,'한국어를 보고 영어 블록을 <b>순서대로</b> 눌러요. 다 만들면 소리 내어 읽어요.')+`<div class="qcard"><div class="cnt">${q+1} / ${queue.length}</div>
-      <div class="ko">${chunkHTML(it.kc)}</div>${hintHTML(it.h)}<div class="bline" id="bline"></div><div class="bpool" id="bpool"></div>
+      ${RL?`<div class="ko" style="font-size:18px">${esc(it.ko)}</div><div class="slots" id="bline">${ec.map((x,k)=>`<div class="slot"><div class="sb empty r${RL[k]}" data-k="${k}">${esc(x)}</div><small>${esc((String(it.kc||'').split(/\s*\/\s*/)[k])||'')}</small></div>`).join('')}</div>`:`<div class="ko">${chunkHTML(it.kc)}</div><div class="bline" id="bline"></div>`}${hintHTML(it.h)}<div class="bpool" id="bpool"></div>
       <div id="micBox"></div><div class="sbtns" id="qBtns"><button class="btn ghost" id="bHint">💡 다음 블록</button><button class="btn ghost" id="bHear">🔊 정답 듣기</button></div></div>`;
     let pos=0,miss=0;
     await new Promise(res=>{
-      const pick=(el,txt)=>{if(txt===blocks[pos]){el.remove();$('bline').insertAdjacentHTML('beforeend',`<span class="blk on">${esc(txt)}</span>`);pos++;if(pos>=blocks.length)res()}
+      const pick=(el,txt)=>{if(txt===blocks[pos]){el.remove();if(RL){const sb=$('bline').querySelector(`.sb[data-k="${pos}"]`);if(sb)sb.classList.remove('empty')}else $('bline').insertAdjacentHTML('beforeend',`<span class="blk on">${esc(txt)}</span>`);pos++;if(pos>=blocks.length)res()}
         else{miss++;el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake')}};
-      order.forEach(txt=>{const el=document.createElement('button');el.className='blk';el.textContent=txt;el.onclick=()=>pick(el,txt);$('bpool').appendChild(el)});
+      order.forEach(txt=>{const el=document.createElement('button');el.className='blk'+(RL?' rb r'+RL[blocks.indexOf(txt)]:'');el.textContent=txt;el.onclick=()=>pick(el,txt);$('bpool').appendChild(el)});
       $('bHint').onclick=()=>{miss++;const el=[...$('bpool').children].find(e=>e.textContent===blocks[pos]);if(el)pick(el,blocks[pos])};
       $('bHear').onclick=()=>{miss++;playEn(n,i,it.en)};
     });
@@ -1478,7 +1488,7 @@ async function runIpyEx(t,tok){
   for(let q=Math.min(t.q||0,idx.length);q<idx.length;q++){
     if(!SESS||SESS.tok!==tok)return false;const i=idx[q],it=items[i];t.q=q;keep();
     $('sMain').innerHTML=stepHead(t,'예문을 듣고, 끊어 읽기(/)에 맞춰 소리 내서 따라 말해요.')+`<div class="qcard"><div class="cnt">예문 ${q+1} / ${idx.length}</div>
-      <div class="en">${chunkHTML(it.ec)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}<div class="ko" style="font-size:16px;font-weight:400;color:var(--sub)">(${esc(it.kc)})</div>
+      <div class="en">${chunkHTML(it.ec,it.roles)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}<div class="ko" style="font-size:16px;font-weight:400;color:var(--sub)">(${esc(it.kc)})</div>
       <div id="micBox"></div><div class="sbtns"><button class="btn ghost" id="again">🔁 다시 듣기</button></div></div>`;
     const ui=micUI();ui.prompt='따라 말해요!';$('micBox').appendChild(ui.el);ui.state('play');
     $('again').onclick=()=>playEn(n,i,it.en);
@@ -1526,7 +1536,7 @@ async function runStep1(t,tok){
       if(!SESS||SESS.tok!==tok)return false;const i=queue[q],it=items[i];t.s1={queue,round,q,next:next.slice()};keep();
       $('sMain').innerHTML=stepHead(t,'끊어 쓴 한국어를 보고 <b>영어로 소리 내서</b> 말해요. 막힌 문장은 이번 훈련 안에서 다시 나와요.')+`<div class="qcard"><div class="cnt">${round}바퀴 · ${q+1} / ${queue.length}${round>1?' (다시 도전)':''}</div>
         <div class="ko">${chunkHTML(it.kc)}</div>${hintHTML(it.h)}
-        <div class="ans hidden" id="ans"><div class="en">${chunkHTML(it.ec)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}</div>
+        <div class="ans hidden" id="ans"><div class="en">${chunkHTML(it.ec,it.roles)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}</div>
         <div id="micBox"></div><div class="sbtns" id="qBtns">${useSR()?'<button class="btn ghost" id="skipB">🙋 모르겠어요</button>':''}</div></div>`;
       const ui=micUI();ui.prompt='영어로 말해요!';$('micBox').appendChild(ui.el);ui.state('listen');
       if($('skipB'))$('skipB').onclick=()=>{if(SESS){SESS.skipNow=true;stopRec()}};
