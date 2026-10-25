@@ -226,7 +226,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v5.3.0</span></div>
+    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v5.5.0</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div class="courses" id="courses">
@@ -411,6 +411,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
         <div class="r"><b>마이크 민감도</b><div class="seg" id="sensSeg"></div></div>
         <div class="r"><b>365일치 목표</b><div class="seg" id="goalSeg"></div></div>
         <div class="r"><b>입영작 공부 방식<br><small style="font-weight:400;color:var(--sub)">이 학습자만 · 바꾸면 진도가 따로 저장돼요</small></b><div class="seg" id="ipyModeSeg"></div></div>
+        <div class="r" id="scopeRow"><b>학습 범위<br><small style="font-weight:400;color:var(--sub)">지금 과정만 · 단어는 하루에 한꺼번에</small></b><div class="seg" id="scopeSeg"></div></div>
         <div class="r"><b>하루 새 문장 (아이 모드)<br><small style="font-weight:400;color:var(--sub)">지금 과정만 · 다음 묶음부터 바로 적용</small></b><div class="seg" id="ipyNewSeg"></div></div>
         <div class="r"><b>입영작 어른 문장<br><small style="font-weight:400;color:var(--sub)">이 학습자만 · 술·연애 등 272문장</small></b><div class="seg" id="ipyAdultSeg"></div></div>
         <div class="r"><b>1일5분 어른 주제 21일치</b><div class="seg" id="adultSeg"></div></div>
@@ -541,7 +542,7 @@ function setIpyData(d){
   d._rules=d.rules||{};d._order=null;
   if(d.pr&&d.lessons)d.lessons.forEach(x=>{if(!x.itemsAll||x.no==null)return;const k=x.b+x.no;
     // itemsAll 순서 = ex + st (어른 문장 포함) → 그 순번으로 발음을 붙여요
-    x.itemsAll.forEach((it,q)=>{it[10]=d.pr[k+':'+q]||'';if(d.roles)it[11]=d.roles[k+':'+q]||null})});
+    x.itemsAll.forEach((it,q)=>{it[10]=d.pr[k+':'+q]||'';if(d.roles)it[11]=d.roles[k+':'+q]||null;if(d.wex)it[12]=d.wex[k+':'+q]||null})});
   if(d.kidOrder&&d.lessons&&d.lessons[0]&&d.lessons[0].no!=null){const ix={};d.lessons.forEach((x,i)=>ix[x.b+x.no]=i);const o=d.kidOrder.map(k=>ix[k]).filter(x=>x!=null);if(o.length===d.lessons.length)d._order=o}
   DS[c]=d;IPYMAP=new Map();const sz=new Map();
   for(const D of Object.values(DS))(D.lessons||[]).forEach(x=>{if(x.files)x.files.forEach((f,j)=>{IPYMAP.set((f.n||f.f+'.mp3')+'|'+f.size,x.fk[j]);sz.set(f.size,sz.has(f.size)&&sz.get(f.size)!==x.fk[j]?null:x.fk[j])});else IPYMAP.set(x.f+'.mp3|'+x.size,'I:'+x.b+x.f)});
@@ -561,8 +562,8 @@ const ttl=n=>isIpy()?(ipyL(n)?ipyL(n).t:''):TITLES[n-1];
 const lab=n=>isIpy()?`${n}${IPYV()>=2?'단':'과'}`:`${n}일차`;
 const LB=()=>S.learners[S.cur];
 // 입영작 진도: 어른 문장 포함(책 전체) 학습자는 진도를 따로 둬요 (문장 번호가 달라서)
-const L=()=>{const b=LB();if(!isIpy())return b;const kd=kidMode(),k=(S.course==='ipy'?'ipy':S.course)+(b.ipyAdult?'A':'')+(kd?'K':'');
-  if(!b[k]||(b[k].dv||1)!==IPYV()){b[k]=newLearner(b.name);b[k].id=b.id+(S.course==='ipy'?'':S.course[0])+(b.ipyAdult?'a':'i')+(kd?'k':'')+IPYV();b[k].dv=IPYV()}b[k].name=b.name;return b[k]};
+const L=()=>{const b=LB();if(!isIpy())return b;const kd=kidMode(),k=(S.course==='ipy'?'ipy':S.course)+(b.ipyAdult?'A':'')+(kd?'K':'')+(S.course!=='ipy'&&SCOPE()!=='all'?'_'+SCOPE():'');
+  if(!b[k]||(b[k].dv||1)!==IPYV()){b[k]=newLearner(b.name);b[k].id=b.id+(S.course==='ipy'?'':S.course[0])+(b.ipyAdult?'a':'i')+(kd?'k':'')+IPYV()+(S.course!=='ipy'&&SCOPE()!=='all'?SCOPE():'');b[k].dv=IPYV()}b[k].name=b.name;return b[k]};
 const learnedCount=()=>Object.keys(L().lessons).length;
 const masteredCount=()=>Object.values(L().lessons).filter(x=>x.st>=6).length;
 
@@ -719,7 +720,7 @@ async function getMeta(d){
   }catch(e){return null}
 }
 async function getItems(d){if(isIpy())return ipyItems(d);if(LYR[d]&&LYR[d].length)return LYR[d];const m=await getMeta(d);return (m&&m.items)||[]}
-const ipyItems=d=>(ipyL(d)?ipyL(d).items:[]).map(x=>({en:x[0],ko:x[1],pr:x[10]||'',roles:x[11]||null,flag:x[4],ec:x[5]||x[0],kc:x[6]||x[1],h:x[7]||[],part:x[8]||'st'}));
+const ipyItems=d=>(ipyL(d)?ipyL(d).items:[]).map(x=>({en:x[0],ko:x[1],pr:x[10]||'',roles:x[11]||null,wex:x[12]||null,flag:x[4],ec:x[5]||x[0],kc:x[6]||x[1],h:x[7]||[],part:x[8]||'st'}));
 let indexing=false;
 async function buildIndex(){
   if(indexing)return;indexing=true;
@@ -868,7 +869,7 @@ function addNewLesson(P,add,n){
 /* 공부가 잘되는 날: 엄마가 골라서 새 진도를 하나 더 (아이 모드는 한 묶음, 책 모드는 남은 STEP) */
 function addMoreIpy(){
   const l=L(),P=getPlan();let cur=l.cur;
-  if(!cur){if(l.next>TOTAL())return false;cur=l.cur={n:l.next,k:0,tries:[],s3:{sum:0,cnt:0}}}
+  if(!cur){const m=kidMode()?nextUnit():l.next;if(m>TOTAL())return false;cur=l.cur={n:m,k:0,tries:[],s3:{sum:0,cnt:0}}}
   const add=t2=>{t2.id='t'+P.tasks.length+'x';P.tasks.push(t2)};
   if(kidMode()){const idx=curGroup(cur);const grs=unitGroups(cur.n);
     kidParts(cur.n,cur.g).slice(cur.k).forEach(([type])=>add({type,n:cur.n,idx,kid:true,g:'new',title:KIDNAME[type][0],sub:`${lab(cur.n)} · ${ttl(cur.n)} · ${cur.g+1}/${grs.length}묶음 · ${KIDNAME[type][1]}`}))}
@@ -877,7 +878,7 @@ function addMoreIpy(){
 }
 /* 입영작: 복습은 그 과에서 최대 10문장 (전에 틀린 문장 먼저) */
 function sampleReview(n,st){
-  const l=L(),stt=l.stats,k=nItems(n),idx=IPYV()>=2&&!kidMode()?unitIdx(n,'st'):[...Array(k).keys()];
+  const l=L(),stt=l.stats,k=nItems(n);let idx=IPYV()>=2&&!kidMode()?unitIdx(n,'st'):kidMode()?eligIdx(n):[...Array(k).keys()];if(!idx.length)idx=[...Array(k).keys()];
   const bad=idx.filter(i=>(stt[n+'-'+i]||[0,0])[1]>0);
   // 30일·90일 복습: 그 단 문장 전부
   if(st>=4)return bad.concat(shuffle(idx.filter(i=>!bad.includes(i)))).map(i=>[n,i]);
@@ -896,15 +897,29 @@ const ruleKey=n=>{const u=ipyL(n);return u?u.b+u.no:''};
 /* 하루 새 문장 수: 과정별로 (5~30개). 바꾸면 다음 묶음부터 바로 적용 */
 const NEWN=()=>LB()['new_'+S.course]||LB().ipyNew||5;
 const rng=(a,k)=>[...Array(Math.max(0,k)).keys()].map(i=>a+i);
-function splitFrom(n,start,G){const u=ipyL(n);const N=u?u.items.length:0;const out=[];for(let i=start;i<N;i+=G)out.push(rng(i,Math.min(G,N-i)));
+/* 학습 범위 (기적의 영어·여행영어): 단어+문장 / 단어만 / 문장만. 단어(ex)는 나누지 않고 하루에 다 */
+const SCOPE=()=>S.course==='ipy'?'all':(LB()['scope_'+S.course]||'all');
+function eligIdx(n){const u=ipyL(n);if(!u)return [];const sc=SCOPE();const a=[];u.items.forEach((x,i)=>{const w=x[8]==='ex';if(sc==='all'||(sc==='w'?w:!w))a.push(i)});return a}
+function planGroups(n,rem,G){const u=ipyL(n);let r=rem.slice();const out=[];
+  if(S.course!=='ipy'&&u){const ex=r.filter(i=>u.items[i][8]==='ex');if(ex.length){out.push(ex);r=r.filter(i=>u.items[i][8]!=='ex')}}
+  const st=[];for(let i=0;i<r.length;i+=G)st.push(r.slice(i,i+G));
+  if(st.length>1&&st[st.length-1].length<Math.ceil(G/2)){const l=st.pop();st[st.length-1].push(...l)}return out.concat(st)}
+function oldGroups(n,G){const u=ipyL(n);if(!u)return [];const out=[];for(let i=0;i<u.items.length;i+=G)out.push(rng(i,Math.min(G,u.items.length-i)));
   if(out.length>1&&out[out.length-1].length<Math.ceil(G/2)){const l=out.pop();out[out.length-1].push(...l)}return out}
-function migCur(cu){if(!cu||cu.bounds)return;const G=cu.G||5,grs=kidGroups(cu.n,G),g=Math.min(cu.g||0,Math.max(0,grs.length-1));
-  cu.bounds=grs.slice(0,g).map(x=>[x[0],x[x.length-1]+1]);cu.pos=cu.bounds.length?cu.bounds[cu.bounds.length-1][1]:0;cu.cg=grs[g]||null;cu.g=g}
-function curGroup(cu){migCur(cu);if(!cu.cg||!cu.cg.length)cu.cg=splitFrom(cu.n,cu.pos||0,NEWN())[0]||[];cu.g=cu.bounds.length;return cu.cg}
-function unitGroups(n){const cu=L().cur;if(!(cu&&cu.n===n))return kidGroups(n,NEWN());migCur(cu);
-  const past=cu.bounds.map(([a,b])=>rng(a,b-a));const cg=cu.cg&&cu.cg.length?cu.cg:null;
-  return past.concat(cg?[cg]:[],splitFrom(n,cg?cg[cg.length-1]+1:(cu.pos||0),NEWN()))}
-function kidGroups(n,G){const u=ipyL(n);if(!u)return [];const out=[];for(let i=0;i<u.items.length;i+=G)out.push([...Array(Math.min(G,u.items.length-i)).keys()].map(k=>i+k));
+function migCur(cu){if(!cu||cu.hist)return;
+  if(cu.bounds)cu.hist=cu.bounds.map(([a,b])=>rng(a,b-a));
+  else if(!cu.G)cu.hist=[];
+  else{const G=cu.G||5,grs=oldGroups(cu.n,G),g=Math.min(cu.g||0,Math.max(0,grs.length-1));cu.hist=grs.slice(0,g);cu.cg=grs[g]||null}
+  delete cu.bounds;delete cu.pos;cu.g=cu.hist.length}
+const doneIdx=cu=>new Set((cu.hist||[]).flat());
+const remIdx=cu=>{const d=doneIdx(cu);return eligIdx(cu.n).filter(i=>!d.has(i))};
+function curGroup(cu){migCur(cu);if(!cu.cg||!cu.cg.length)cu.cg=planGroups(cu.n,remIdx(cu),NEWN())[0]||[];cu.g=cu.hist.length;return cu.cg}
+function unitGroups(n){const cu=L().cur;if(!(cu&&cu.n===n))return planGroups(n,eligIdx(n),NEWN());migCur(cu);
+  const cg=cu.cg&&cu.cg.length?cu.cg:null;const used=new Set([...doneIdx(cu),...(cg||[])]);
+  return cu.hist.concat(cg?[cg]:[],planGroups(n,eligIdx(n).filter(i=>!used.has(i)),NEWN()))}
+/* 다음에 배울 단: 아직 안 배웠고 지금 범위에 공부할 게 있는 단 */
+function nextUnit(){const l=L(),N=TOTAL();for(let m=l.next;m<=N;m++)if(!l.lessons[m]&&eligIdx(m).length)return m;return N+1}
+function kidGroups(n,G){if(S.course!=='ipy')return planGroups(n,eligIdx(n),G);const u=ipyL(n);if(!u)return [];const out=[];for(let i=0;i<u.items.length;i+=G)out.push([...Array(Math.min(G,u.items.length-i)).keys()].map(k=>i+k));
   if(out.length>1&&out[out.length-1].length<Math.ceil(G/2)){const l=out.pop();out[out.length-1].push(...l)}return out}
 function kidParts(n,g){const ps=[];if(g===0&&RULES[ruleKey(n)])ps.push(['rule']);ps.push(['ipyex'],['step2'],['block'],['step3']);return ps}
 const KIDNAME={rule:['오늘의 규칙','규칙을 읽고 예문 듣기'],ipyex:['듣고 따라 말하기','원어민 소리를 듣고 따라 말해요'],step2:['실감 나게 4번 읽기','영어를 보면서 연기하듯 읽어요'],block:['블록 맞추기','한국어를 보고 영어 블록을 순서대로'],step3:['영어로 말하기','한국어만 보고 영어로 · 80점 넘으면 통과']};
@@ -923,7 +938,7 @@ function buildPlanIpy(force){
   // 진행 중인 단이 있으면 멈춘 STEP부터 이어서, 없으면 새 단
   let cur=l.cur;if(cur&&cur.k==null)cur=l.cur={n:cur.n,k:0,tries:cur.tries||[],s3:{sum:0,cnt:0}};
   const due=dueLessons(t);const overdue=due.filter(x=>x.due<t).length;
-  if(!cur&&(wkOK||wd>=1&&wd<=6)&&l.next<=N&&wrongKeys.length<=30&&overdue<15){cur=l.cur={n:l.next,k:0,tries:[],s3:{sum:0,cnt:0}}}
+  if(!cur&&(wkOK||wd>=1&&wd<=6)&&l.next<=N&&wrongKeys.length<=30&&overdue<15){const m=kidMode()?nextUnit():l.next;if(m<=N)cur=l.cur={n:m,k:0,tries:[],s3:{sum:0,cnt:0}}}
   const LIM=LIMITF();
   const unitSec=cur&&kidMode()?5*60:cur?partsFor(cur.n).slice(cur.k).reduce((a,[type,h])=>a+taskSec({type,n:cur.n,h}),0):0;
   let added=0;
@@ -1166,8 +1181,8 @@ async function runNext(){
   const cu=L().cur;
   if(t.g==='new'&&cu&&cu.n===t.n&&STEPNAME[t.type]){
     if(t.after&&t.kid){migCur(cu);cu.s3={sum:0,cnt:0};
-      if(t.after==='done'){const cg=t.idx&&t.idx.length?t.idx:curGroup(cu);const end=cg[cg.length-1]+1;cu.bounds.push([cg[0],end]);cu.pos=end;cu.cg=null;cu.g=cu.bounds.length;
-        if(end>=nItems(t.n)){markLearned(t.n);L().cur=null}else cu.k=0}
+      if(t.after==='done'){const cg=t.idx&&t.idx.length?t.idx:curGroup(cu);cu.hist.push(cg);cu.cg=null;cu.g=cu.hist.length;
+        if(!remIdx(cu).length){markLearned(t.n);L().cur=null}else cu.k=0}
       else cu.k=kidParts(t.n,cu.g||0).findIndex(p=>p[0]===(t.after==='s3'?'step3':'step2'));
       P.tasks.filter(x=>!x.done&&x.g==='new').forEach(x=>x.done=true)}
     else if(t.after){ // 책의 채점 기준: 80점↑ 완성 / 41~79 STEP 3 재도전 / 40↓ STEP 2부터
@@ -1434,6 +1449,10 @@ const unitIdx=(n,part)=>{const u=ipyL(n);const a=[];if(!u)return a;for(let i=0;i
 const chunkHTML=(s,roles)=>{const c=String(s).split(' / ');if(roles&&roles.length===c.length)return c.map((x,i)=>`<span class="rb r${roles[i]}">${esc(x)}</span>`).join(' ');return esc(s).split(' / ').join(' <span style="color:var(--accent);font-weight:400">/</span> ')};
 const hintHTML=h=>h&&h.length?`<div class="pr" style="margin-top:8px">${h.map(x=>'▶ '+esc(x[0])+' <b>'+esc(x[1])+'</b>').join(' &nbsp; ')}</div>`:'';
 function stepHead(t,guide){return `<div class="stitle">${(IPYC[S.course]||IPYC.ipy)[1]} ${CNAME()} · ${lab(t.n)} · ${esc(ttl(t.n))}</div><div class="sh">${esc(t.title)}</div><p class="sguide">${guide}</p>`}
+/* 단어 → 그 단어가 들어간 책 예문 (블록 색깔, 단어 블록 강조) */
+function wexHTML(it){const w=it&&it.wex;if(!w)return '';const c=String(w[3]||w[0]).split(' / '),r=w[4]&&w[4].length===c.length?w[4]:null,re=new RegExp('\\b'+w[2].replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i');
+  const blocks=c.map((x,i)=>`<span class="rb ${r?'r'+r[i]:''}" style="${re.test(x)?'outline:3px solid var(--accent);font-weight:800':''}">${esc(x)}</span>`).join(' ');
+  return `<div class="wex" onclick="say(${esc(JSON.stringify(w[0]))})" style="margin-top:10px;padding:10px;border-radius:12px;background:var(--soft);font-size:16px;text-align:center;cursor:pointer">📝 문장 속에서: ${blocks}<br><small style="color:var(--sub)">${esc(w[1])} 🔊</small></div>`}
 const mdk=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b class="kw">$1</b>');
 /* 아이 모드: 오늘의 규칙 카드 */
 async function runRule(t,tok){
@@ -1471,7 +1490,7 @@ async function runBlock(t,tok){
       $('bHear').onclick=()=>{miss++;playEn(n,i,it.en)};
     });
     if(!SESS||SESS.tok!==tok)return false;
-    $('qBtns').innerHTML='';if(it.pr)$('bline').insertAdjacentHTML('afterend',`<div class="pr">🗣️ ${esc(it.pr)}</div>`);
+    $('qBtns').innerHTML='';if(it.pr)$('bline').insertAdjacentHTML('afterend',`<div class="pr">🗣️ ${esc(it.pr)}</div>${wexHTML(it)}`);
     const ui=micUI();ui.prompt='소리 내어 읽어요!';$('micBox').appendChild(ui.el);ui.state('play');
     await playEn(n,i,it.en);if(!SESS||SESS.tok!==tok)return false;
     const ok=await speak(ui,Math.min(1.4,Math.max(0.35,enLen(n,i)*0.5)),`${L().id}|${today()}|${n}-${i}|블록`,tok);if(!ok)return false;
@@ -1488,7 +1507,7 @@ async function runIpyEx(t,tok){
   for(let q=Math.min(t.q||0,idx.length);q<idx.length;q++){
     if(!SESS||SESS.tok!==tok)return false;const i=idx[q],it=items[i];t.q=q;keep();
     $('sMain').innerHTML=stepHead(t,'예문을 듣고, 끊어 읽기(/)에 맞춰 소리 내서 따라 말해요.')+`<div class="qcard"><div class="cnt">예문 ${q+1} / ${idx.length}</div>
-      <div class="en">${chunkHTML(it.ec,it.roles)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}<div class="ko" style="font-size:16px;font-weight:400;color:var(--sub)">(${esc(it.kc)})</div>
+      <div class="en">${chunkHTML(it.ec,it.roles)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}${wexHTML(it)}<div class="ko" style="font-size:16px;font-weight:400;color:var(--sub)">(${esc(it.kc)})</div>
       <div id="micBox"></div><div class="sbtns"><button class="btn ghost" id="again">🔁 다시 듣기</button></div></div>`;
     const ui=micUI();ui.prompt='따라 말해요!';$('micBox').appendChild(ui.el);ui.state('play');
     $('again').onclick=()=>playEn(n,i,it.en);
@@ -1536,7 +1555,7 @@ async function runStep1(t,tok){
       if(!SESS||SESS.tok!==tok)return false;const i=queue[q],it=items[i];t.s1={queue,round,q,next:next.slice()};keep();
       $('sMain').innerHTML=stepHead(t,'끊어 쓴 한국어를 보고 <b>영어로 소리 내서</b> 말해요. 막힌 문장은 이번 훈련 안에서 다시 나와요.')+`<div class="qcard"><div class="cnt">${round}바퀴 · ${q+1} / ${queue.length}${round>1?' (다시 도전)':''}</div>
         <div class="ko">${chunkHTML(it.kc)}</div>${hintHTML(it.h)}
-        <div class="ans hidden" id="ans"><div class="en">${chunkHTML(it.ec,it.roles)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}</div>
+        <div class="ans hidden" id="ans"><div class="en">${chunkHTML(it.ec,it.roles)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}${wexHTML(it)}</div>
         <div id="micBox"></div><div class="sbtns" id="qBtns">${useSR()?'<button class="btn ghost" id="skipB">🙋 모르겠어요</button>':''}</div></div>`;
       const ui=micUI();ui.prompt='영어로 말해요!';$('micBox').appendChild(ui.el);ui.state('listen');
       if($('skipB'))$('skipB').onclick=()=>{if(SESS){SESS.skipNow=true;stopRec()}};
@@ -1557,14 +1576,14 @@ async function runStep1(t,tok){
 /* STEP 2 연기낭독 훈련: 영어 문장을 듣고, 연기하듯 두 번 읽기 */
 async function runStep2(t,tok){
   if(S.voice&&!MIC.ok)await micInit();
-  const n=t.n,items=await getItems(n),idx=t.idx||halfIdx(n,t.h);const REPS=t.reps||4;
+  const n=t.n,items=await getItems(n),idx=t.idx||halfIdx(n,t.h);const allW=S.course!=='ipy'&&idx.every(i=>items[i]&&items[i].part==='ex');const REPS=allW?1:(t.reps||4); // 단어는 한 번씩만
   const q0=Math.min(t.q||0,idx.length),r0=t.rep||1;
   for(let q=q0;q<idx.length;q++){
     const i=idx[q],it=items[i];
     for(let rep=(q===q0?r0:1);rep<=REPS;rep++){
       if(!SESS||SESS.tok!==tok)return false;t.q=q;t.rep=rep;keep();
       $('sMain').innerHTML=stepHead(t,'상대방에게 이야기하듯 <b>실감 나게</b> 소리 내어 읽어요. 조용히 읽으면 공식으로만 남아요!')+`<div class="qcard"><div class="cnt">${q+1} / ${idx.length} · 낭독 ${rep}/${REPS}</div>
-        <div class="en">${esc(it.en)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}<div class="ko" style="font-size:16px;font-weight:400;color:var(--sub)">${esc(it.ko)}</div>
+        <div class="en">${esc(it.en)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}${wexHTML(it)}<div class="ko" style="font-size:16px;font-weight:400;color:var(--sub)">${esc(it.ko)}</div>
         <div id="micBox"></div><div class="sbtns"><button class="btn ghost" id="again">🔁 원어민 다시 듣기</button></div></div>`;
       const ui=micUI();ui.prompt=rep===1?'따라 읽어요!':'혼자 연기하듯 읽어요!';$('micBox').appendChild(ui.el);ui.state('play');
       $('again').onclick=()=>playEn(n,i,it.en);
@@ -1583,7 +1602,7 @@ async function runStep3(t,tok){
   for(let q=Math.min(t.q||0,idx.length);q<idx.length;q++){
     if(!SESS||SESS.tok!==tok)return false;const i=idx[q],it=items[i];t.q=q;t.sum=sum;keep();
     $('sMain').innerHTML=stepHead(t,'자연스러운 한국어를 보고 실감 나게 영어로 말해요. 막힘없이 바로 말하면 5점!')+`<div class="qcard"><div class="cnt">${q+1} / ${idx.length} · 지금까지 ${cu.s3.sum+sum}점</div>
-      <div class="ko">${esc(it.ko)}</div><div class="ans hidden" id="ans"><div class="en">${esc(it.en)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}</div>
+      <div class="ko">${esc(it.ko)}</div><div class="ans hidden" id="ans"><div class="en">${esc(it.en)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}${wexHTML(it)}</div>
       <div id="micBox"></div><div class="sbtns" id="qBtns"><button class="btn ghost" id="again">🔁 한국어 듣기</button>${useSR()?'<button class="btn ghost" id="skipB">🙋 모르겠어요</button>':''}</div></div>`;
     const ui=micUI();ui.prompt='영어로 말해요!';$('micBox').appendChild(ui.el);ui.state('play');
     $('again').onclick=async()=>{if(SESS){SESS.replayNow=true;stopRec()}await say(it.ko,'ko-KR')};
@@ -1607,7 +1626,7 @@ async function runStep3(t,tok){
   const score=Math.round(cu.s3.sum/(cu.s3.cnt*5)*100);const cur=cu;(cur.tries=cur.tries||[]).push(score);
   t.score=score;t.after=score>=80?'done':score>40?'s3':'s2';save();
   if(SESS&&SESS.tok===tok){
-    const kLast=t.kid&&idx.length&&idx[idx.length-1]+1>=nItems(n);
+    const kLast=t.kid&&cur.hist&&remIdx(cur).filter(i=>!idx.includes(i)).length===0;
     const msg=score>=80&&t.kid&&!kLast?`<div class="big">🎉</div><div class="sh">오늘 문장 통과!</div><p>80점 이상! 내일은 다음 문장을 배워요.</p>`
       :score>=80?`<div class="big">🥋</div><div class="sh">${lab(n)} 완성!</div><p>80점 이상! 이 단을 마스터했어요. 1·3·7·30·90일 뒤에 복습으로 다시 만나요.</p>`
       :score>40?`<div class="big">💪</div><div class="sh">입영작 마스터 훈련 재도전</div><p>41~79점이에요. 다음 공부 때 ${t.kid?'영어로 말하기':'STEP 3'}에 다시 도전해요.</p>`
@@ -1629,7 +1648,7 @@ async function runQuiz(t,tok){
       ${it.word?'<div class="cnt" style="margin:0">🔤 단어 · 뜻을 듣고 영어 단어를 말해요</div>':''}
       <div class="ko">${esc(it.ko)}</div>
       ${it.word&&it.blank?`<div class="pr" style="margin-top:6px">${esc(it.blank)}</div>`:''}
-      <div class="ans hidden" id="ans"><div class="en">${esc(it.en)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}</div>
+      <div class="ans hidden" id="ans"><div class="en">${esc(it.en)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}${wexHTML(it)}</div>
       <div id="micBox"></div><div class="sbtns" id="qBtns"><button class="btn ghost" id="again">🔁 한국어 다시 듣기</button><button class="btn ghost" id="hintB">💡 첫 단어</button></div></div>`;
     const ui=micUI();ui.prompt='영어로 말해요!';$('micBox').appendChild(ui.el);ui.state('play');
     $('again').onclick=async()=>{if(SESS){SESS.replayNow=true;stopRec()}await playKo(n,i,it.ko)};
@@ -1951,6 +1970,8 @@ function renderSettings(){
   seg('voiceSeg',[true,false],()=>S.voice,v=>S.voice=v,v=>v?'켜기 (권장)':'끄기');
   seg('sensSeg',['low','mid','high'],()=>S.sens,v=>S.sens=v,v=>({low:'둔하게',mid:'보통',high:'예민하게'})[v]);
   seg('ipyModeSeg',['kid','book'],()=>(LB().ipyMode||(LB().ipyAdult?'book':'kid')),v=>{LB().ipyMode=v;setTimeout(renderAll,0)},v=>v==='kid'?'아이 모드 (쉬운 순서·블록)':'책 그대로');
+  $('scopeRow').classList.toggle('hide',!(isIpy()&&S.course!=='ipy'));
+  seg('scopeSeg',['all','w','s'],()=>SCOPE(),v=>{if(!isIpy())return;LB()['scope_'+S.course]=v;const cu=L().cur;if(cu&&!cu.k){migCur(cu);cu.cg=null}const P=L().plan;if(P&&P.date===today()&&!P.tasks.some(x=>x.done))L().plan=null},v=>({all:'단어+문장',w:'단어만',s:'문장만'})[v]);
   seg('ipyNewSeg',[5,7,10,15,20,25,30],()=>NEWN(),v=>{LB()['new_'+(isIpy()?S.course:'ipy')]=v;const P=L().plan;if(isIpy()&&P&&P.date===today()&&!P.tasks.some(x=>x.done)){L().plan=null}},v=>v+'개');
   seg('ipyAdultSeg',[false,true],()=>!!LB().ipyAdult,v=>{LB().ipyAdult=v;setTimeout(renderAll,0)},v=>v?'포함 (책 전체)':'빼기 (아이용)');
   seg('adultSeg',[true,false],()=>S.skipAdult!==false,v=>{S.skipAdult=v;const P=L().plan;if(P&&P.date===today()&&!P.tasks.some(x=>x.done))L().plan=null},v=>v?'건너뛰기 (추천)':'포함');
