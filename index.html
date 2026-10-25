@@ -41,8 +41,8 @@ header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:s
 .bar{height:6px;background:var(--c0);border-radius:9px;overflow:hidden;margin-top:6px}
 .bar i{display:block;height:100%;background:var(--accent2)}
 .tabs{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto}
-.courses{display:flex;gap:8px;margin:-4px 0 14px}
-.courses button{flex:1;padding:12px;border-radius:14px;border:2px solid var(--line);background:var(--paper);font-weight:800;font-size:16px;color:var(--sub)}
+.courses{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:-4px 0 14px}
+.courses button{padding:10px 8px;border-radius:14px;border:2px solid var(--line);background:var(--paper);font-weight:800;font-size:16px;color:var(--sub)}
 .courses button.on{border-color:var(--accent);color:var(--ink);background:var(--soft)}
 .tab{background:transparent;padding:8px 14px;color:var(--sub);font-weight:600;white-space:nowrap}
 .tab.on{background:var(--paper);color:var(--ink);border:1px solid var(--line)}
@@ -219,11 +219,13 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v4.1.1</span></div>
+    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v5.0.0</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div class="courses" id="courses">
     <button data-course="ipy">✍️ 입영작</button>
+    <button data-course="trv">✈️ 여행영어</button>
+    <button data-course="home">🏠 생활영어</button>
     <button data-course="eng">📘 1일 5분 영어</button>
     <input type="file" id="ipyDataInput" accept=".json,application/json" class="hide">
   </div>
@@ -271,7 +273,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
     </div>
     <div id="missionBox"></div>
     <div class="card help hide" id="ipyHelpKid">
-      <b>입영작 아이 모드 (하루 최대 20분)</b>
+      <b>아이 모드 (하루 최대 20분)</b>
       <ol>
         <li><b>📘 오늘의 규칙</b>: 새 단을 시작하는 날, 패턴 규칙을 쉬운 말로 보고 예문을 들어요.</li>
         <li><b>🎧 듣고 따라 말하기</b> → <b>🎭 실감 나게 4번 읽기</b>: 영어를 보면서 입에 붙여요.</li>
@@ -517,23 +519,32 @@ if(!S||!S.learners||!S.learners.length)S={learners:[newLearner('나')],cur:0,rat
 if(S.cur>=S.learners.length)S.cur=0;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 /* ---------- 과정: 1일 5분 영어 / 입영작 ---------- */
-let IPYD=null,IPYMAP=new Map();   // 입영작 데이터 (부모님이 불러온 파일, 이 기기에만 저장)
-const IPYBOOK={A:'영어로 잘 대답하기',B:'영어로 더 잘 대답하기',C:'영어로 잘 물어보기',D:'영어로 진짜 길게 말하기'};
+let IPYD=null,IPYMAP=new Map(),IPYSIZE=new Map();   // 입영작·여행영어 데이터 (부모님이 불러온 파일, 이 기기에만 저장)
+const DS={};   // 과정별 데이터 {ipy, trv}
+const IPYBOOK={A:'영어로 잘 대답하기',B:'영어로 더 잘 대답하기',C:'영어로 잘 물어보기',D:'영어로 진짜 길게 말하기',T:'여행영어 패턴',E:'EBS 여행편',M:'엄마의 365일 영어 한마디'};
+const IPYC={ipy:['입영작','✍️'],trv:['여행영어','✈️'],home:['생활영어','🏠']};
+const CNAME=()=>(IPYC[S.course]||IPYC.ipy)[0];
 function setIpyData(d){
-  // v2: 책의 '단' 단위 (예문 폭탄 음원 + STEP 음원). 문장 목록은 [예문 폭탄..., STEP 20문장...] 순서로 합쳐요
+  const c=d.course||'ipy';
+  // v2: '단' 단위. 문장 목록은 [예문/단어..., STEP 문장...] 순서로 합쳐요 (fi: 문장마다 음원 번호)
   if(d.units){d.lessons=d.units.map(u=>{const fk=u.files.map(f=>'I:'+u.b+f.f);
-    const all=u.ex.map(x=>[...x,'ex',fk[0]]).concat(u.st.map(x=>[...x,'st',fk[1]||fk[0]]));const kid=all.filter(x=>x[4]!=='adult');
+    const all=u.ex.map((x,j)=>[...x,'ex',fk[u.exfi?u.exfi[j]:0]]).concat(u.st.map((x,j)=>[...x,'st',fk[u.fi?u.fi[j]:(fk[1]?1:0)]]));const kid=all.filter(x=>x[4]!=='adult');
     return {...u,fk,nEx:u.ex.filter(x=>x[4]!=='adult').length,itemsAll:all,itemsKid:kid,items:kid}})}
-  IPYD=d;IPYMAP=new Map();
-  RULES=d.rules||{};ORDERK=null;
-  if(d.kidOrder&&d.lessons&&d.lessons[0]&&d.lessons[0].no!=null){const ix={};d.lessons.forEach((x,i)=>ix[x.b+x.no]=i);const o=d.kidOrder.map(k=>ix[k]).filter(x=>x!=null);if(o.length===d.lessons.length)ORDERK=o}
-  (d.lessons||[]).forEach((x,i)=>{if(x.files)x.files.forEach((f,j)=>IPYMAP.set(f.f+'.mp3|'+f.size,x.fk[j]));else IPYMAP.set(x.f+'.mp3|'+x.size,'I:'+x.b+x.f)});
+  d._rules=d.rules||{};d._order=null;
+  if(d.pr&&d.lessons)d.lessons.forEach(x=>{if(!x.itemsAll||x.no==null)return;const k=x.b+x.no;
+    // itemsAll 순서 = ex + st (어른 문장 포함) → 그 순번으로 발음을 붙여요
+    x.itemsAll.forEach((it,q)=>{it[10]=d.pr[k+':'+q]||''})});
+  if(d.kidOrder&&d.lessons&&d.lessons[0]&&d.lessons[0].no!=null){const ix={};d.lessons.forEach((x,i)=>ix[x.b+x.no]=i);const o=d.kidOrder.map(k=>ix[k]).filter(x=>x!=null);if(o.length===d.lessons.length)d._order=o}
+  DS[c]=d;IPYMAP=new Map();const sz=new Map();
+  for(const D of Object.values(DS))(D.lessons||[]).forEach(x=>{if(x.files)x.files.forEach((f,j)=>{IPYMAP.set((f.n||f.f+'.mp3')+'|'+f.size,x.fk[j]);sz.set(f.size,sz.has(f.size)&&sz.get(f.size)!==x.fk[j]?null:x.fk[j])});else IPYMAP.set(x.f+'.mp3|'+x.size,'I:'+x.b+x.f)});
+  IPYSIZE=sz;IPYD=null;
 }
+function activate(c){const d=DS[c]||null;IPYD=d;RULES=d?d._rules:{};ORDERK=d?d._order:null}
 let RULES={},ORDERK=null;
 const IPYV=()=>IPYD&&IPYD.v||1;
 /* 아이 모드: 쉬운 순서 · 규칙 카드 · 블록 맞추기 · 하루 새 문장 5/7/10개 */
 const kidMode=()=>isIpy()&&IPYV()>=2&&(LB().ipyMode?LB().ipyMode==='kid':!LB().ipyAdult);
-const isIpy=()=>S.course==='ipy'&&!!IPYD;
+const isIpy=()=>{const c=S.course;if(!IPYC[c])return false;const d=DS[c];if(d&&IPYD!==d)activate(c);return !!d};
 const ipyL=n=>{const x=IPYD&&IPYD.lessons[kidMode()&&ORDERK?ORDERK[n-1]:n-1];if(x&&x.itemsAll)x.items=LB().ipyAdult?x.itemsAll:x.itemsKid;return x};
 const ipyKey=(n,fi=0)=>{const x=ipyL(n);return !x?'':x.fk?(x.fk[fi]||''):'I:'+x.b+x.f};
 const ipyFiles=n=>{const x=ipyL(n);return !x?[]:x.fk?x.fk:[ipyKey(n)]};
@@ -542,8 +553,8 @@ const ttl=n=>isIpy()?(ipyL(n)?ipyL(n).t:''):TITLES[n-1];
 const lab=n=>isIpy()?`${n}${IPYV()>=2?'단':'과'}`:`${n}일차`;
 const LB=()=>S.learners[S.cur];
 // 입영작 진도: 어른 문장 포함(책 전체) 학습자는 진도를 따로 둬요 (문장 번호가 달라서)
-const L=()=>{const b=LB();if(!isIpy())return b;const kd=kidMode(),k='ipy'+(b.ipyAdult?'A':'')+(kd?'K':'');
-  if(!b[k]||(b[k].dv||1)!==IPYV()){b[k]=newLearner(b.name);b[k].id=b.id+(b.ipyAdult?'a':'i')+(kd?'k':'')+IPYV();b[k].dv=IPYV()}b[k].name=b.name;return b[k]};
+const L=()=>{const b=LB();if(!isIpy())return b;const kd=kidMode(),k=(S.course==='ipy'?'ipy':S.course)+(b.ipyAdult?'A':'')+(kd?'K':'');
+  if(!b[k]||(b[k].dv||1)!==IPYV()){b[k]=newLearner(b.name);b[k].id=b.id+(S.course==='ipy'?'':S.course[0])+(b.ipyAdult?'a':'i')+(kd?'k':'')+IPYV();b[k].dv=IPYV()}b[k].name=b.name;return b[k]};
 const learnedCount=()=>Object.keys(L().lessons).length;
 const masteredCount=()=>Object.values(L().lessons).filter(x=>x.st>=6).length;
 
@@ -557,8 +568,9 @@ function parseName(n){
 }
 function addFile(name,obj){const p=parseName(name);if(p){FILES.set(p.day+'-'+p.k,obj);return true}return false}
 function updateFolderMsg(){
-  $('ipyDataBtn').classList.toggle('hide',S.course!=='ipy');
+  $('ipyDataBtn').classList.toggle('hide',!isIpy());$('ipyDataBtn').textContent=CNAME()+' 데이터 다시 불러오기';
   if(isIpy()){let c=0,all=0;for(let d=1;d<=TOTAL();d++)for(const k of ipyFiles(d)){all++;if(FILES.has(k))c++}
+    if(S.course!=='ipy'){$('folderMsg').innerHTML=`<b>${c===all?'✓ ':''}${CNAME()} 음원 ${c}/${all}개 연결됨</b>${c<all?(S.course==='trv'?' — 여행영어 패턴 책 mp3와 EBS 여행편 mp3를 골라 주세요':' — 엄마의 365일 영어 한마디 mp3 12개를 골라 주세요')+' (한꺼번에 골라도 돼요)':''}`;return}
     $('folderMsg').innerHTML=c?`<b>${c===all?'✓ ':''}입영작 음원 ${c}/${all}개 연결됨</b>${c<all?' — 네 권 폴더의 mp3를 모두 골라 주세요 (한꺼번에 골라도 돼요)':''}`:'입영작 음원 네 권(잘 대답하기·더 잘 대답하기·잘 물어보기·진짜 길게 말하기)의 mp3를 골라 주세요. 한꺼번에 골라도 앱이 어느 책인지 알아서 나눠요.';return}
   let n=0;for(const k of FILES.keys())if(!k.startsWith('I:'))n++;
   if(!n){$('folderMsg').innerHTML='<b>2복습하기</b> 폴더의 음원(365개)만 있으면 돼요. ‘음원 폴더 선택’으로 폴더를 고르거나, ‘mp3 파일 고르기’에서 전체 선택하세요. 한 번 고르면 앱 안에 저장돼요.';return}
@@ -587,7 +599,7 @@ async function importFiles(arr){
   for(const x of arr){
     let key=null,file=null;const p=parseName(x.name);
     if(p){if(p.k==='s'){i++;continue}key=p.day+'-'+p.k}
-    else if(IPYD){try{file=await x.get();key=IPYMAP.get(x.name+'|'+file.size)||null}catch(e){}}
+    else if(Object.keys(DS).length){try{file=await x.get();key=IPYMAP.get(x.name+'|'+file.size)||IPYSIZE.get(file.size)||null}catch(e){}}
     if(!key){unknown++;i++;continue}
     try{
       if(have.has(key)){if(!FILES.has(key)){const b=await idbGet('audio',key);if(b)FILES.set(key,b)}}
@@ -597,8 +609,8 @@ async function importFiles(arr){
     if(++i%10===0)$('folderMsg').textContent=`앱 안에 저장하는 중… ${i}/${arr.length} (처음 한 번만)`;
   }
   afterLoad();
-  if(added)toast(`음원 ${added}개를 저장했어요${ipyN?` (입영작 ${ipyN}개)`:''}. 다음부터는 다시 고를 필요 없어요`);
-  else toast(!IPYD&&unknown?'입영작 음원은 입영작 데이터 파일을 먼저 불러와야 해요':'알맞은 음원이 없어요');
+  if(added)toast(`음원 ${added}개를 저장했어요. 다음부터는 다시 고를 필요 없어요`);
+  else toast(!Object.keys(DS).length&&unknown?'입영작·여행영어 음원은 데이터 파일을 먼저 불러와야 해요':'알맞은 음원이 없어요');
 }
 function afterLoad(){for(const k in META){if(META[k].img)URL.revokeObjectURL(META[k].img);delete META[k]}segDay=0;
   updateFolderMsg();renderAll();if(FILES.size)buildIndex()}
@@ -609,20 +621,20 @@ $('pickBtn').onclick=async()=>{
 $('pickFilesBtn').onclick=()=>$('fileInput').click();
 async function takeInput(list){await importFiles([...list].map(f=>({name:f.name,get:async()=>f})))}
 async function loadIpyFile(file){
-  try{const d=JSON.parse(await file.text());if(d.kind!=='ipy'||!(d.lessons||d.units))throw 0;
-    await idbPut('h','ipydata',d);setIpyData(d);S.course='ipy';save();afterLoad();
-    toast(`입영작 데이터를 불러왔어요 (${IPYD.lessons.length}${IPYV()>=2?'단':'과'}, 문장 ${IPYD.lessons.reduce((a,x)=>a+(x.itemsAll||x.items).length,0).toLocaleString()}개)`);
-  }catch(e){toast('입영작 데이터 파일이 아니에요')}
+  try{const d=JSON.parse(await file.text());if(d.kind!=='ipy'||!(d.lessons||d.units))throw 0;const c=d.course||'ipy';
+    await idbPut('h',c==='ipy'?'ipydata':c+'data',d);setIpyData(d);S.course=c;activate(c);save();afterLoad();
+    toast(`${CNAME()} 데이터를 불러왔어요 (${IPYD.lessons.length}${IPYV()>=2?'단':'과'}, 문장 ${IPYD.lessons.reduce((a,x)=>a+(x.itemsAll||x.items).length,0).toLocaleString()}개)`);
+  }catch(e){toast('입영작·여행영어 데이터 파일이 아니에요')}
 }
 $('ipyDataInput').onchange=e=>{if(e.target.files[0])loadIpyFile(e.target.files[0]);e.target.value=''};
 $('ipyDataBtn').onclick=()=>$('ipyDataInput').click();
 function setCourse(c){
   if(SESS)return;
-  if(c==='ipy'&&!IPYD){$('ipyDataInput').click();toast('입영작 데이터 파일(.json)을 먼저 불러와 주세요');return}
+  if(IPYC[c]&&!DS[c]){$('ipyDataInput').click();toast(IPYC[c][0]+' 데이터 파일(.json)을 먼저 불러와 주세요');return}
   S.course=c;save();stopSeg();if(!audio.paused)audio.pause();afterLoad();showTab('today');
 }
 document.querySelectorAll('[data-course]').forEach(b=>b.onclick=()=>setCourse(b.dataset.course));
-(async()=>{const d=await idbGet('h','ipydata');if(d){setIpyData(d);if(!S.course){S.course='ipy';save()}renderAll()}})();
+(async()=>{const d=await idbGet('h','ipydata');if(d){setIpyData(d);if(!S.course){S.course='ipy';save()}}const t2=await idbGet('h','trvdata');if(t2)setIpyData(t2);const t3=await idbGet('h','homedata');if(t3)setIpyData(t3);if(d||t2||t3)renderAll()})();
 (async()=>{ // 앱 안에 저장된 음원 불러오기
   const keys=await idbKeys('audio');if(!keys.length)return;
   for(const k of keys){if(!FILES.has(k)){const b=await idbGet('audio',k);if(b)FILES.set(k,b)}}
@@ -691,7 +703,7 @@ async function getMeta(d){
   }catch(e){return null}
 }
 async function getItems(d){if(isIpy())return ipyItems(d);if(LYR[d]&&LYR[d].length)return LYR[d];const m=await getMeta(d);return (m&&m.items)||[]}
-const ipyItems=d=>(ipyL(d)?ipyL(d).items:[]).map(x=>({en:x[0],ko:x[1],pr:'',flag:x[4],ec:x[5]||x[0],kc:x[6]||x[1],h:x[7]||[],part:x[8]||'st'}));
+const ipyItems=d=>(ipyL(d)?ipyL(d).items:[]).map(x=>({en:x[0],ko:x[1],pr:x[10]||'',flag:x[4],ec:x[5]||x[0],kc:x[6]||x[1],h:x[7]||[],part:x[8]||'st'}));
 let indexing=false;
 async function buildIndex(){
   if(indexing)return;indexing=true;
@@ -821,7 +833,7 @@ function finishForecast(){ // 최근 4주 속도로 끝나는 날 예상
   const l=L(),t=today();const left=leftLessons();if(left<=0)return '모두 배웠어요! 🎉 이제 전체 복습을 돌려요';
   const ds=Object.values(l.lessons).map(x=>x.d).sort();
   const need=(needPerDay()*6).toFixed(1);
-  if(isIpy()){const u=IPYV()>=2?'단':'과';if(ds.length<5)return `입영작 ${TOTAL()}${u} · 남은 ${left}${u}${u==='단'?' · 한 단을 STEP 3 80점까지':' · 월~토 하루 1과씩'}`;
+  if(isIpy()){const u=IPYV()>=2?'단':'과';if(ds.length<5)return `${CNAME()} ${TOTAL()}${u} · 남은 ${left}${u}${u==='단'?' · 한 단을 STEP 3 80점까지':' · 월~토 하루 1과씩'}`;
     const w=Math.max(1,Math.min(4,(new Date(t+'T12:00')-new Date(ds[0]+'T12:00'))/864e5/7));const pw=Math.max(0.5,ds.filter(d=>d>=addDays(t,-27)).length/w);
     return `남은 ${left}${u} · 지금 속도(주 ${pw.toFixed(1)}${u})면 ${ym(addDays(t,Math.ceil(left/pw*7)))} 완료 예상`}
   if(ds.length<5)return `목표: ${ym(goalDate())}까지 365일치 · 일주일에 ${need}일치 정도 하면 돼요`;
@@ -848,10 +860,16 @@ function addMoreIpy(){
   P.capped=false;P.extra=(P.extra||0)+1;save();return true;
 }
 /* 입영작: 복습은 그 과에서 최대 10문장 (전에 틀린 문장 먼저) */
-function sampleReview(n){
-  const st=L().stats,k=nItems(n),idx=IPYV()>=2?unitIdx(n,'st'):[...Array(k).keys()];
-  const bad=idx.filter(i=>(st[n+'-'+i]||[0,0])[1]>0),rest=shuffle(idx.filter(i=>!bad.includes(i)));
-  return bad.concat(rest).slice(0,10).map(i=>[n,i]);
+function sampleReview(n,st){
+  const l=L(),stt=l.stats,k=nItems(n),idx=IPYV()>=2&&!kidMode()?unitIdx(n,'st'):[...Array(k).keys()];
+  const bad=idx.filter(i=>(stt[n+'-'+i]||[0,0])[1]>0);
+  // 30일·90일 복습: 그 단 문장 전부
+  if(st>=4)return bad.concat(shuffle(idx.filter(i=>!bad.includes(i)))).map(i=>[n,i]);
+  // 1·3·7일 복습: 아직 복습 퀴즈에 안 나온 문장부터 돌아가며 10개 (틀린 문장은 항상 먼저)
+  const rq=(l.rq=l.rq||{});let seen=rq[n]||[];if(idx.every(i=>seen.includes(i)))seen=[];
+  const fresh=shuffle(idx.filter(i=>!bad.includes(i)&&!seen.includes(i))),old2=shuffle(idx.filter(i=>!bad.includes(i)&&seen.includes(i)));
+  const pick=bad.concat(fresh,old2).slice(0,10);rq[n]=[...new Set(seen.concat(pick))];
+  return pick.map(i=>[n,i]);
 }
 const STEPS=[['ipyex','무기 · 예문 폭탄','예문을 듣고 끊어 읽으며 따라 말하기','📖'],['step1','STEP 1 아숙 훈련','끊어 쓴 한국어를 보고 영어로, 막히지 않을 때까지','✍️'],['step2','STEP 2 연기낭독 훈련','영어 문장을 연기하듯 실감 나게 소리 내어 읽기','🎭'],['step3','STEP 3 입영작 마스터 훈련','자연스러운 한국어를 보고 영어로 · 80점 넘으면 완성','🏆']];
 const STEPNAME={ipyex:STEPS[0],step1:STEPS[1],step2:STEPS[2],step3:STEPS[3],rule:['rule','📘 오늘의 규칙',''],block:['block','🧩 블록 맞추기','']};
@@ -882,12 +900,12 @@ function buildPlanIpy(force){
   const unitSec=cur&&kidMode()?5*60:cur?partsFor(cur.n).slice(cur.k).reduce((a,[type,h])=>a+taskSec({type,n:cur.n,h}),0):0;
   let added=0;
   for(const x of due){
-    const items=sampleReview(x.n);const s2=x.st<=2?taskSec({type:'step2',n:x.n,h:'all'}):0;const sec=s2+items.length*10;
+    const items=sampleReview(x.n,x.st);const s2=x.st<=2?taskSec({type:'step2',n:x.n,h:'all'}):0;const sec=s2+items.length*10;
     if(added>=1&&est+sec>LIM-Math.min(unitSec,9*60))break;
     // 1일·3일 복습: 연기낭독 4회 더 (책의 12회를 4회 × 3일로)
     if(x.st<=2&&kidMode()){add({type:'step2',n:x.n,idx:items.slice(0,6).map(z=>z[1]),reps:2,g:'review',title:`다시 읽기 · ${x.st===1?'하루':'3일'} 지난 문장`,sub:`${lab(x.n)} · ${ttl(x.n)} · 6문장 2번씩`})}
     else if(x.st<=2)add({type:'step2',n:x.n,h:'all',g:'review',title:`STEP 2 연기낭독 · ${x.st===1?'5~8':'9~12'}회째`,sub:`${lab(x.n)} · ${ttl(x.n)} · 4회 낭독`});
-    add({type:'quiz',kind:'review',g:'review',items,adv:x.n,title:`${STAGE_NAME[x.st]} 복습 · STEP 3${x.retry?' (다시 도전)':''}`,sub:`${lab(x.n)} · ${ttl(x.n)} · ${x.st===5?'모두 맞혀야 ★':'80% 넘으면 통과'}`});added++;
+    add({type:'quiz',kind:'review',g:'review',items,adv:x.n,title:`${STAGE_NAME[x.st]} 복습 · ${kidMode()?'영어로 말하기':'STEP 3'}${x.retry?' (다시 도전)':''}`,sub:`${lab(x.n)} · ${ttl(x.n)} · ${x.st>=4?'전체 '+items.length+'문장':items.length+'문장'} · ${x.st===5?'모두 맞혀야 ★':'80% 넘으면 통과'}`});added++;
   }
   if(cur&&kidMode()){P.newN=cur.n;
     if(!cur.G)cur.G=LB().ipyNew||5;cur.g=cur.g||0;const grs=kidGroups(cur.n,cur.G);if(cur.g>=grs.length)cur.g=grs.length-1;const idx=grs[cur.g]||[];
@@ -907,7 +925,7 @@ function buildPlanIpyV1(P,l,t,wd){
   const canNew=wd>=1&&wd<=6&&!allLearned&&wrongKeys.length<=30&&overdue<15;
   const reserve=canNew?nItems(l.next)*16:0;let added=0;
   for(const x of due){
-    const items=sampleReview(x.n);const sec=items.length*10;
+    const items=sampleReview(x.n,x.st);const sec=items.length*10;
     if(added>=1&&est+sec>LIMIT-reserve)break;
     add({type:'quiz',kind:'review',g:'review',items,adv:x.n,title:`${STAGE_NAME[x.st]} 복습${x.retry?' (다시 도전)':''}`,sub:`${lab(x.n)} · ${ttl(x.n)} · ${x.st===5?'모두 맞혀야 ★':'80% 넘으면 통과'}`});added++;
   }
@@ -1226,7 +1244,7 @@ async function speak(ui,need,recKey,tok){
 /* ---------- 음성 인식 자동 채점 ---------- */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 function micRelease(){try{if(MIC.stream)MIC.stream.getTracks().forEach(x=>x.stop());if(MIC.ctx)MIC.ctx.close()}catch(e){}MIC.ok=false;MIC.stream=null;MIC.ctx=null}
-const CONTR={"i'm":"i am","you're":"you are","it's":"it is","what's":"what is","that's":"that is","don't":"do not","can't":"can not","cannot":"can not","i'd":"i would","i'll":"i will","let's":"let us","there's":"there is","here's":"here is","he's":"he is","she's":"she is","isn't":"is not","aren't":"are not","won't":"will not","didn't":"did not","doesn't":"does not","wasn't":"was not","we're":"we are","they're":"they are","i've":"i have","you've":"you have","you'll":"you will","we'll":"we will","where's":"where is","how's":"how is","who's":"who is","couldn't":"could not","wouldn't":"would not","shouldn't":"should not","haven't":"have not","hasn't":"has not","you'd":"you would","we've":"we have","ok":"okay","mr":"mister","mrs":"missus","ms":"miss","dr":"doctor"};
+const CONTR={"i'm":"i am","you're":"you are","it's":"it is","what's":"what is","that's":"that is","don't":"do not","can't":"can not","cannot":"can not","i'd":"i would","i'll":"i will","let's":"let us","there's":"there is","here's":"here is","he's":"he is","she's":"she is","isn't":"is not","aren't":"are not","won't":"will not","didn't":"did not","doesn't":"does not","wasn't":"was not","we're":"we are","they're":"they are","i've":"i have","you've":"you have","you'll":"you will","we'll":"we will","where's":"where is","how's":"how is","who's":"who is","couldn't":"could not","wouldn't":"would not","shouldn't":"should not","haven't":"have not","hasn't":"has not","you'd":"you would","we've":"we have","weren't":"were not","mustn't":"must not","needn't":"need not","they'll":"they will","she'll":"she will","he'll":"he will","it'll":"it will","that'll":"that will","they've":"they have","they'd":"they would","she'd":"she would","he'd":"he would","what're":"what are","who're":"who are","where're":"where are","how're":"how are","there're":"there are","ain't":"is not","gotta":"got to","gonna":"going to","wanna":"want to","ok":"okay","mr":"mister","mrs":"missus","ms":"miss","dr":"doctor"};
 function words(s){
   s=String(s).toLowerCase().replace(/[’‘`]/g,"'").replace(/\([^)]*\)/g,' ').replace(/[^a-z0-9' ]+/g,' ');
   return s.split(/\s+/).filter(Boolean).flatMap(w=>{w=w.replace(/^'+|'+$/g,'');const c=CONTR[w];if(c)return c.split(' ');
@@ -1239,7 +1257,7 @@ const NUMW='zero one two three four five six seven eight nine ten eleven twelve 
 const ORD={1:'first',2:'second',3:'third',4:'fourth',5:'fifth',6:'sixth',7:'seventh',8:'eighth',9:'ninth',10:'tenth'};
 function num2w(n){if(n<20)return NUMW[n];if(n<100)return TENW[Math.floor(n/10)]+(n%10?' '+NUMW[n%10]:'');if(n<1000)return NUMW[Math.floor(n/100)]+' hundred'+(n%100?' '+num2w(n%100):'');if(n<10000&&n%100===0&&n%1000!==0)return num2w(n/100)+' hundred';if(n<1e6)return num2w(Math.floor(n/1000))+' thousand'+(n%1000?' '+num2w(n%1000):'');return String(n)}
 /* 비슷하게 들린 단어도 맞게 쳐요: 복수·과거·~ing, 소리가 같은 단어, 한두 글자 차이 */
-const HOMO=[['to','too','two'],['for','four','fore'],['your','youre'],['there','their','theyre'],['its','it'],['know','no'],['right','write'],['hear','here'],['weak','week'],['by','buy','bye'],['meet','meat'],['see','sea'],['son','sun'],['whole','hole'],['wear','where'],['would','wood'],['ate','eight'],['one','won'],['our','hour','are'],['an','and','a','the','uh'],['in','on'],['hes','his'],['wanna','want'],['gonna','going'],['okay','ok'],['yeah','yes'],['mom','mum','ma']];
+const HOMO=[['were','where','wear','war','word','whirl','we','well'],['to','too','two'],['for','four','fore'],['your','youre'],['there','their','theyre'],['its','it'],['know','no'],['right','write'],['hear','here'],['weak','week'],['by','buy','bye'],['meet','meat'],['see','sea'],['son','sun'],['whole','hole'],['would','wood'],['ate','eight'],['one','won'],['our','hour','are'],['an','and','a','the','uh'],['in','on'],['hes','his'],['wanna','want'],['gonna','going'],['okay','ok'],['yeah','yes'],['mom','mum','ma']];
 const HOMOM=new Map();HOMO.forEach(g=>g.forEach(w=>HOMOM.set(w,g)));
 const stem=w=>w.length<=3?w:w.replace(/(ies|ied)$/,'y').replace(/(ing|ed|es|s)$/,'');
 function tokEq(x,y){if(x===y)return true;const g=HOMOM.get(x);if(g&&g.includes(y))return true;
@@ -1386,7 +1404,7 @@ async function runRepeat(t,tok){
 const unitIdx=(n,part)=>{const u=ipyL(n);const a=[];if(!u)return a;for(let i=0;i<u.items.length;i++)if((u.items[i][8]||'st')===part)a.push(i);return a};
 const chunkHTML=s=>esc(s).split(' / ').join(' <span style="color:var(--accent);font-weight:400">/</span> ');
 const hintHTML=h=>h&&h.length?`<div class="pr" style="margin-top:8px">${h.map(x=>'▶ '+esc(x[0])+' <b>'+esc(x[1])+'</b>').join(' &nbsp; ')}</div>`:'';
-function stepHead(t,guide){return `<div class="stitle">✍️ 입영작 · ${lab(t.n)} · ${esc(ttl(t.n))}</div><div class="sh">${esc(t.title)}</div><p class="sguide">${guide}</p>`}
+function stepHead(t,guide){return `<div class="stitle">${(IPYC[S.course]||IPYC.ipy)[1]} ${CNAME()} · ${lab(t.n)} · ${esc(ttl(t.n))}</div><div class="sh">${esc(t.title)}</div><p class="sguide">${guide}</p>`}
 const mdk=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b class="kw">$1</b>');
 /* 아이 모드: 오늘의 규칙 카드 */
 async function runRule(t,tok){
@@ -1422,7 +1440,7 @@ async function runBlock(t,tok){
       $('bHear').onclick=()=>{miss++;playEn(n,i,it.en)};
     });
     if(!SESS||SESS.tok!==tok)return false;
-    $('qBtns').innerHTML='';
+    $('qBtns').innerHTML='';if(it.pr)$('bline').insertAdjacentHTML('afterend',`<div class="pr">🗣️ ${esc(it.pr)}</div>`);
     const ui=micUI();ui.prompt='소리 내어 읽어요!';$('micBox').appendChild(ui.el);ui.state('play');
     await playEn(n,i,it.en);if(!SESS||SESS.tok!==tok)return false;
     const ok=await speak(ui,Math.min(1.4,Math.max(0.35,enLen(n,i)*0.5)),`${L().id}|${today()}|${n}-${i}|블록`,tok);if(!ok)return false;
@@ -1439,7 +1457,7 @@ async function runIpyEx(t,tok){
   for(let q=Math.min(t.q||0,idx.length);q<idx.length;q++){
     if(!SESS||SESS.tok!==tok)return false;const i=idx[q],it=items[i];t.q=q;keep();
     $('sMain').innerHTML=stepHead(t,'예문을 듣고, 끊어 읽기(/)에 맞춰 소리 내서 따라 말해요.')+`<div class="qcard"><div class="cnt">예문 ${q+1} / ${idx.length}</div>
-      <div class="en">${chunkHTML(it.ec)}</div><div class="ko" style="font-size:16px;font-weight:400;color:var(--sub)">(${esc(it.kc)})</div>
+      <div class="en">${chunkHTML(it.ec)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}<div class="ko" style="font-size:16px;font-weight:400;color:var(--sub)">(${esc(it.kc)})</div>
       <div id="micBox"></div><div class="sbtns"><button class="btn ghost" id="again">🔁 다시 듣기</button></div></div>`;
     const ui=micUI();ui.prompt='따라 말해요!';$('micBox').appendChild(ui.el);ui.state('play');
     $('again').onclick=()=>playEn(n,i,it.en);
@@ -1487,7 +1505,7 @@ async function runStep1(t,tok){
       if(!SESS||SESS.tok!==tok)return false;const i=queue[q],it=items[i];t.s1={queue,round,q,next:next.slice()};keep();
       $('sMain').innerHTML=stepHead(t,'끊어 쓴 한국어를 보고 <b>영어로 소리 내서</b> 말해요. 막힌 문장은 이번 훈련 안에서 다시 나와요.')+`<div class="qcard"><div class="cnt">${round}바퀴 · ${q+1} / ${queue.length}${round>1?' (다시 도전)':''}</div>
         <div class="ko">${chunkHTML(it.kc)}</div>${hintHTML(it.h)}
-        <div class="ans hidden" id="ans"><div class="en">${chunkHTML(it.ec)}</div></div>
+        <div class="ans hidden" id="ans"><div class="en">${chunkHTML(it.ec)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}</div>
         <div id="micBox"></div><div class="sbtns" id="qBtns">${useSR()?'<button class="btn ghost" id="skipB">🙋 모르겠어요</button>':''}</div></div>`;
       const ui=micUI();ui.prompt='영어로 말해요!';$('micBox').appendChild(ui.el);ui.state('listen');
       if($('skipB'))$('skipB').onclick=()=>{if(SESS){SESS.skipNow=true;stopRec()}};
@@ -1515,7 +1533,7 @@ async function runStep2(t,tok){
     for(let rep=(q===q0?r0:1);rep<=REPS;rep++){
       if(!SESS||SESS.tok!==tok)return false;t.q=q;t.rep=rep;keep();
       $('sMain').innerHTML=stepHead(t,'상대방에게 이야기하듯 <b>실감 나게</b> 소리 내어 읽어요. 조용히 읽으면 공식으로만 남아요!')+`<div class="qcard"><div class="cnt">${q+1} / ${idx.length} · 낭독 ${rep}/${REPS}</div>
-        <div class="en">${esc(it.en)}</div><div class="ko" style="font-size:16px;font-weight:400;color:var(--sub)">${esc(it.ko)}</div>
+        <div class="en">${esc(it.en)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}<div class="ko" style="font-size:16px;font-weight:400;color:var(--sub)">${esc(it.ko)}</div>
         <div id="micBox"></div><div class="sbtns"><button class="btn ghost" id="again">🔁 원어민 다시 듣기</button></div></div>`;
       const ui=micUI();ui.prompt=rep===1?'따라 읽어요!':'혼자 연기하듯 읽어요!';$('micBox').appendChild(ui.el);ui.state('play');
       $('again').onclick=()=>playEn(n,i,it.en);
@@ -1534,7 +1552,7 @@ async function runStep3(t,tok){
   for(let q=Math.min(t.q||0,idx.length);q<idx.length;q++){
     if(!SESS||SESS.tok!==tok)return false;const i=idx[q],it=items[i];t.q=q;t.sum=sum;keep();
     $('sMain').innerHTML=stepHead(t,'자연스러운 한국어를 보고 실감 나게 영어로 말해요. 막힘없이 바로 말하면 5점!')+`<div class="qcard"><div class="cnt">${q+1} / ${idx.length} · 지금까지 ${cu.s3.sum+sum}점</div>
-      <div class="ko">${esc(it.ko)}</div><div class="ans hidden" id="ans"><div class="en">${esc(it.en)}</div></div>
+      <div class="ko">${esc(it.ko)}</div><div class="ans hidden" id="ans"><div class="en">${esc(it.en)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}</div>
       <div id="micBox"></div><div class="sbtns" id="qBtns"><button class="btn ghost" id="again">🔁 한국어 듣기</button>${useSR()?'<button class="btn ghost" id="skipB">🙋 모르겠어요</button>':''}</div></div>`;
     const ui=micUI();ui.prompt='영어로 말해요!';$('micBox').appendChild(ui.el);ui.state('play');
     $('again').onclick=async()=>{if(SESS){SESS.replayNow=true;stopRec()}await say(it.ko,'ko-KR')};
@@ -1580,7 +1598,7 @@ async function runQuiz(t,tok){
       ${it.word?'<div class="cnt" style="margin:0">🔤 단어 · 뜻을 듣고 영어 단어를 말해요</div>':''}
       <div class="ko">${esc(it.ko)}</div>
       ${it.word&&it.blank?`<div class="pr" style="margin-top:6px">${esc(it.blank)}</div>`:''}
-      <div class="ans hidden" id="ans"><div class="en">${esc(it.en)}</div></div>
+      <div class="ans hidden" id="ans"><div class="en">${esc(it.en)}</div>${it.pr?`<div class="pr" style="margin-top:4px">🗣️ ${esc(it.pr)}</div>`:''}</div>
       <div id="micBox"></div><div class="sbtns" id="qBtns"><button class="btn ghost" id="again">🔁 한국어 다시 듣기</button><button class="btn ghost" id="hintB">💡 첫 단어</button></div></div>`;
     const ui=micUI();ui.prompt='영어로 말해요!';$('micBox').appendChild(ui.el);ui.state('play');
     $('again').onclick=async()=>{if(SESS){SESS.replayNow=true;stopRec()}await playKo(n,i,it.ko)};
@@ -1780,11 +1798,11 @@ function renderBrowse(){
 }
 function renderBrowseIpy(){
   const d=S.ib=Math.max(1,Math.min(TOTAL(),S.ib|0||1));const x=L().lessons[d],L0=ipyL(d);
-  $('dNum').textContent=`${lab(d)} · ${IPYBOOK[L0.b]}${L0.files?' '+L0.no+'단':' '+L0.f+'번 음원'}`+(x?(x.st>=6?' · ★ 완벽 암기':' · 배움'):'');
+  $('dNum').textContent=`${lab(d)} · ${IPYBOOK[L0.b]}${S.course!=='ipy'?'':L0.files?' '+L0.no+'단':' '+L0.f+'번 음원'}`+(x?(x.st>=6?' · ★ 완벽 암기':' · 배움'):'');
   $('dTitle').textContent=L0.t;$('dayInput').value=d;$('dayInput').max=TOTAL();
   $('steps').innerHTML='';
   (L0.files||[{dur:L0.dur}]).forEach((f,fi)=>{const el=document.createElement('div');el.className='step';
-    el.innerHTML=`<div class="no">▶</div><div class="t"><b>${L0.files?(fi===0?'무기 · 예문 폭탄 음원':'STEP 문장 음원'):'원본 음원'}</b><small>${L0.files?IPYBOOK[L0.b]+' '+f.f+'번 파일':'번호 → 영어 문장'}</small></div><span class="dur">${fmt(f.dur||0)}</span><button class="play" ${hasFile(d,'o',fi)?'':'disabled'}>▶</button>`;
+    el.innerHTML=`<div class="no">▶</div><div class="t"><b>${S.course!=='ipy'?'음원 '+(fi+1):L0.files?(fi===0?'무기 · 예문 폭탄 음원':'STEP 문장 음원'):'원본 음원'}</b><small>${L0.files?IPYBOOK[L0.b]+' '+(f.label||f.f)+'번 파일':'번호 → 영어 문장'}</small></div><span class="dur">${fmt(f.dur||0)}</span><button class="play" ${hasFile(d,'o',fi)?'':'disabled'}>▶</button>`;
     el.querySelector('.play').onclick=()=>startQueue([{day:d,k:'o',fi}],{});$('steps').appendChild(el)});
   $('memo').value=L().memo[d]||'';$('coverWrap').innerHTML='';
   const all=ipyItems(d);let items=all;const gc=$('grpChips');gc.classList.toggle('hide',!kidMode());
@@ -1865,12 +1883,12 @@ async function loadCur(play){
   const f=await getFile(cur.day,cur.k,cur.fi||0);if(!f){toast('음원을 열 수 없어요');return}
   if(curUrl)URL.revokeObjectURL(curUrl);curUrl=URL.createObjectURL(f);
   audio.src=curUrl;audio.playbackRate=S.rate;
-  $('pName').innerHTML=`<b>${cur.k==='o'?lab(cur.day):pad(cur.day)+'일'} · ${cur.k==='o'?'입영작':MODE[cur.k].name}</b>  ${esc(ttl(cur.day))}`;
+  $('pName').innerHTML=`<b>${cur.k==='o'?lab(cur.day):pad(cur.day)+'일'} · ${cur.k==='o'?CNAME():MODE[cur.k].name}</b>  ${esc(ttl(cur.day))}`;
   $('pQueue').textContent=Q.length>1?`${qi+1} / ${Q.length}`:'';
   const cd=cur.day;
   getMeta(cd).then(m=>{if(!cur||cur.day!==cd)return;const t=$('pThumb');
     if(m&&m.img){t.src=m.img;t.classList.remove('hide');t.onclick=()=>openCard(cd)}else t.classList.add('hide');
-    if('mediaSession' in navigator){try{navigator.mediaSession.metadata=new MediaMetadata({title:`${lab(cd)} ${cur.k==='o'?'입영작':MODE[cur.k].name}`,artist:ttl(cd),album:'1일 5분 영어',artwork:m&&m.img?[{src:m.img,sizes:'512x512',type:'image/jpeg'}]:[]})}catch(e){}}});
+    if('mediaSession' in navigator){try{navigator.mediaSession.metadata=new MediaMetadata({title:`${lab(cd)} ${cur.k==='o'?CNAME():MODE[cur.k].name}`,artist:ttl(cd),album:'1일 5분 영어',artwork:m&&m.img?[{src:m.img,sizes:'512x512',type:'image/jpeg'}]:[]})}catch(e){}}});
   if(play)audio.play().catch(()=>{});
   if(!$('tab-browse').classList.contains('hide')&&cd===(isIpy()?S.ib:S.browse))renderBrowse();
 }
@@ -1969,7 +1987,7 @@ function showTab(t){document.querySelectorAll('.tab').forEach(b=>b.classList.tog
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2800)}
 function renderCourse(){
-  document.querySelectorAll('[data-course]').forEach(b=>b.classList.toggle('on',b.dataset.course===(isIpy()?'ipy':'eng')));
+  document.querySelectorAll('[data-course]').forEach(b=>b.classList.toggle('on',b.dataset.course===(isIpy()?S.course:'eng')));
   $('calTab').textContent=isIpy()?'진도표':'365일 진도표';$('browseTab').textContent=isIpy()?'과별 보기':'일차별 보기';
   document.querySelectorAll('.coverbox').forEach(x=>x.classList.toggle('hide',isIpy()));
   document.querySelectorAll('#tab-today .help').forEach(x=>x.classList.toggle('hide',x.id==='ipyHelp'?!(isIpy()&&!kidMode()):x.id==='ipyHelpKid'?!kidMode():isIpy()));
