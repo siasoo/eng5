@@ -219,7 +219,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v5.0.0</span></div>
+    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v5.2.0</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div class="courses" id="courses">
@@ -403,7 +403,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
         <div class="r"><b>마이크 민감도</b><div class="seg" id="sensSeg"></div></div>
         <div class="r"><b>365일치 목표</b><div class="seg" id="goalSeg"></div></div>
         <div class="r"><b>입영작 공부 방식<br><small style="font-weight:400;color:var(--sub)">이 학습자만 · 바꾸면 진도가 따로 저장돼요</small></b><div class="seg" id="ipyModeSeg"></div></div>
-        <div class="r"><b>하루 새 문장 (아이 모드)<br><small style="font-weight:400;color:var(--sub)">다음 단부터 적용돼요</small></b><div class="seg" id="ipyNewSeg"></div></div>
+        <div class="r"><b>하루 새 문장 (아이 모드)<br><small style="font-weight:400;color:var(--sub)">지금 과정만 · 다음 묶음부터 바로 적용</small></b><div class="seg" id="ipyNewSeg"></div></div>
         <div class="r"><b>입영작 어른 문장<br><small style="font-weight:400;color:var(--sub)">이 학습자만 · 술·연애 등 272문장</small></b><div class="seg" id="ipyAdultSeg"></div></div>
         <div class="r"><b>1일5분 어른 주제 21일치</b><div class="seg" id="adultSeg"></div></div>
         <p class="hint" style="margin:0">욕설·술·담배·연애/결혼/이혼·유흥 주제(173, 208, 237~248, 256~257, 287~291일차)예요. 건너뛰면 진도표에서 줄이 그어져요.</p>
@@ -497,7 +497,7 @@ const RATES=[0.75,0.9,1,1.1,1.25];
 const CUM=[0,1,3,7,30,90];            // 배운 날로부터 복습하는 날 (1·3·7·30·90일 후)
 const STAGE_NAME=['','1일','3일','7일','30일','90일'];
 const LIMIT=15*60; // 1일 5분 영어: 하루 최대 15분
-const LIMITF=()=>isIpy()?20*60:LIMIT; // 입영작: 하루 최대 20분
+const LIMITF=()=>isIpy()?Math.max(20,NEWN()*2)*60:LIMIT; // 입영작: 하루 최대 20분
 const KEY='eng5min_v2';
 const $=id=>document.getElementById(id);
 const pad=n=>String(n).padStart(3,'0');
@@ -570,7 +570,8 @@ function addFile(name,obj){const p=parseName(name);if(p){FILES.set(p.day+'-'+p.k
 function updateFolderMsg(){
   $('ipyDataBtn').classList.toggle('hide',!isIpy());$('ipyDataBtn').textContent=CNAME()+' 데이터 다시 불러오기';
   if(isIpy()){let c=0,all=0;for(let d=1;d<=TOTAL();d++)for(const k of ipyFiles(d)){all++;if(FILES.has(k))c++}
-    if(S.course!=='ipy'){$('folderMsg').innerHTML=`<b>${c===all?'✓ ':''}${CNAME()} 음원 ${c}/${all}개 연결됨</b>${c<all?(S.course==='trv'?' — 여행영어 패턴 책 mp3와 EBS 여행편 mp3를 골라 주세요':' — 엄마의 365일 영어 한마디 mp3 12개를 골라 주세요')+' (한꺼번에 골라도 돼요)':''}`;return}
+    if(S.course!=='ipy'){const miss=[...new Set(IPYD.lessons.flatMap(x=>x.files.map((f,j)=>FILES.has(x.fk[j])?null:(x.b==='E'?'EBS '+f.f.slice(0,2)+'_'+f.f.slice(2):x.b==='T'?'패턴책 '+f.f:'365일 '+f.f.slice(1)+'월')).filter(Boolean)))].sort();
+      $('folderMsg').innerHTML=`<b>${c===all?'✓ ':''}${CNAME()} 음원 ${c}/${all}개 연결됨</b>${miss.length?`<br><small>빠진 음원 ${miss.length}개: ${esc(miss.slice(0,12).join(', '))}${miss.length>12?' …':''}</small>`:''}`+`${c<all?(S.course==='trv'?'<br>빠진 파일을 ‘mp3 파일 고르기’로 더 골라 주세요. 이미 넣은 건 건너뛰어요.':'<br>엄마의 365일 영어 한마디 mp3 12개를 골라 주세요.'):''}`;return}
     $('folderMsg').innerHTML=c?`<b>${c===all?'✓ ':''}입영작 음원 ${c}/${all}개 연결됨</b>${c<all?' — 네 권 폴더의 mp3를 모두 골라 주세요 (한꺼번에 골라도 돼요)':''}`:'입영작 음원 네 권(잘 대답하기·더 잘 대답하기·잘 물어보기·진짜 길게 말하기)의 mp3를 골라 주세요. 한꺼번에 골라도 앱이 어느 책인지 알아서 나눠요.';return}
   let n=0;for(const k of FILES.keys())if(!k.startsWith('I:'))n++;
   if(!n){$('folderMsg').innerHTML='<b>2복습하기</b> 폴더의 음원(365개)만 있으면 돼요. ‘음원 폴더 선택’으로 폴더를 고르거나, ‘mp3 파일 고르기’에서 전체 선택하세요. 한 번 고르면 앱 안에 저장돼요.';return}
@@ -592,6 +593,13 @@ async function useDir(h){
   $('folderMsg').textContent='음원을 찾는 중…';const found=[];await scanDir(h,0,found);$('reconnectBtn').classList.add('hide');
   await importFiles(found.map(x=>({name:x.name,get:()=>x.getFile()})));
 }
+/* 이름으로 짐작: EBS 01_02_공항_02 → I:E0102, 패턴 책 T03_… → I:TT03, 엄마의 365일 …_05 → I:MM05 */
+function guessKey(n){let m,k=null;const all=new Set(IPYMAP.values());
+  if((m=n.match(/^(\d\d)_(\d\d)_/)))k='I:E'+m[1]+m[2];
+  else if((m=n.match(/^1_6\[/)))k='I:E0106';
+  else if((m=n.match(/^T(\d\d)[_ .]/i)))k='I:TT'+m[1];
+  else if(/365/.test(n)&&(m=n.match(/(\d\d)\.mp3$/i)))k='I:MM'+m[1];
+  return k&&all.has(k)?k:null}
 /* 고른 mp3를 알아보고 앱 안에 저장 (한 번만) */
 async function importFiles(arr){
   try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}
@@ -599,7 +607,7 @@ async function importFiles(arr){
   for(const x of arr){
     let key=null,file=null;const p=parseName(x.name);
     if(p){if(p.k==='s'){i++;continue}key=p.day+'-'+p.k}
-    else if(Object.keys(DS).length){try{file=await x.get();key=IPYMAP.get(x.name+'|'+file.size)||IPYSIZE.get(file.size)||null}catch(e){}}
+    else if(Object.keys(DS).length){try{file=await x.get();key=IPYMAP.get(x.name+'|'+file.size)||IPYSIZE.get(file.size)||guessKey(x.name)}catch(e){}}
     if(!key){unknown++;i++;continue}
     try{
       if(have.has(key)){if(!FILES.has(key)){const b=await idbGet('audio',key);if(b)FILES.set(key,b)}}
@@ -854,7 +862,7 @@ function addMoreIpy(){
   const l=L(),P=getPlan();let cur=l.cur;
   if(!cur){if(l.next>TOTAL())return false;cur=l.cur={n:l.next,k:0,tries:[],s3:{sum:0,cnt:0}}}
   const add=t2=>{t2.id='t'+P.tasks.length+'x';P.tasks.push(t2)};
-  if(kidMode()){if(!cur.G)cur.G=LB().ipyNew||5;cur.g=cur.g||0;const grs=kidGroups(cur.n,cur.G);const idx=grs[cur.g]||[];
+  if(kidMode()){const idx=curGroup(cur);const grs=unitGroups(cur.n);
     kidParts(cur.n,cur.g).slice(cur.k).forEach(([type])=>add({type,n:cur.n,idx,kid:true,g:'new',title:KIDNAME[type][0],sub:`${lab(cur.n)} · ${ttl(cur.n)} · ${cur.g+1}/${grs.length}묶음 · ${KIDNAME[type][1]}`}))}
   else partsFor(cur.n).slice(cur.k,cur.k+2).forEach(([type,h])=>{const [,title,sub]=STEPNAME[type];add({type,n:cur.n,h,g:'new',title:title+halfLabel(cur.n,h),sub:`${lab(cur.n)} · ${ttl(cur.n)} · ${sub}`})});
   P.capped=false;P.extra=(P.extra||0)+1;save();return true;
@@ -877,6 +885,17 @@ const STEPNAME={ipyex:STEPS[0],step1:STEPS[1],step2:STEPS[2],step3:STEPS[3],rule
 function halfIdx(n,h){const a=unitIdx(n,'st');return h==='all'||h==null?a:h===0?a.slice(0,10):a.slice(10)}
 function partsFor(n){const ps=[['ipyex',null]];for(const s of ['step1','step2','step3'])for(const h of [0,1])if(halfIdx(n,h).length)ps.push([s,h]);return ps}
 const ruleKey=n=>{const u=ipyL(n);return u?u.b+u.no:''};
+/* 하루 새 문장 수: 과정별로 (5~30개). 바꾸면 다음 묶음부터 바로 적용 */
+const NEWN=()=>LB()['new_'+S.course]||LB().ipyNew||5;
+const rng=(a,k)=>[...Array(Math.max(0,k)).keys()].map(i=>a+i);
+function splitFrom(n,start,G){const u=ipyL(n);const N=u?u.items.length:0;const out=[];for(let i=start;i<N;i+=G)out.push(rng(i,Math.min(G,N-i)));
+  if(out.length>1&&out[out.length-1].length<Math.ceil(G/2)){const l=out.pop();out[out.length-1].push(...l)}return out}
+function migCur(cu){if(!cu||cu.bounds)return;const G=cu.G||5,grs=kidGroups(cu.n,G),g=Math.min(cu.g||0,Math.max(0,grs.length-1));
+  cu.bounds=grs.slice(0,g).map(x=>[x[0],x[x.length-1]+1]);cu.pos=cu.bounds.length?cu.bounds[cu.bounds.length-1][1]:0;cu.cg=grs[g]||null;cu.g=g}
+function curGroup(cu){migCur(cu);if(!cu.cg||!cu.cg.length)cu.cg=splitFrom(cu.n,cu.pos||0,NEWN())[0]||[];cu.g=cu.bounds.length;return cu.cg}
+function unitGroups(n){const cu=L().cur;if(!(cu&&cu.n===n))return kidGroups(n,NEWN());migCur(cu);
+  const past=cu.bounds.map(([a,b])=>rng(a,b-a));const cg=cu.cg&&cu.cg.length?cu.cg:null;
+  return past.concat(cg?[cg]:[],splitFrom(n,cg?cg[cg.length-1]+1:(cu.pos||0),NEWN()))}
 function kidGroups(n,G){const u=ipyL(n);if(!u)return [];const out=[];for(let i=0;i<u.items.length;i+=G)out.push([...Array(Math.min(G,u.items.length-i)).keys()].map(k=>i+k));
   if(out.length>1&&out[out.length-1].length<Math.ceil(G/2)){const l=out.pop();out[out.length-1].push(...l)}return out}
 function kidParts(n,g){const ps=[];if(g===0&&RULES[ruleKey(n)])ps.push(['rule']);ps.push(['ipyex'],['step2'],['block'],['step3']);return ps}
@@ -886,7 +905,8 @@ const halfLabel=(n,h)=>{if(h==='all'||h==null)return '';const a=halfIdx(n,h),b=u
 function buildPlanIpy(force){
   const l=L(),t=today(),wd=dow(t);
   const P={date:t,tasks:[],kind:'normal',idx:0,secs:0,newN:null,newNs:[]};
-  if(wd===0&&!force){P.kind='rest';return P}
+  const wkOK=S.course!=='ipy'; // 여행영어·생활영어는 주말에도 새 진도
+  if(wd===0&&!force&&!wkOK){P.kind='rest';return P}
   if(IPYV()<2)return buildPlanIpyV1(P,l,t,wd);
   const N=TOTAL();let est=0;const add=t2=>{t2.id='t'+P.tasks.length;P.tasks.push(t2);est+=taskSec(t2)};
   const wrongKeys=Object.keys(l.wrong);
@@ -895,7 +915,7 @@ function buildPlanIpy(force){
   // 진행 중인 단이 있으면 멈춘 STEP부터 이어서, 없으면 새 단
   let cur=l.cur;if(cur&&cur.k==null)cur=l.cur={n:cur.n,k:0,tries:cur.tries||[],s3:{sum:0,cnt:0}};
   const due=dueLessons(t);const overdue=due.filter(x=>x.due<t).length;
-  if(!cur&&wd>=1&&wd<=6&&l.next<=N&&wrongKeys.length<=30&&overdue<15){cur=l.cur={n:l.next,k:0,tries:[],s3:{sum:0,cnt:0}}}
+  if(!cur&&(wkOK||wd>=1&&wd<=6)&&l.next<=N&&wrongKeys.length<=30&&overdue<15){cur=l.cur={n:l.next,k:0,tries:[],s3:{sum:0,cnt:0}}}
   const LIM=LIMITF();
   const unitSec=cur&&kidMode()?5*60:cur?partsFor(cur.n).slice(cur.k).reduce((a,[type,h])=>a+taskSec({type,n:cur.n,h}),0):0;
   let added=0;
@@ -908,12 +928,12 @@ function buildPlanIpy(force){
     add({type:'quiz',kind:'review',g:'review',items,adv:x.n,title:`${STAGE_NAME[x.st]} 복습 · ${kidMode()?'영어로 말하기':'STEP 3'}${x.retry?' (다시 도전)':''}`,sub:`${lab(x.n)} · ${ttl(x.n)} · ${x.st>=4?'전체 '+items.length+'문장':items.length+'문장'} · ${x.st===5?'모두 맞혀야 ★':'80% 넘으면 통과'}`});added++;
   }
   if(cur&&kidMode()){P.newN=cur.n;
-    if(!cur.G)cur.G=LB().ipyNew||5;cur.g=cur.g||0;const grs=kidGroups(cur.n,cur.G);if(cur.g>=grs.length)cur.g=grs.length-1;const idx=grs[cur.g]||[];
-    if(cur.g>0&&cur.k===0)add({type:'step2',n:cur.n,idx:grs[cur.g-1],reps:4,g:'review',title:'어제 배운 문장 다시 읽기',sub:`${lab(cur.n)} · ${grs[cur.g-1].length}문장 · 4번씩`});
+    const idx=curGroup(cur);const grs=unitGroups(cur.n);
+    if(cur.g>0&&cur.k===0){const pv=grs[cur.g-1],rp=pv.length>10?2:4;add({type:'step2',n:cur.n,idx:pv,reps:rp,g:'review',title:'어제 배운 문장 다시 읽기',sub:`${lab(cur.n)} · ${pv.length}문장 · ${rp}번씩`})}
     kidParts(cur.n,cur.g).slice(cur.k).forEach(([type])=>add({type,n:cur.n,idx,kid:true,g:'new',title:KIDNAME[type][0],sub:`${lab(cur.n)} · ${ttl(cur.n)} · ${cur.g+1}/${grs.length}묶음 · ${KIDNAME[type][1]}`}))}
   else if(cur){P.newN=cur.n;
     partsFor(cur.n).slice(cur.k).forEach(([type,h])=>{const [,title,sub]=STEPNAME[type];add({type,n:cur.n,h,g:'new',title:title+halfLabel(cur.n,h),sub:`${lab(cur.n)} · ${ttl(cur.n)} · ${sub}`})})}
-  else if(l.next<=N&&wd>=1&&wd<=6)P.kind='reviewday';
+  else if(l.next<=N&&(wkOK||wd>=1&&wd<=6))P.kind='reviewday';
   return P;
 }
 function buildPlanIpyV1(P,l,t,wd){
@@ -1137,8 +1157,9 @@ async function runNext(){
   if(t.kind==='cycle'){L().cycle=t.cycleTo}
   const cu=L().cur;
   if(t.g==='new'&&cu&&cu.n===t.n&&STEPNAME[t.type]){
-    if(t.after&&t.kid){const grs=kidGroups(t.n,cu.G||5);cu.s3={sum:0,cnt:0};
-      if(t.after==='done'){if((cu.g||0)+1>=grs.length){markLearned(t.n);L().cur=null}else{cu.g=(cu.g||0)+1;cu.k=0}}
+    if(t.after&&t.kid){migCur(cu);cu.s3={sum:0,cnt:0};
+      if(t.after==='done'){const cg=t.idx&&t.idx.length?t.idx:curGroup(cu);const end=cg[cg.length-1]+1;cu.bounds.push([cg[0],end]);cu.pos=end;cu.cg=null;cu.g=cu.bounds.length;
+        if(end>=nItems(t.n)){markLearned(t.n);L().cur=null}else cu.k=0}
       else cu.k=kidParts(t.n,cu.g||0).findIndex(p=>p[0]===(t.after==='s3'?'step3':'step2'));
       P.tasks.filter(x=>!x.done&&x.g==='new').forEach(x=>x.done=true)}
     else if(t.after){ // 책의 채점 기준: 80점↑ 완성 / 41~79 STEP 3 재도전 / 40↓ STEP 2부터
@@ -1576,7 +1597,7 @@ async function runStep3(t,tok){
   const score=Math.round(cu.s3.sum/(cu.s3.cnt*5)*100);const cur=cu;(cur.tries=cur.tries||[]).push(score);
   t.score=score;t.after=score>=80?'done':score>40?'s3':'s2';save();
   if(SESS&&SESS.tok===tok){
-    const kLast=t.kid&&((cur.g||0)+1>=kidGroups(n,cur.G||5).length);
+    const kLast=t.kid&&idx.length&&idx[idx.length-1]+1>=nItems(n);
     const msg=score>=80&&t.kid&&!kLast?`<div class="big">🎉</div><div class="sh">오늘 문장 통과!</div><p>80점 이상! 내일은 다음 문장을 배워요.</p>`
       :score>=80?`<div class="big">🥋</div><div class="sh">${lab(n)} 완성!</div><p>80점 이상! 이 단을 마스터했어요. 1·3·7·30·90일 뒤에 복습으로 다시 만나요.</p>`
       :score>40?`<div class="big">💪</div><div class="sh">입영작 마스터 훈련 재도전</div><p>41~79점이에요. 다음 공부 때 ${t.kid?'영어로 말하기':'STEP 3'}에 다시 도전해요.</p>`
@@ -1754,7 +1775,7 @@ function renderCalKid(){
     let lc=0;for(let d=s;d<=e;d++)if(l.lessons[d])lc++;
     sec.innerHTML=`<h3>${lab(s)}~${lab(e)} · 배움 ${lc}/${e-s+1}</h3>`;
     const g=document.createElement('div');g.className='grid';
-    for(let d=s;d<=e;d++){const x=l.lessons[d];const G=cu&&cu.n===d&&cu.G?cu.G:LB().ipyNew||5;const grs=kidGroups(d,G);
+    for(let d=s;d<=e;d++){const x=l.lessons[d];const grs=unitGroups(d);
       grs.forEach((idx,gi)=>{day++;const b=document.createElement('button');
         const done=!!x||(cu&&cu.n===d&&gi<(cu.g||0)),now=cu&&cu.n===d&&gi===(cu.g||0)||(!cu&&d===l.next&&gi===0);
         b.className='cell'+(x?' s'+Math.min(6,x.st):done?' s1':'')+(now?' nextup':'');b.style.fontSize='11px';
@@ -1806,7 +1827,7 @@ function renderBrowseIpy(){
     el.querySelector('.play').onclick=()=>startQueue([{day:d,k:'o',fi}],{});$('steps').appendChild(el)});
   $('memo').value=L().memo[d]||'';$('coverWrap').innerHTML='';
   const all=ipyItems(d);let items=all;const gc=$('grpChips');gc.classList.toggle('hide',!kidMode());
-  if(kidMode()){const cu=L().cur,G=cu&&cu.n===d&&cu.G?cu.G:LB().ipyNew||5,grs=kidGroups(d,G);if(S.ibg==null||S.ibg>=grs.length)S.ibg=-1;
+  if(kidMode()){const grs=unitGroups(d);if(S.ibg==null||S.ibg>=grs.length)S.ibg=-1;
     gc.innerHTML='';[-1,...grs.keys()].forEach(g=>{const b=document.createElement('button');b.className='chip'+(S.ibg===g?' on':'');b.textContent=g<0?'전체':`${g+1}일째`;b.onclick=()=>{S.ibg=g;renderBrowseIpy()};gc.appendChild(b)});
     if(S.ibg>=0)items=grs[S.ibg].map(i=>({...all[i],_i:i}))}
   $('sentCount').textContent=items.length+'개';
@@ -1851,7 +1872,7 @@ async function openCard(d){
 }
 $('modalX').onclick=()=>{$('modal').classList.add('hide');stopSeg()};
 $('modal').onclick=e=>{if(e.target.id==='modal'){$('modal').classList.add('hide');stopSeg()}};
-const kgN=d=>{const cu=L().cur;return kidGroups(d,cu&&cu.n===d&&cu.G?cu.G:LB().ipyNew||5).length};
+const kgN=d=>unitGroups(d).length;
 $('prevDay').onclick=()=>{if(isIpy()){if(kidMode()&&S.ibg>0)S.ibg--;else if(kidMode()&&S.ibg===0&&S.ib>1){S.ib--;S.ibg=kgN(S.ib)-1}else{S.ib--;S.ibg=-1}}else S.browse--;renderBrowse()};
 $('nextDay').onclick=()=>{if(isIpy()){if(kidMode()&&S.ibg>=0&&S.ibg<kgN(S.ib)-1)S.ibg++;else if(kidMode()&&S.ibg>=0){S.ib++;S.ibg=0}else{S.ib++;S.ibg=-1}}else S.browse++;renderBrowse()};
 $('dayInput').onchange=e=>{if(isIpy()){S.ib=+e.target.value;S.ibg=-1}else S.browse=+e.target.value;renderBrowse()};
@@ -1920,7 +1941,7 @@ function renderSettings(){
   seg('voiceSeg',[true,false],()=>S.voice,v=>S.voice=v,v=>v?'켜기 (권장)':'끄기');
   seg('sensSeg',['low','mid','high'],()=>S.sens,v=>S.sens=v,v=>({low:'둔하게',mid:'보통',high:'예민하게'})[v]);
   seg('ipyModeSeg',['kid','book'],()=>(LB().ipyMode||(LB().ipyAdult?'book':'kid')),v=>{LB().ipyMode=v;setTimeout(renderAll,0)},v=>v==='kid'?'아이 모드 (쉬운 순서·블록)':'책 그대로');
-  seg('ipyNewSeg',[5,7,10],()=>LB().ipyNew||5,v=>{LB().ipyNew=v},v=>v+'개');
+  seg('ipyNewSeg',[5,7,10,15,20,25,30],()=>NEWN(),v=>{LB()['new_'+(isIpy()?S.course:'ipy')]=v;const P=L().plan;if(isIpy()&&P&&P.date===today()&&!P.tasks.some(x=>x.done)){L().plan=null}},v=>v+'개');
   seg('ipyAdultSeg',[false,true],()=>!!LB().ipyAdult,v=>{LB().ipyAdult=v;setTimeout(renderAll,0)},v=>v?'포함 (책 전체)':'빼기 (아이용)');
   seg('adultSeg',[true,false],()=>S.skipAdult!==false,v=>{S.skipAdult=v;const P=L().plan;if(P&&P.date===today()&&!P.tasks.some(x=>x.done))L().plan=null},v=>v?'건너뛰기 (추천)':'포함');
   seg('goalSeg',['2028-02-15','2029-02-15'],()=>goalDate(),v=>{S.goal=v;const P=L().plan;if(P&&P.date===today()&&!P.tasks.some(x=>x.done))L().plan=null},v=>v<'2029'?'5학년 말 (2028년 2월)':'6학년 말 (2029년 2월)');
