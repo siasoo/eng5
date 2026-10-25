@@ -231,7 +231,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v6.9.0</span></div>
+    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v6.9.1</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div class="courses" id="courses">
@@ -1468,7 +1468,9 @@ function tokEq(x,y){if(x===y)return true;const g=HOMOM.get(x);if(g&&g.includes(y
   return (L0>=5&&lev(x,y)<=1)||(L0>=8&&lev(x,y)<=2)}
 function lev(a,b){const d=Array.from({length:a.length+1},(_,i)=>[i]);for(let j=1;j<=b.length;j++)d[0][j]=j;
   for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]}
-function matchScore(expected,got){
+function wordClose(expected,got){const a=String(expected).toLowerCase().replace(/[^a-z]/g,''),b=String(got).toLowerCase().replace(/[^a-z]/g,'');
+  if(!a||!b)return false;if(b.includes(a))return true;const d=lev(a,b);return a.length>=3&&d<=Math.max(1,Math.floor(a.length*0.34))}
+function matchScore(expected,got){if(String(expected).trim().split(/\s+/).length<=3&&wordClose(expected,got))return 1;
   const a=words(expected),b=words(got);if(!a.length)return 1;if(!b.length)return 0;
   if(a.length===1){ // 단어 하나: 비슷한 철자까지 인정 (예: pale / pail)
     const sk=s=>s.replace(/[aeiouy]/g,'').replace(/(.)\1+/g,'$1'); // 자음 뼈대 (pale=pail, honored=honoured)
@@ -1490,7 +1492,7 @@ const passLine=()=>STRICT[S.strict||'mid'];
 function recognizeOnce(ui,tok){
   return new Promise(res=>{
     let r;try{r=new SR()}catch(e){res({alts:[],err:'unsupported'});return}
-    r.lang='en-US';r.interimResults=true;r.maxAlternatives=5;r.continuous=false;
+    r.lang='en-US';r.interimResults=true;r.maxAlternatives=10;r.continuous=false;
     let finals=null,err=null,done=false;
     let interim='';
     r.onresult=e=>{const R=[...e.results];const pre=R.slice(0,-1).map(x=>x[0].transcript).join(' ');const x=R[R.length-1];
@@ -1499,7 +1501,9 @@ function recognizeOnce(ui,tok){
     r.onerror=e=>{err=e.error};
     r.onend=()=>{if(done)return;done=true;if(SESS&&SESS.rec===r)SESS.rec=null;res({alts:finals||(interim?[interim]:[]),err})};
     if(SESS)SESS.rec=r;
-    ui.state('listen');
+    let on=false;const go=()=>{if(on||done)return;on=true;ui.state('listen')};
+    try{ui.el.querySelector('#micI').textContent='⏳';ui.el.querySelector('#micS').innerHTML='준비…'}catch(e){}
+    r.onaudiostart=()=>setTimeout(go,150);setTimeout(go,1500);
     const guard=setTimeout(()=>{if(!done){try{r.abort()}catch(e){}setTimeout(()=>{if(!done){done=true;res({alts:finals||(interim?[interim]:[]),err:err||'timeout'})}},800)}},15000);
     r.addEventListener&&r.addEventListener('end',()=>clearTimeout(guard));
     try{r.start()}catch(e){done=true;clearTimeout(guard);res({alts:[],err:'start'})}
@@ -1692,8 +1696,10 @@ async function runIpyEx(t,tok){
 async function gradeSR(ui,en,need,tok){
   let r=await listenAnswer(ui,en,tok,need);if(!SESS||SESS.tok!==tok||r===null)return null;
   if(r.fallback||r.skip||r.score>=need)return r;
-  const m=ui.el.querySelector('#micS');if(m)m.innerHTML='잘 못 알아들었어요 🤔<small>또박또박 한 번 더 말해 봐요</small>';ui.nagged=true;
-  const r2=await listenAnswer(ui,en,tok,need);if(!SESS||SESS.tok!==tok||r2===null)return null;ui.nagged=false;
+  const m=ui.el.querySelector('#micS');let r2=r;
+  // 단어 하나는 폰 인식기가 특히 잘 못 알아들어요 → 다시 말하게 하지 않고 바로 정답 보고 ⭕/❌
+  if(words(en).length>2){if(m)m.innerHTML='잘 못 알아들었어요 🤔<small>또박또박 한 번 더 말해 봐요</small>';ui.nagged=true;
+    r2=await listenAnswer(ui,en,tok,need);if(!SESS||SESS.tok!==tok||r2===null)return null;ui.nagged=false}
   if(r2.fallback||r2.skip)return {...r2,retry:true};
   const b=r2.score>r.score?r2:r;if(b.score>=need)return {...b,retry:true};
   // 휴대폰 인식기가 아이 발음을 잘 못 알아들을 때가 많아요 → 정답을 보고 스스로 판단 (녹음 대신 들린 말이 기록에 남아요)
