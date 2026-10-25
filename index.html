@@ -170,6 +170,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 .qcard .pr{font-size:15px;color:var(--sub)}
 .qcard .ans{min-height:84px;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .qcard .ans.hidden .en *{color:transparent!important}
+.ans.hidden .pr,.ans.hidden .wex,.ans.hidden .prl{visibility:hidden}
 .qcard .ans.hidden .en{color:transparent;background:var(--c0);border-radius:10px;padding:0 20px;user-select:none}
 .mic{width:120px;height:120px;border-radius:50%;margin:18px auto 8px;display:grid;place-items:center;font-size:44px;background:var(--c0);position:relative;transition:background .2s}
 .mic .ring{position:absolute;inset:-8px;border-radius:50%;border:6px solid var(--accent);opacity:0;transition:transform .08s,opacity .08s}
@@ -230,7 +231,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v6.6.0</span></div>
+    <div class="brand"><h1>1일 <b>5분</b> 영어</h1><span>365일 완전정복 · v6.8.2</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div class="courses" id="courses">
@@ -249,10 +250,10 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn acc hide" id="reconnectBtn">이전 폴더 다시 연결</button>
       <button class="btn" id="pickBtn">음원 폴더 선택</button>
-      <button class="btn ghost" id="pickFilesBtn">mp3 파일 고르기</button>
+      <button class="btn ghost" id="pickFilesBtn">mp3·zip 파일 고르기</button>
       <button class="btn ghost hide" id="ipyDataBtn">입영작 데이터 다시 불러오기</button>
       <input type="file" id="dirInput" webkitdirectory multiple class="hide">
-      <input type="file" id="fileInput" accept="audio/*,.mp3" multiple class="hide">
+      <input type="file" id="fileInput" accept="audio/*,.mp3,.zip,application/zip" multiple class="hide">
     </div>
   </div>
 
@@ -273,6 +274,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 
   <!-- 오늘 공부 -->
   <section id="tab-today">
+    <div id="bkBox"></div>
     <div id="rewardBox"></div>
     <div class="card">
       <div class="daynum" id="tDate"></div>
@@ -440,7 +442,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
         </div>
         <div class="r"><b>진도 백업</b>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button class="btn ghost sm" id="exportBtn">백업 파일 저장</button>
+            <button class="btn ghost sm" id="exportBtn">전체 백업 저장</button>
             <button class="btn ghost sm" id="importBtn">백업 불러오기</button>
             <input type="file" id="importInput" accept=".json" class="hide">
           </div>
@@ -543,7 +545,7 @@ const CNAME=()=>(IPYC[S.course]||IPYC.ipy)[0];
 function setIpyData(d){
   const c=d.course||'ipy';
   // v2: '단' 단위. 문장 목록은 [예문/단어..., STEP 문장...] 순서로 합쳐요 (fi: 문장마다 음원 번호)
-  if(d.units){d.lessons=d.units.map(u=>{const fk=u.files.map(f=>'I:'+u.b+f.f);
+  if(d.units){d.lessons=d.units.map(u=>{const fk=u.files.map(f=>'I:'+u.b+f.f);if(d.audioBase)u.files.forEach((f,j)=>AUTOURL.set(fk[j],d.audioBase+f.n));
     const all=u.ex.map((x,j)=>[...x,'ex',fk[u.exfi?u.exfi[j]:0]]).concat(u.st.map((x,j)=>[...x,'st',fk[u.fi?u.fi[j]:(fk[1]?1:0)]]));const kid=all.filter(x=>x[4]!=='adult');
     return {...u,fk,nEx:u.ex.filter(x=>x[4]!=='adult').length,itemsAll:all,itemsKid:kid,items:kid}})}
   d._rules=d.rules||{};d._order=null;
@@ -605,6 +607,7 @@ function addFile(name,obj){const p=parseName(name);if(p){FILES.set(p.day+'-'+p.k
 function updateFolderMsg(){
   $('ipyDataBtn').classList.toggle('hide',!isIpy());$('ipyDataBtn').textContent=CNAME()+' 데이터 다시 불러오기';
   if(isIpy()){let c=0,all=0;for(let d=1;d<=TOTAL();d++)for(const k of ipyFiles(d)){all++;if(FILES.has(k))c++}
+    if(S.course==='wd'){$('folderMsg').innerHTML=`<b>✓ 영어단어 음원은 공부할 때 자동으로 받아요</b> <small>(${c}/${all}개 받음)</small>`;return}
     if(S.course!=='ipy'){const miss=[...new Set(IPYD.lessons.flatMap(x=>x.files.map((f,j)=>FILES.has(x.fk[j])?null:(x.b==='E'?'EBS '+f.f.slice(0,2)+'_'+f.f.slice(2):x.b==='T'?'패턴책 '+f.f:x.b==='G'||x.b==='W'?(f.label||f.f):'365일 '+f.f.slice(1)+'월')).filter(Boolean)))].sort();
       $('folderMsg').innerHTML=`<b>${c===all?'✓ ':''}${CNAME()} 음원 ${c}/${all}개 연결됨</b>${miss.length?`<br><small>빠진 음원 ${miss.length}개: ${esc(miss.slice(0,12).join(', '))}${miss.length>12?' …':''}</small>`:''}`+`${c<all?(S.course==='trv'?'<br>빠진 파일을 ‘mp3 파일 고르기’로 더 골라 주세요. 이미 넣은 건 건너뛰어요.':(S.course==='gj'?'<br>기적의 영어문장 만들기 1~5권 mp3(168개)를 골라 주세요. 이미 넣은 건 건너뛰어요.':S.course==='gw'?'<br>기적의 영어문장 쓰기 1~4권 mp3(480개)를 골라 주세요. 이미 넣은 건 건너뛰어요.':'<br>엄마의 365일 영어 한마디 mp3 12개를 골라 주세요.')):''}`;return}
     $('folderMsg').innerHTML=c?`<b>${c===all?'✓ ':''}입영작 음원 ${c}/${all}개 연결됨</b>${c<all?' — 네 권 폴더의 mp3를 모두 골라 주세요 (한꺼번에 골라도 돼요)':''}`:'입영작 음원 네 권(잘 대답하기·더 잘 대답하기·잘 물어보기·진짜 길게 말하기)의 mp3를 골라 주세요. 한꺼번에 골라도 앱이 어느 책인지 알아서 나눠요.';return}
@@ -617,7 +620,10 @@ function updateFolderMsg(){
   $('folderMsg').innerHTML=`<b>음원 ${n.toLocaleString()}개 연결됨</b> (전체 1,825개)<br>${per}`;
 }
 const hasFile=(d,k,fi=0)=>k==='o'?!!(ipyL(d)&&FILES.has(ipyKey(d,fi))):FILES.has(d+'-'+k);
-async function getFile(day,k,fi=0){const o=k==='o'?FILES.get(ipyKey(day,fi)):k==='key'?FILES.get(day):FILES.get(day+'-'+k);if(!o)return null;return o.getFile?await o.getFile():o}
+/* 앱 사이트에 같이 올린 음원(영어단어)은 필요할 때 자동으로 받아서 저장해요 */
+const AUTOURL=new Map();
+async function autoFetch(key){const u=AUTOURL.get(key);if(!u)return null;try{const r=await fetch(u);if(!r.ok)return null;const b=new Blob([await r.arrayBuffer()],{type:'audio/mpeg'});await idbPut('audio',key,b);FILES.set(key,b);return b}catch(e){return null}}
+async function getFile(day,k,fi=0){const key=k==='o'?ipyKey(day,fi):k==='key'?day:day+'-'+k;let o=FILES.get(key);if(!o&&AUTOURL.has(key))o=await autoFetch(key);if(!o)return null;return o.getFile?await o.getFile():o}
 const idb=()=>new Promise((res,rej)=>{const r=indexedDB.open('eng5min',3);r.onupgradeneeded=()=>{const db=r.result;for(const s of ['h','rec','audio'])if(!db.objectStoreNames.contains(s))db.createObjectStore(s)};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
 async function idbPut(store,key,v){try{const db=await idb();await new Promise(r=>{const tx=db.transaction(store,'readwrite');tx.objectStore(store).put(v,key);tx.oncomplete=r;tx.onerror=r})}catch(e){}}
 async function idbGet(store,key){try{const db=await idb();return await new Promise(r=>{const q=db.transaction(store).objectStore(store).get(key);q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)})}catch(e){return null}}
@@ -663,7 +669,34 @@ $('pickBtn').onclick=async()=>{
   else $('dirInput').click();
 };
 $('pickFilesBtn').onclick=()=>$('fileInput').click();
-async function takeInput(list){await importFiles([...list].map(f=>({name:f.name,get:async()=>f})))}
+/* zip을 그대로 골라도 돼요: 안의 mp3만 하나씩 꺼내서 저장 (큰 zip도 메모리를 적게 써요) */
+async function zipEntries(file){
+  const T=Math.min(file.size,65557),tail=new DataView(await file.slice(file.size-T).arrayBuffer());let e=-1;
+  for(let i=tail.byteLength-22;i>=0;i--)if(tail.getUint32(i,true)===0x06054b50){e=i;break}
+  if(e<0)return [];
+  let cnt=tail.getUint16(e+10,true),cdSize=tail.getUint32(e+12,true),cdOff=tail.getUint32(e+16,true);
+  if((cdOff===0xffffffff||cnt===0xffff)&&e>=20&&tail.getUint32(e-20,true)===0x07064b50){
+    const z=Number(tail.getBigUint64(e-12,true)),zz=new DataView(await file.slice(z,z+56).arrayBuffer());
+    cnt=Number(zz.getBigUint64(32,true));cdSize=Number(zz.getBigUint64(40,true));cdOff=Number(zz.getBigUint64(48,true))}
+  const cd=new DataView(await file.slice(cdOff,cdOff+cdSize).arrayBuffer());let p=0;const out=[];
+  for(let k=0;k<cnt&&p+46<=cd.byteLength;k++){
+    if(cd.getUint32(p,true)!==0x02014b50)break;
+    const fl=cd.getUint16(p+8,true),meth=cd.getUint16(p+10,true);let cs=cd.getUint32(p+20,true),us=cd.getUint32(p+24,true);
+    const nl=cd.getUint16(p+28,true),xl=cd.getUint16(p+30,true),cl=cd.getUint16(p+32,true);let lho=cd.getUint32(p+42,true);
+    const nb=new Uint8Array(cd.buffer,p+46,nl);let name;try{name=new TextDecoder(fl&0x800?'utf-8':'euc-kr').decode(nb)}catch(err){name=new TextDecoder().decode(nb)}
+    let x=p+46+nl;const xe=x+xl;while(x+4<=xe){const id=cd.getUint16(x,true),sz=cd.getUint16(x+2,true);if(id===1){let q=x+4;
+      if(us===0xffffffff){us=Number(cd.getBigUint64(q,true));q+=8}if(cs===0xffffffff){cs=Number(cd.getBigUint64(q,true));q+=8}if(lho===0xffffffff){lho=Number(cd.getBigUint64(q,true))}}x+=4+sz}
+    p=xe+cl;const base=name.split('/').pop();
+    if(!base||base.startsWith('._')||!/\.mp3$/i.test(base))continue;
+    const L0=lho,C0=cs,M0=meth;
+    out.push({name:base,get:async()=>{const lh=new DataView(await file.slice(L0,L0+30).arrayBuffer());const off=L0+30+lh.getUint16(26,true)+lh.getUint16(28,true);const raw=file.slice(off,off+C0);
+      if(M0===0)return new File([raw],base,{type:'audio/mpeg'});
+      const b=await new Response(raw.stream().pipeThrough(new DecompressionStream('deflate-raw'))).blob();return new File([b],base,{type:'audio/mpeg'})}})}
+  return out}
+async function takeInput(list){const arr=[];for(const f of [...list]){
+    if(/\.zip$/i.test(f.name)){$('folderMsg').textContent=`zip 여는 중… ${f.name}`;try{arr.push(...await zipEntries(f))}catch(e){toast('zip을 열지 못했어요: '+f.name)}}
+    else arr.push({name:f.name,get:async()=>f})}
+  await importFiles(arr)}
 async function loadIpyFile(file){
   try{const d=JSON.parse(await file.text());if(d.kind!=='ipy'||!(d.lessons||d.units))throw 0;const c=d.course||'ipy';
     await idbPut('h',c==='ipy'?'ipydata':c+'data',d);setIpyData(d);S.course=c;activate(c);save();afterLoad();
@@ -794,8 +827,8 @@ function say(t,lang='en-US'){
   });
 }
 function clip(d,i){if(isIpy()){const x=ipyL(d)&&ipyL(d).items[i];return x?[null,null,x[2],x[3],x[9]||ipyKey(d)]:null}return (CLIPS[d]||[])[i]}
-const hasSeg=(d,c)=>isIpy()?!!(c&&FILES.has(c[4])):FILES.has(d+'-r');
-async function playEn(d,i,text,mul){const c=typeof i==='number'?clip(d,i):null;if(c&&c[2]!=null&&hasSeg(d,c))return playRange(isIpy()?c[4]:d,c[2],c[3],mul);if(text)await say(text);return true}
+const hasSeg=(d,c)=>isIpy()?!!(c&&(FILES.has(c[4])||AUTOURL.has(c[4]))):FILES.has(d+'-r');
+async function playEn(d,i,text,mul){const c=typeof i==='number'?clip(d,i):null;if(c&&c[2]!=null&&hasSeg(d,c)){const r=await playRange(isIpy()?c[4]:d,c[2],c[3],mul);if(r!==false||!isIpy())return r}if(text)await say(text);return true}
 async function playKo(d,i,text){const c=typeof i==='number'?clip(d,i):null;if(c&&c[0]!=null&&hasSeg(d,c))return playRange(d,c[0],c[1]);if(text)await say(text,'ko-KR');return true}
 const enLen=(d,i)=>{const c=typeof i==='number'?clip(d,i):null;return c&&c[2]!=null?c[3]-c[2]:1.5};
 
@@ -1105,8 +1138,12 @@ const GROUP={new:'📘 새로 배우기',review:'🔁 복습',wrong:'❗ 틀린 
 const ICON={rule:'📘',block:'🧩',listen:'🎧',repeat:'🗣️',quiz:'❓',words:'🔤',ipyex:'📖',spell:'🔤',step1:'✍️',step2:'🎭',step3:'🏆'};
 function renderToday(){
   const l=L(),t=today(),P=getPlan();
+  { // 일주일마다 백업 알림 (폰을 잃어버려도 진도가 남게)
+    const lb=S.lastBackup,old=!lb||(new Date(t)-new Date(lb))/864e5>=7,used=S.learners.some(x=>Object.keys(x).length>12);
+    $('bkBox').innerHTML=old&&used?`<div class="card" style="display:flex;gap:10px;align-items:center;padding:12px 14px"><div style="flex:1;font-size:14px">💾 <b>${lb?'백업한 지 일주일이 지났어요':'아직 백업이 없어요'}</b><br><small style="color:var(--sub)">폰을 바꾸거나 잃어버려도 진도가 남아요</small></div><button class="btn acc sm" id="bkNow">지금 백업</button></div>`:'';
+    if($('bkNow'))$('bkNow').onclick=exportAll}
   $('tDate').textContent=`${t.slice(5).replace('-','월 ')}일 (${WD[dow(t)]}) · ${l.name}`;
-  const list=$('planList');list.innerHTML='';
+  const list=$('planList');list.innerHTML='';let chainNote='';
   const total=P.tasks.reduce((a,x)=>a+taskSec(x),0);const doneN=P.tasks.filter(x=>x.done).length;
   if(P.kind==='rest'){
     $('tHead').textContent='오늘은 쉬는 날 😴';$('tSub').textContent='일요일은 쉬어요. 복습하고 싶으면 아래 버튼을 눌러요 (새 진도는 없어요).';
@@ -1119,6 +1156,15 @@ function renderToday(){
       (Object.keys(l.wrong).length?` · 다시 볼 것 ${Object.keys(l.wrong).length}개`:'')+`<br><small>${finishForecast()}</small>`;
     $('startBtn').textContent=allDone?'✓ 다 했어요':doneN?'▶ 이어서 하기':'▶ 오늘 공부 시작';
     $('startBtn').disabled=allDone||!P.tasks.length;
+    if(CHAIN()&&P.newN&&!allDone){ // 오늘 정한 개수: 지금 묶음이 끝나면 다음 묶음이 이어서 나와요
+      const pend=P.tasks.filter(x=>x.g==='new'&&!x.done&&x.idx);const cur=pend.length?newCnt(pend[0].n,pend[0].idx):0;
+      let left=wdTarget()-wdToday()-cur;const w=S.course==='wd'?'단어':'문장';const nx=[];
+      if(left>0){const cu=L().cur;let m=cu?cu.n:L().next;let first=true;
+        while(left>0&&m<=TOTAL()&&nx.length<6){if(L().lessons[m]&&!(cu&&cu.n===m)){m++;continue}
+          let rem=(cu&&cu.n===m)?remIdx(cu).filter(i=>!(pend[0]&&pend[0].idx.includes(i))):eligIdx(m);
+          const c=S.course==='wd'?rem.length:rem.filter(i=>ipyL(m).items[i][8]!=='ex').length;
+          if(c>0){const k=Math.min(c,left);nx.push(`${lab(m)} ${k}${w}`);left-=k}m++}}
+      if(nx.length)chainNote=(`<div class="hint" style="margin:8px 4px 0;font-size:14px">📌 오늘 새 ${w} <b>${wdTarget()}개</b> (오늘 한 것 ${wdToday()}개) · 지금 묶음이 끝나면 이어서 나와요: ${nx.join(' → ')}</div>`)}
     $('startHint').textContent=S.course!=='wd'&&!FILES.size&&!allDone&&P.tasks.length?'먼저 위에서 음원 폴더를 연결해 주세요':'';
     const canMore=isIpy()&&IPYV()>=2&&allDone&&(L().cur||L().next<=TOTAL());
     $('moreBtn').classList.toggle('hide',!canMore);$('moreBtn').textContent=kidMode()?'➕ 한 묶음 더 하기':'➕ 한 단계 더 하기';
@@ -1129,7 +1175,9 @@ function renderToday(){
     const el=document.createElement('div');el.className='ptask'+(x.done?' done':'')+(!x.done&&i===P.tasks.findIndex(y=>!y.done)?' cur':'');
     el.innerHTML=`<div class="ic">${x.done?'✓':ICON[x.type]}</div><div class="t"><b>${esc(x.title)}</b><small>${esc(x.sub||'')}</small></div><span class="m">${x.done?(x.score!=null?x.score+'점':'완료'):'약 '+Math.max(1,Math.round(taskSec(x)/60))+'분'}</span>`;
     list.appendChild(el);
+    if(chainNote&&x.g==='new'&&(!P.tasks[i+1]||P.tasks[i+1].g!=='new')){list.insertAdjacentHTML('beforeend',chainNote);chainNote=''}
   });
+  if(chainNote)list.insertAdjacentHTML('beforeend',chainNote);
   renderMission();renderReward();
 }
 $('startBtn').onclick=()=>{
@@ -2141,10 +2189,21 @@ $('addLearner').onclick=()=>{const n=prompt('학습자 이름');if(n&&n.trim()){
 $('renameLearner').onclick=()=>{const n=prompt('새 이름',LB().name);if(n&&n.trim()){LB().name=n.trim();save();renderAll()}};
 $('delLearner').onclick=()=>{if(S.learners.length<2){toast('학습자는 한 명 이상 있어야 해요');return}
   if(confirm(`‘${LB().name}’의 진도를 모두 지울까요?`)){S.learners.splice(S.cur,1);S.cur=0;save();renderAll()}};
-$('exportBtn').onclick=()=>{const b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const a=document.createElement('a');
-  a.href=URL.createObjectURL(b);a.download=`1일5분영어_진도백업_${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+/* 전체 백업: 진도 + 과정 데이터 + 민채 앱 진도까지 파일 하나로 (음원은 빼고) */
+const DKEYS=['ipydata','trvdata','homedata','gjdata','gwdata','wddata'],LKEYS=['okwrite_v1','eng5_bridge'];
+async function exportAll(){S.lastBackup=today();save();
+  const data={};for(const k of DKEYS){const v=await idbGet('h',k);if(v){const c={...v};delete c.lessons;data[k]=c}}
+  const ls={};for(const k of LKEYS){const v=localStorage.getItem(k);if(v!=null)ls[k]=v}
+  const name=`영어공부_전체백업_${today()}.json`;const blob=new Blob([JSON.stringify({kind:'eng5backup',v:2,S,data,ls})],{type:'application/json'});
+  try{const f=new File([blob],name,{type:'application/json'});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});toast('백업 파일을 보냈어요 · 구글 드라이브나 카톡 나에게 보내기에 저장하세요');renderAll();return}}catch(e){if(e&&e.name==='AbortError')return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('백업 파일을 저장했어요');renderAll()}
+$('exportBtn').onclick=exportAll;
 $('importBtn').onclick=()=>$('importInput').click();
-$('importInput').onchange=async e=>{try{const d=JSON.parse(await e.target.files[0].text());if(!d.learners)throw 0;
+$('importInput').onchange=async e=>{try{const d=JSON.parse(await e.target.files[0].text());
+  if(d.kind==='eng5backup'){if(!confirm('진도·데이터·민채 앱 진도를 백업 파일 내용으로 바꿀까요?'))return;
+    for(const [k,v] of Object.entries(d.data||{}))await idbPut('h',k,v);for(const [k,v] of Object.entries(d.ls||{}))localStorage.setItem(k,v);
+    S=d.S;save();toast('백업을 불러왔어요 · 음원만 zip으로 다시 넣어 주세요');setTimeout(()=>location.reload(),1200);return}
+  if(!d.learners)throw 0;
   if(confirm('지금 진도를 백업 파일 내용으로 바꿀까요?')){S=d;save();renderAll();toast('백업을 불러왔어요')}}catch(_){toast('백업 파일이 아니에요')}e.target.value=''};
 
 /* ---------- 공통 ---------- */
