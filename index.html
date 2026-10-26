@@ -232,7 +232,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v9.4.0</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v9.4.1</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1058,7 +1058,7 @@ async function runWdListen(t,tok){if(S.voice&&!MIC.ok)await micInit();const A=t.
       const m=ui.el.querySelector('#micS');if(m)m.innerHTML='한 번 더! 잘 듣고 따라 해요 👂';$('qBtns').innerHTML='';ui.state('play');await sleep(500);await playEn(n,i,it.en);if(!SESS||SESS.tok!==tok)return false;ui.state('play')}
     ui.done(known?'아는 단어는 오늘 스펠링·말하기에서 빼요 😎':'잘했어요!');await sleep(known?900:500)}
   return true}
-async function runWdSay(t,tok){const kn=new Set((L().plan&&L().plan.wdKnown)||[]);const A=t.g==='new'?t.items.filter(([n,i])=>!kn.has(n+'-'+i)):t.items;if(SESS)SESS.kind='first';let sum=t.sum||0;
+async function runWdSay(t,tok){const kn=new Set((L().plan&&L().plan.wdKnown)||[]);let A=t.g==='new'?t.items.filter(([n,i])=>!kn.has(n+'-'+i)):t.items;if(!t.ord||t.ord.length!==A.length)t.ord=shuffle(A.map((_,k)=>k));A=t.ord.map(k=>A[k]);if(SESS)SESS.kind='first';let sum=t.sum||0;
   for(let q=Math.min(t.q||0,A.length);q<A.length;q++){if(!SESS||SESS.tok!==tok)return false;const [n,i]=A[q];const it=(await getItems(n))[i];t.q=q;t.sum=sum;keep();if(!it)continue;
     $('sMain').innerHTML=dayHead(t,'한국어를 보고 <b>영어로</b> 말해요. 틀린 단어는 맨 끝에 다시 나와요.')+`<div class="qcard"><div class="cnt">${q+1} / ${A.length}</div>
       <div class="ko">${esc(it.ko)}</div><div class="ans hidden" id="ans">${picHTML(it)}<div class="en">${esc(it.en)}</div>${prHTML(it,'ans')}</div>
@@ -1987,7 +1987,7 @@ async function runRListen(t,tok){const n=t.n,items=await getItems(n),idx=t.idx;
   if(r===2){t.q=0;return runRListen(t,tok)}return true}
 async function runSpell(t,tok){
   const kn=new Set((L().plan&&L().plan.wdKnown)||[]);const base=(t.items?t.items:(t.idx||unitIdx(t.n,'ex')).map(i=>[t.n,i])).filter(([n,i])=>!(t.g==='new'&&kn.has(n+'-'+i)));
-  const Z=t.sq||{queue:base.slice(),q:0,retry:[],round:1};
+  const Z=t.sq||{queue:shuffle(base.slice()),q:0,retry:[],round:1};
   while(Z.queue.length){
     for(let q=Z.q;q<Z.queue.length;q++){
       if(!SESS||SESS.tok!==tok)return false;Z.q=q;t.sq=Z;keep();
