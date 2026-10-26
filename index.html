@@ -232,7 +232,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v9.1.4</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v9.2.0</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -715,7 +715,7 @@ async function zipEntries(file){
     let x=p+46+nl;const xe=x+xl;while(x+4<=xe){const id=cd.getUint16(x,true),sz=cd.getUint16(x+2,true);if(id===1){let q=x+4;
       if(us===0xffffffff){us=Number(cd.getBigUint64(q,true));q+=8}if(cs===0xffffffff){cs=Number(cd.getBigUint64(q,true));q+=8}if(lho===0xffffffff){lho=Number(cd.getBigUint64(q,true))}}x+=4+sz}
     p=xe+cl;const base=name.split('/').pop();
-    if(!base||base.startsWith('._')||!/\.mp3$/i.test(base))continue;
+    if(!base||base.startsWith('._')||!/\.(mp3|json)$/i.test(base))continue;
     const L0=lho,C0=cs,M0=meth;
     out.push({name:base,get:async()=>{const lh=new DataView(await file.slice(L0,L0+30).arrayBuffer());const off=L0+30+lh.getUint16(26,true)+lh.getUint16(28,true);const raw=file.slice(off,off+C0);
       if(M0===0)return new File([raw],base,{type:'audio/mpeg'});
@@ -724,7 +724,12 @@ async function zipEntries(file){
 async function takeInput(list){const arr=[];for(const f of [...list]){
     if(/\.zip$/i.test(f.name)){$('folderMsg').textContent=`zip 여는 중… ${f.name}`;try{arr.push(...await zipEntries(f))}catch(e){toast('zip을 열지 못했어요: '+f.name)}}
     else arr.push({name:f.name,get:async()=>f})}
-  await importFiles(arr)}
+  // 설치 파일 하나: 안에 든 과정 데이터(.json)를 먼저 넣고, 그다음 음원
+  const js=arr.filter(x=>/\.json$/i.test(x.name)),au=arr.filter(x=>!/\.json$/i.test(x.name));
+  if(js.length){const keep=S.course;let n=0;
+    for(const x of js){try{const f=await x.get();const d=JSON.parse(await f.text());if(d.kind==='ipy'&&(d.lessons||d.units)){const c=d.course||'ipy';$('folderMsg').textContent=`과정 데이터 넣는 중… ${n+1}/${js.length}`;await idbPut('h',c==='ipy'?'ipydata':c+'data',d);setIpyData(d);activate(c);n++}}catch(e){}}
+    if(n){S.course=keep||S.course;if(DS[S.course])activate(S.course);save();afterLoad();toast(`과정 데이터 ${n}개를 넣었어요 · 이제 음원을 넣어요`)}}
+  if(au.length)await importFiles(au);else renderAll()}
 async function loadIpyFile(file){
   try{const d=JSON.parse(await file.text());if(d.kind!=='ipy'||!(d.lessons||d.units))throw 0;const c=d.course||'ipy';
     await idbPut('h',c==='ipy'?'ipydata':c+'data',d);setIpyData(d);S.course=c;activate(c);save();afterLoad();
@@ -1174,6 +1179,7 @@ function buildPlan(force){
   const l=L(),t=today(),wd=dow(t);
   const P={date:t,tasks:[],kind:'normal',idx:0,secs:0,newN:null,newNs:[]};
   if(wd===0&&!force){P.kind='rest';return P}
+
   if(FILES.size&&l.next<=365){const tk=skipTask(l.next);if(tk){P.newN=l.next;P.tasks.push({...tk,id:'t0'});return P}}
   const wrongKeys=Object.keys(l.wrong);
   l.next=nextAfter(l.next);const allLearned=l.next>365;
