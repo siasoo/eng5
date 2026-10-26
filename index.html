@@ -232,7 +232,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v8.7.0</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v8.8.0</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div class="courses" id="courses">
@@ -438,6 +438,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
         <div class="r"><b>한글 발음 표시<br><small style="font-weight:400;color:var(--sub)">이 학습자만</small></b><div class="seg" id="prSeg"></div></div>
         <div class="r" id="scopeRow"><b>학습 범위<br><small style="font-weight:400;color:var(--sub)">지금 과정만 · 단어는 하루에 한꺼번에</small></b><div class="seg" id="scopeSeg"></div></div>
         <div class="r"><b>시작 단원 바꾸기<br><small style="font-weight:400;color:var(--sub)">지금 과정 · 앞 단원은 끝난 걸로 (복습 없이)</small></b><div style="display:flex;gap:6px;align-items:center"><input type="number" id="jumpN" min="1" style="width:80px"><button class="btn ghost sm" id="jumpB">여기부터</button></div></div>
+        <div class="r"><b>실력 확인 다시 하기<br><small style="font-weight:400;color:var(--sub)">지금 과정 · 오늘 공부 위에 테스트 버튼이 생겨요</small></b><button class="btn ghost sm" id="placeAgainB">📝 다시 하기</button></div>
         <div class="r"><b>실력 확인 테스트 문장 수<br><small style="font-weight:400;color:var(--sub)">처음 시작할 때 한 번에</small></b><div class="seg" id="placeSeg"></div></div>
         <div class="r"><b>가벼운 날 (30분)<br><small style="font-weight:400;color:var(--sub)">이 학습자 · 새로 배우는 양 줄이고 리딩은 복습만</small></b><div class="seg" id="lightSeg"></div></div>
         <div class="r"><b><span id="newLbl">하루 새 문장·단어 (아이 모드)</span><br><small style="font-weight:400;color:var(--sub)">지금 과정만 · 다음 묶음부터 바로 적용</small></b><div class="seg" id="ipyNewSeg"></div></div>
@@ -835,7 +836,8 @@ async function playRange(d,s,e,mul=1){
   const tok=++segTok;
   if(!audio.paused)audio.pause();if(sAudio&&!sAudio.paused)sAudio.pause();
   if(!(await ensureSeg(d)))return false;if(tok!==segTok)return true;
-  segA.playbackRate=Math.min(2,S.rate*mul);const st=Math.max(0,s-0.15),pre=Math.min(st,0.5);segA.volume=pre>0?0:1;segA.currentTime=st-pre;const end=e+0.15; // 폰이 소리 시작 부분을 먹지 않게: 0.5초 먼저 소리 없이 틀고 문장에서 켜요
+  {const w=1000-(performance.now()-(window.lastRecEnd||0));if(w>0){await sleep(w);if(tok!==segTok)return true}} // 마이크가 막 꺼진 직후엔 폰이 소리 앞부분을 먹어요
+  segA.playbackRate=Math.min(2,S.rate*mul);const st=Math.max(0,s-0.15),pre=Math.min(st,0.8);segA.volume=pre>0?0:1;segA.currentTime=st-pre;const end=e+0.15; // 폰이 소리 시작 부분을 먹지 않게: 0.5초 먼저 소리 없이 틀고 문장에서 켜요
   segPlaying=true;
   try{await segA.play()}catch(err){segPlaying=false;return false}
   await new Promise(res=>{const tick=()=>{if(segA.volume===0&&segA.currentTime>=st-0.02)segA.volume=1;if(tok!==segTok||segA.currentTime>=end||segA.paused||segA.ended){if(tok===segTok)segA.pause();segA.volume=1;res();return}requestAnimationFrame(tick)};tick()});
@@ -1215,7 +1217,8 @@ function buildPlan(force){
   }else if(!allLearned&&wd>=1&&wd<=6)P.kind='reviewday';
   return P;
 }
-function getPlan(){const l=L();if(!l.plan||l.plan.date!==today()){l.plan=buildPlan(false);save()}return l.plan}
+function getPlan(){const l=L();if(l.placeStarted&&!l.placeDone){l.placeDone=true;if(l.plan)l.plan.tasks=l.plan.tasks.filter(x=>!(x.kind==='skiptest'&&!x.done));save()} // 이미 테스트를 한 번 한 과정은 다시 안 해요
+  if(!l.plan||l.plan.date!==today()){l.plan=buildPlan(false);save()}return l.plan}
 function markLearned(n){
   const l=L();const t=today();
   if(!l.lessons[n])l.lessons[n]=S.course==='wd'?{d:t,st:2,due:addDays(t,3)}:{d:t,st:1,due:addDays(t,1)};
@@ -1275,7 +1278,7 @@ function renderToday(){
       if(nx.length)chainNote=(`<div class="hint" style="margin:8px 4px 0;font-size:14px">📌 오늘 새 ${w} <b>${wdTarget()}개</b> (오늘 한 것 ${wdToday()}개) · 지금 묶음이 끝나면 이어서 나와요: ${nx.join(' → ')}</div>`)}
     $('startHint').textContent=S.course!=='wd'&&!FILES.size&&!allDone&&P.tasks.length?'먼저 위에서 음원 폴더를 연결해 주세요':'';
     const canMore=isIpy()&&IPYV()>=2&&allDone&&(L().cur||L().next<=TOTAL());
-    $('moreBtn').classList.toggle('hide',!canMore);$('skipTestBtn').classList.toggle('hide',!(kidMode()&&!['wd','rd'].includes(S.course)&&!L().placeDone&&!getPlan().tasks.some(x=>x.kind==='skiptest')&&nextUnit()<=TOTAL()));$('moreBtn').textContent=kidMode()?'➕ 한 묶음 더 하기':'➕ 한 단계 더 하기';
+    $('moreBtn').classList.toggle('hide',!canMore);$('skipTestBtn').classList.toggle('hide',!(kidMode()&&!['wd','rd'].includes(S.course)&&L().placeAgain&&!getPlan().tasks.some(x=>x.kind==='skiptest')&&nextUnit()<=TOTAL()));$('moreBtn').textContent=kidMode()?'➕ 한 묶음 더 하기':'➕ 한 단계 더 하기';
   }
   let lastG='';
   P.tasks.forEach((x,i)=>{
@@ -1352,6 +1355,7 @@ function exitSession(){
   if(!SESS)return;stopRec();sessTick();SESS.tok++;SESS=null;try{WL&&WL.release()}catch(e){}WL=null;stopSeg();sAudio.pause();
   $('sess').classList.add('hide');document.body.style.overflow='';renderAll();
 }
+$('placeAgainB').onclick=()=>{if(!isIpy())return;L().placeAgain=true;save();renderAll();showTab('today');toast('오늘 공부 위의 📝 버튼을 눌러요')};
 $('jumpB').onclick=()=>{const v=+$('jumpN').value;if(!isIpy()||!v||v<1||v>TOTAL())return;const l=L();
   if(!confirm(`${lab(v)} ${ttl(v)}부터 시작할까요?\n그 앞 단원은 끝난 걸로 바꿔요 (복습 없이).`))return;
   for(let m=1;m<v;m++)if(!l.lessons[m])l.lessons[m]={d:today(),st:6,m:today(),jump:1};
@@ -1365,7 +1369,7 @@ function skipTask(n){const N=placeN(),units=[],items=[];
   return {id:'sk'+n+'_'+Date.now(),type:'quiz',kind:'skiptest',skipN:n,units,g:'place',items,title:`📝 실력 확인 테스트 · ${a===b?lab(a):lab(a)+'~'+lab(b)}`,sub:`단원 전체 ${items.length}문장 · 다 맞힌 단원은 건너뛰고, 틀린 문장만 공부해요`}}
 $('skipTestBtn').onclick=()=>{const l=L();const tk=skipTask(l.next||1);if(!tk){toast('테스트할 단원이 없어요');return}const n=tk.skipN;
   if(!confirm(`📝 실력 확인 테스트\n${lab(n)}부터 ${placeN()}문장을 한국어 보고 영어로 말해요.\n단원마다 4문장 중 3개 이상 맞히면 건너뛰고,\n막히는 단원부터 공부를 시작해요.`))return;
-  const P=getPlan();P.tasks.unshift(tk);save();startSession()};
+  L().placeAgain=false;const P=getPlan();P.tasks.unshift(tk);save();startSession()};
 $('moreBtn').onclick=()=>{
   if(addMoreIpy()){renderAll();toast('추가했어요! ‘이어서 하기’를 눌러요')}};
 $('sExit').onclick=()=>{if(confirm('그만할까요? 다음에 하던 곳부터 이어서 해요.'))exitSession()};
@@ -1408,9 +1412,9 @@ async function runNext(){
       if(!bad.length){l.lessons[m]={d:today(),st:4,due:addDays(today(),14+(m%14)),skip:1};if(l.cur&&l.cur.n===m)l.cur=null;skipped++}
       else if(isIpy()){l.partial[m]=all.filter(i=>!bad.includes(i));if(l.cur&&l.cur.n===m)l.cur=null;part++}
       else{l.lessons[m]={d:today(),st:1,due:addDays(today(),1)};bad.forEach(i=>l.wrong[m+'-'+i]={n:2,d:today()});part++}}
-    const badAll=t.items.filter(([n,i])=>wr.has(n+'-'+i)).length;const done=badAll>t.items.length/2;if(done)l.placeDone=true;
+    const done=true;l.placeDone=true;
     if(!isIpy())while(l.lessons[l.next])l.next++;l.next=nextAfter(l.next);
-    l.plan=buildPlan(false);save();toast(`다 맞힌 단원 ${skipped}개 건너뛰기`+(part?` · ${part}개 단원은 틀린 문장만 공부`:'')+(done?' · 이제부터 차근차근 배워요 📘':' · 다음 단원 전에 또 확인해요'))}
+    l.plan=buildPlan(false);save();toast(`다 맞힌 단원 ${skipped}개 건너뛰기`+(part?` · ${part}개 단원은 틀린 문장만 공부`:'')+' · 이제부터 차근차근 배워요 📘')}
   if(t.type==='quiz'&&t.adv){const x=L().lessons[t.adv];const ok=advance(t.adv,t.sScore);if(x){if(ok===false&&t.wr&&t.wr.length)x.rq=pickRetry(t.adv,t.wr.filter(i=>typeof i==='number'),t.items.map(z=>z[1]).filter(i=>typeof i==='number'));else if(ok)delete x.rq;save()}}
   if(t.type==='quiz'&&t.learn)markLearned(t.learn);
   if(t.type==='wds'&&t.items&&t.g==='new')wdFinish(t.items);
@@ -1581,7 +1585,7 @@ function recognizeOnce(ui,tok){
       const full=(pre+' '+x[0].transcript).trim();ui.heard(full,false);interim=full;
       if(x.isFinal){finals=[...x].map(a=>(pre+' '+a.transcript).trim())}};
     r.onerror=e=>{err=e.error};
-    r.onend=()=>{if(done)return;done=true;if(SESS&&SESS.rec===r)SESS.rec=null;res({alts:finals||(interim?[interim]:[]),err})};
+    r.onend=()=>{window.lastRecEnd=performance.now();if(done)return;done=true;if(SESS&&SESS.rec===r)SESS.rec=null;res({alts:finals||(interim?[interim]:[]),err})};
     if(SESS)SESS.rec=r;
     let on=false;const go=()=>{if(on||done)return;on=true;ui.state('listen')};
     try{ui.el.querySelector('#micI').textContent='⏳';ui.el.querySelector('#micS').innerHTML='준비…'}catch(e){}
