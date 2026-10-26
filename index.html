@@ -225,14 +225,14 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 .slot .sb.empty{opacity:.55;color:transparent}
 .wpic{text-align:center;margin:4px 0 8px}.wpic img{max-width:150px;max-height:130px;border-radius:14px;object-fit:contain;background:#fff}.wpic.emo{font-size:56px;line-height:1.2}
 .sslots{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;margin:12px 0 4px}.sslot{width:30px;height:38px;border-bottom:3px solid var(--line,#ccc);font-size:24px;font-weight:800;text-align:center;line-height:38px}.sslot.on{border-color:var(--accent)}.sslot.ok{color:#1a9e5c;border-color:#1a9e5c}.sslot.miss{color:#d9534f;border-color:#d9534f}.sgap{width:14px}.spunc{font-size:24px;font-weight:800;line-height:38px}
-.stiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px auto 4px;max-width:300px}.stile{font-size:26px;font-weight:800;padding:12px 0;border-radius:14px;border:2px solid var(--line,#ddd);background:#fff;color:#222}.stile.shake{animation:shk .35s;border-color:#d9534f}
+.stiles{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:14px auto 4px;max-width:420px}.stile{font-size:24px;font-weight:800;padding:12px 0;border-radius:14px;border:2px solid var(--line,#ddd);background:#fff;color:#222}.stile.shake{animation:shk .35s;border-color:#d9534f}
 .sfb{text-align:center;font-weight:800;margin-top:10px}.sfb.good{color:#1a9e5c}.sfb.bad{color:#d9534f}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v9.3.0</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v9.4.0</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1043,7 +1043,7 @@ function wdFinish(items){const l=L();l.wdPart=l.wdPart||{};for(const [n,i] of it
   l.wdDay={d:today(),n:wdToday()+items.length};l.cur=null;save()}
 function addWdDay(add,items){const n=items[0][0],k=items.length;
   add({type:'wdl',items,n,g:'new',title:'듣고 따라 말하기',sub:`오늘 새 단어 ${k}개 · 그림 보고 원어민 소리 따라 말하기`});
-  add({type:'spell',items,n,g:'new',day:true,title:'스펠링',sub:`오늘 새 단어 ${k}개 · 그림과 뜻을 보고 글자 고르기`});
+  add({type:'spell',items,n,g:'new',day:true,title:'스펠링',sub:`오늘 새 단어 ${k}개 · 뜻을 보고 글자 고르기`});
   add({type:'wds',items,n,g:'new',title:'영어로 말하기',sub:`오늘 새 단어 ${k}개 · 한국어 보고 영어로 · 틀린 건 맞힐 때까지`})}
 const dayHead=(t,g)=>`<div class="stitle">🖼️ 영어단어 · ${t.g==='review'?'복습 단어':'오늘 새 단어'} ${t.items.length}개</div><div class="sh">${esc(t.title)}</div><p class="sguide">${g}</p>`;
 async function runWdListen(t,tok){if(S.voice&&!MIC.ok)await micInit();const A=t.items;
@@ -1060,8 +1060,8 @@ async function runWdListen(t,tok){if(S.voice&&!MIC.ok)await micInit();const A=t.
   return true}
 async function runWdSay(t,tok){const kn=new Set((L().plan&&L().plan.wdKnown)||[]);const A=t.g==='new'?t.items.filter(([n,i])=>!kn.has(n+'-'+i)):t.items;if(SESS)SESS.kind='first';let sum=t.sum||0;
   for(let q=Math.min(t.q||0,A.length);q<A.length;q++){if(!SESS||SESS.tok!==tok)return false;const [n,i]=A[q];const it=(await getItems(n))[i];t.q=q;t.sum=sum;keep();if(!it)continue;
-    $('sMain').innerHTML=dayHead(t,'그림과 한국어를 보고 <b>영어로</b> 말해요. 틀린 단어는 맨 끝에 다시 나와요.')+`<div class="qcard"><div class="cnt">${q+1} / ${A.length}</div>
-      ${picHTML(it)}<div class="ko">${esc(it.ko)}</div><div class="ans hidden" id="ans"><div class="en">${esc(it.en)}</div>${prHTML(it,'ans')}</div>
+    $('sMain').innerHTML=dayHead(t,'한국어를 보고 <b>영어로</b> 말해요. 틀린 단어는 맨 끝에 다시 나와요.')+`<div class="qcard"><div class="cnt">${q+1} / ${A.length}</div>
+      <div class="ko">${esc(it.ko)}</div><div class="ans hidden" id="ans">${picHTML(it)}<div class="en">${esc(it.en)}</div>${prHTML(it,'ans')}</div>
       <div id="micBox"></div><div class="sbtns" id="qBtns"><button class="btn ghost" id="again">🔁 한국어 듣기</button>${useSR()?'<button class="btn ghost" id="skipB">🙋 모르겠어요</button>':''}</div></div>`;
     const ui=micUI();ui.prompt='영어로 말해요!';$('micBox').appendChild(ui.el);ui.state('play');
     $('again').onclick=async()=>{if(SESS){SESS.replayNow=true;stopRec()}await say(it.ko,'ko-KR')};
@@ -1101,7 +1101,7 @@ function wdMore(){if(S.course==='wd')return;if(!CHAIN())return;const P=L().plan;
   migCur(cu);cu.cg=null;const idx=curGroup(cu);if(!idx.length)return;const m=cu.n,w=S.course==='wd'?'단어':'문장';
   kidParts(m,cu.fromTest&&!cu.k?0:(cu.g||0)).forEach(([type])=>{const t2={type,n:m,idx,kid:true,g:'new',title:KIDNAME[type][0],sub:`${lab(m)} · ${ttl(m)} · 오늘 ${Math.min(wdTarget(),wdToday()+newCnt(m,idx))}/${wdTarget()}${w} · ${KIDNAME[type][1]}`};t2.id='t'+P.tasks.length;P.tasks.push(t2)});save()}
 function kidParts(n,g){if(S.course==='wd')return [['ipyex'],['spell'],['step3']];const ps=[];if(g===0&&RULES[ruleKey(n)])ps.push(['rule']);ps.push(['ipyex'],['step2'],['block'],['step3']);return ps}
-const KIDNAME={spell:['스펠링','그림과 뜻을 보고 글자를 하나씩 골라요'],rule:['오늘의 규칙','규칙을 읽고 예문 듣기'],ipyex:['듣고 따라 말하기','원어민 소리를 듣고 따라 말해요'],step2:['실감 나게 4번 읽기','영어를 보면서 연기하듯 읽어요'],block:['블록 맞추기','한국어를 보고 영어 블록을 순서대로'],step3:['영어로 말하기','한국어만 보고 영어로 · 80점 넘으면 통과']};
+const KIDNAME={spell:['스펠링','뜻을 보고 글자를 하나씩 골라요'],rule:['오늘의 규칙','규칙을 읽고 예문 듣기'],ipyex:['듣고 따라 말하기','원어민 소리를 듣고 따라 말해요'],step2:['실감 나게 4번 읽기','영어를 보면서 연기하듯 읽어요'],block:['블록 맞추기','한국어를 보고 영어 블록을 순서대로'],step3:['영어로 말하기','한국어만 보고 영어로 · 80점 넘으면 통과']};
 const partPos=(n,type,h)=>partsFor(n).findIndex(p=>p[0]===type&&p[1]===h);
 const halfLabel=(n,h)=>{if(h==='all'||h==null)return '';const a=halfIdx(n,h),b=unitIdx(n,'st');const s=b.indexOf(a[0])+1;return ` (${s}~${s+a.length-1})`};
 function buildPlanIpy(force){
@@ -1873,8 +1873,8 @@ async function runStep1(t,tok){
     for(let q=q0;q<queue.length;q++){
       if(!SESS||SESS.tok!==tok)return false;const i=queue[q],it=items[i];t.s1={queue,round,q,next:next.slice()};keep();
       $('sMain').innerHTML=stepHead(t,'끊어 쓴 한국어를 보고 <b>영어로 소리 내서</b> 말해요. 막힌 문장은 이번 훈련 안에서 다시 나와요.')+`<div class="qcard"><div class="cnt">${round}바퀴 · ${q+1} / ${queue.length}${round>1?' (다시 도전)':''}</div>
-        ${picHTML(it)}<div class="ko">${chunkHTML(it.kc)}</div>${hintHTML(it.h)}
-        <div class="ans hidden" id="ans"><div class="en">${chunkHTML(it.ec,it.roles)}</div>${prHTML(it,'ans')}${wexHTML(it)}</div>
+        <div class="ko">${chunkHTML(it.kc)}</div>${hintHTML(it.h)}
+        <div class="ans hidden" id="ans">${picHTML(it)}<div class="en">${chunkHTML(it.ec,it.roles)}</div>${prHTML(it,'ans')}${wexHTML(it)}</div>
         <div id="micBox"></div><div class="sbtns" id="qBtns">${useSR()?'<button class="btn ghost" id="skipB">🙋 모르겠어요</button>':''}</div></div>`;
       const ui=micUI();ui.prompt='영어로 말해요!';$('micBox').appendChild(ui.el);ui.state('listen');
       if($('skipB'))$('skipB').onclick=()=>{if(SESS){SESS.skipNow=true;stopRec()}};
@@ -1921,7 +1921,7 @@ async function runStep3(t,tok){
   for(let q=Math.min(t.q||0,idx.length);q<idx.length;q++){
     if(!SESS||SESS.tok!==tok)return false;const i=idx[q],it=items[i];t.q=q;t.sum=sum;keep();
     $('sMain').innerHTML=stepHead(t,'자연스러운 한국어를 보고 실감 나게 영어로 말해요. 막힘없이 바로 말하면 5점!')+`<div class="qcard"><div class="cnt">${q+1} / ${idx.length} · 지금까지 ${cu.s3.sum+sum}점</div>
-      ${picHTML(it)}<div class="ko">${esc(it.ko)}</div><div class="ans hidden" id="ans"><div class="en">${esc(it.en)}</div>${prHTML(it,'ans')}${wexHTML(it)}</div>
+      <div class="ko">${esc(it.ko)}</div><div class="ans hidden" id="ans">${picHTML(it)}<div class="en">${esc(it.en)}</div>${prHTML(it,'ans')}${wexHTML(it)}</div>
       <div id="micBox"></div><div class="sbtns" id="qBtns"><button class="btn ghost" id="again">🔁 한국어 듣기</button>${useSR()?'<button class="btn ghost" id="skipB">🙋 모르겠어요</button>':''}</div></div>`;
     const ui=micUI();ui.prompt='영어로 말해요!';$('micBox').appendChild(ui.el);ui.state('play');
     $('again').onclick=async()=>{if(SESS){SESS.replayNow=true;stopRec()}await say(it.ko,'ko-KR')};
@@ -1962,7 +1962,7 @@ async function wdAgain(t,list,tok){let q=list.slice(),round=1;
   while(q.length){const next=[];
     for(let k=0;k<q.length;k++){if(!SESS||SESS.tok!==tok)return false;const [n,i]=q[k];const it=(await getItems(n))[i];if(!it)continue;
       $('sMain').innerHTML=`<div class="stitle">🔁 틀린 단어 다시</div><div class="sh">맞힐 때까지 한 번 더!</div><p class="sguide">틀렸던 단어만 다시 나와요. 한국어를 보고 영어로 말해요.</p><div class="qcard"><div class="cnt">${round>1?round+'바퀴 · ':''}${k+1} / ${q.length}</div>
-        ${picHTML(it)}<div class="ko">${esc(it.ko)}</div><div class="ans hidden" id="ans"><div class="en">${esc(it.en)}</div>${prHTML(it,'ans')}</div>
+        <div class="ko">${esc(it.ko)}</div><div class="ans hidden" id="ans">${picHTML(it)}<div class="en">${esc(it.en)}</div>${prHTML(it,'ans')}</div>
         <div id="micBox"></div><div class="sbtns" id="qBtns"></div></div>`;
       const ui=micUI();ui.prompt='영어로 말해요!';$('micBox').appendChild(ui.el);ui.state('play');
       await say(it.ko,'ko-KR');if(!SESS||SESS.tok!==tok)return false;
@@ -2004,13 +2004,13 @@ function spellOne(t,it,n,i,tok,cnt){return new Promise(res=>{
   const gen=()=>{const need=w[p].toLowerCase();const pool=shuffle('abcdefghijklmnopqrstuvwxyz'.split('').filter(x=>x!==need)).slice(0,5);opts=shuffle([need,...pool])};
   const slots=()=>[...w].map((c,k)=>!isL(c)?(c===' '?'<span class="sgap"></span>':`<span class="spunc">${esc(c)}</span>`):`<span class="sslot${k<p?' on':''}">${k<p?esc(c):''}</span>`).join('');
   skip();if(p<w.length)gen();
-  $('sMain').innerHTML=(t.day?dayHead(t,'그림과 뜻을 보고 <b>다음 글자</b>를 골라요. 틀리거나 힌트를 쓴 단어는 한 번 더 나와요.'):t.n?stepHead(t,'그림과 뜻을 보고 <b>다음 글자</b>를 골라요. 틀리거나 힌트를 쓴 단어는 한 번 더 나와요.'):`<div class="stitle">${esc((GROUP[t.g]||'')||'')}</div><div class="sh">${esc(t.title)}</div><p class="sguide">그림과 뜻을 보고 <b>다음 글자</b>를 골라요.</p>`)+
-    `<div class="qcard"><div class="cnt">${cnt}</div>${picHTML(it)}<div class="ko">${esc(it.ko)}</div><div class="sslots" id="ss">${slots()}</div><div class="stiles" id="st"></div>
-    <div id="sres"></div><div class="sbtns" id="sb"><button class="btn ghost" id="sBk">⌫ 지우기</button><button class="btn ghost" id="sHint">💡 힌트</button></div></div>`;
+  $('sMain').innerHTML=(t.day?dayHead(t,'뜻을 보고 <b>다음 글자</b>를 골라요. 틀리거나 힌트를 쓴 단어는 한 번 더 나와요.'):t.n?stepHead(t,'뜻을 보고 <b>다음 글자</b>를 골라요. 틀리거나 힌트를 쓴 단어는 한 번 더 나와요.'):`<div class="stitle">${esc((GROUP[t.g]||'')||'')}</div><div class="sh">${esc(t.title)}</div><p class="sguide">뜻을 보고 <b>다음 글자</b>를 골라요.</p>`)+
+    `<div class="qcard"><div class="cnt">${cnt}</div><div class="ko" style="font-size:30px;margin:18px 0 22px">${esc(it.ko)}</div><div class="sslots" id="ss">${slots()}</div><div class="stiles" id="st"></div>
+    <div id="sres"></div><div id="spic"></div><div class="sbtns" id="sb"><button class="btn ghost" id="sBk">⌫ 지우기</button><button class="btn ghost" id="sHint">💡 힌트</button></div></div>`;
   const draw=()=>{$('ss').innerHTML=slots();$('st').innerHTML=p<w.length?opts.map((o,k)=>`<button class="stile" data-k="${k}">${o}</button>`).join(''):'';
     $('st').querySelectorAll('.stile').forEach(b=>b.onclick=()=>tap(+b.dataset.k,b))};
   const fin=async()=>{$('ss').innerHTML=slots();$('st').innerHTML='';$('sb').innerHTML='';$('ss').querySelectorAll('.sslot').forEach(e=>e.classList.add(miss?'miss':'ok'));
-    $('sres').innerHTML=miss?'<div class="sfb bad">아까운 곳이 있었어요 — 이 단어는 한 번 더 나와요 🔁</div>':'<div class="sfb good">정답! 🎉</div>';
+    $('spic').innerHTML=picHTML(it);$('sres').innerHTML=miss?'<div class="sfb bad">아까운 곳이 있었어요 — 이 단어는 한 번 더 나와요 🔁</div>':'<div class="sfb good">정답! 🎉</div>';
     if(!miss)beepOK();await playEn(n,i,w);
     if(!SESS||SESS.tok!==tok){res(null);return}
     setTimeout(()=>res(!miss),miss?1500:500)};
@@ -2029,9 +2029,9 @@ async function runQuiz(t,tok){
     $('sMain').innerHTML=`<div class="stitle">${esc((GROUP[t.g]||''))}</div><div class="sh">${esc(t.title)}</div><p class="sguide">${useSR()?'한국어를 듣고 <b>영어로 또박또박</b> 말해요. 앱이 듣고 채점해요. 모르면 ‘모르겠어요’를 눌러요.':'한국어를 듣고 <b>영어로 소리 내서</b> 말해요. 모르면 “패스”라고 말하고 ❌를 눌러요.'}</p>
       <div class="qcard"><div class="cnt">${q+1} / ${total} · ${lab(n)}</div>
       ${it.word?'<div class="cnt" style="margin:0">🔤 단어 · 뜻을 듣고 영어 단어를 말해요</div>':''}
-      ${picHTML(it)}<div class="ko">${esc(it.ko)}</div>
+      <div class="ko">${esc(it.ko)}</div>
       ${it.word&&it.blank?`<div class="pr" style="margin-top:6px">${esc(it.blank)}</div>`:''}
-      <div class="ans hidden" id="ans"><div class="en">${esc(it.en)}</div>${prHTML(it,'ans')}${wexHTML(it)}</div>
+      <div class="ans hidden" id="ans">${picHTML(it)}<div class="en">${esc(it.en)}</div>${prHTML(it,'ans')}${wexHTML(it)}</div>
       <div id="micBox"></div><div class="sbtns" id="qBtns"><button class="btn ghost" id="again">🔁 한국어 다시 듣기</button><button class="btn ghost" id="hintB">💡 첫 단어</button></div></div>`;
     const ui=micUI();ui.prompt='영어로 말해요!';$('micBox').appendChild(ui.el);ui.state('play');
     $('again').onclick=async()=>{if(SESS){SESS.replayNow=true;stopRec()}await playKo(n,i,it.ko)};
