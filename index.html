@@ -232,7 +232,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v8.5.1</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v8.6.1</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div class="courses" id="courses">
@@ -282,16 +282,16 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
       <div class="daynum" id="tDate"></div>
       <h2 class="daytitle" id="tHead">오늘 공부</h2>
       <p class="hint" id="tSub"></p>
+      <button class="btn acc hide" id="skipTestBtn" style="width:100%;margin:6px 0 10px;background:#2f7d6b">📝 실력 확인 테스트 먼저 하기 · 아는 단원은 건너뛰어요</button>
       <div class="plan" id="planList"></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button class="btn acc big" id="startBtn">▶ 오늘 공부 시작</button>
         <span class="hint" id="startHint" style="margin:0"></span>
         <button class="btn ghost hide" id="moreBtn">➕ 하나 더 하기</button>
-        <button class="btn ghost hide" id="skipTestBtn">📝 실력 확인 테스트</button>
       </div>
     </div>
     <div class="card" id="bikeCard">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b style="font-size:18px">🚲 자전거 듣기</b><small style="color:var(--sub)">틀린 문장 → 새로 배울 문장 · 화면 꺼도 계속 나와요</small></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b style="font-size:18px">🚶🚲 걷기·자전거 듣기</b><small style="color:var(--sub)">틀린 문장 → 새로 배울 문장 · 화면 꺼도 계속 나와요</small></div>
       <div class="row" style="margin-top:10px">
         <div class="f">문장 수<select id="bkCnt"><option value="5">5개</option><option value="10">10개</option><option value="15">15개</option><option value="20">20개</option><option value="25">25개</option><option value="30">30개</option><option value="35">35개</option><option value="40">40개</option><option value="45">45개</option><option value="50" selected>50개</option></select></div>
         <div class="f">한 문장 반복<select id="bkRep"><option value="1">1번</option><option value="2">2번</option><option value="3">3번</option><option value="4">4번</option><option value="5">5번</option><option value="6">6번</option><option value="7">7번</option><option value="8">8번</option><option value="9">9번</option><option value="10" selected>10번</option><option value="11">11번</option><option value="12">12번</option><option value="13">13번</option><option value="14">14번</option><option value="15">15번</option><option value="16">16번</option><option value="17">17번</option><option value="18">18번</option><option value="19">19번</option><option value="20">20번</option></select></div>
@@ -1274,7 +1274,7 @@ function renderToday(){
       if(nx.length)chainNote=(`<div class="hint" style="margin:8px 4px 0;font-size:14px">📌 오늘 새 ${w} <b>${wdTarget()}개</b> (오늘 한 것 ${wdToday()}개) · 지금 묶음이 끝나면 이어서 나와요: ${nx.join(' → ')}</div>`)}
     $('startHint').textContent=S.course!=='wd'&&!FILES.size&&!allDone&&P.tasks.length?'먼저 위에서 음원 폴더를 연결해 주세요':'';
     const canMore=isIpy()&&IPYV()>=2&&allDone&&(L().cur||L().next<=TOTAL());
-    $('moreBtn').classList.toggle('hide',!canMore);$('skipTestBtn').classList.toggle('hide',!(isIpy()&&kidMode()&&!['wd','rd'].includes(S.course)&&(L().next<=TOTAL())));$('moreBtn').textContent=kidMode()?'➕ 한 묶음 더 하기':'➕ 한 단계 더 하기';
+    $('moreBtn').classList.toggle('hide',!canMore);$('skipTestBtn').classList.toggle('hide',!(kidMode()&&!['wd','rd'].includes(S.course)&&!L().placeDone&&!getPlan().tasks.some(x=>x.kind==='skiptest')&&nextUnit()<=TOTAL()));$('moreBtn').textContent=kidMode()?'➕ 한 묶음 더 하기':'➕ 한 단계 더 하기';
   }
   let lastG='';
   P.tasks.forEach((x,i)=>{
@@ -2250,7 +2250,7 @@ function bikeItems(cnt){const c0=S.course,cand=[],seen=new Set(),nexts={};
 async function bikeMake(){const list=bikeItems(+$('bkCnt').value);if(!list.length){toast('들을 문장이 없어요 · 음원을 먼저 넣어 주세요');return}
   const rep=+$('bkRep').value,gapOn=$('bkGap').value==='1',SR=16000;$('bkMake').disabled=true;const msg=x=>$('bkOut').innerHTML=`<small>${x}</small>`;const c0=S.course;
   try{const ctx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:SR});const seg={};const byKey={};
-    for(const c of [...new Set(list.map(x=>x.c))]){S.course=c;activate(c);list.forEach((x,k)=>{if(x.c!==c)return;const cl=clip(x.n,x.i);if(cl&&cl[2]!=null&&cl[4])(byKey[cl[4]]=byKey[cl[4]]||[]).push([k,cl[2],cl[3]])})}
+    for(const c of [...new Set(list.map(x=>x.c))]){S.course=c;activate(c);list.forEach((x,k)=>{if(x.c===c){const it=(ipyItems(x.n)||[])[x.i];if(it){x.en=it.en;x.ko=it.ko;x.pr=it.pr||''}}});list.forEach((x,k)=>{if(x.c!==c)return;const cl=clip(x.n,x.i);if(cl&&cl[2]!=null&&cl[4])(byKey[cl[4]]=byKey[cl[4]]||[]).push([k,cl[2],cl[3]])})}
     S.course=c0;activate(c0);
     const keys=Object.keys(byKey);let done=0;
     for(const key of keys){msg(`소리 모으는 중… ${Math.round(done/keys.length*100)}%`);let f=await getFile(key,'key');if(!f){done++;continue}
@@ -2258,22 +2258,29 @@ async function bikeMake(){const list=bikeItems(+$('bkCnt').value);if(!list.lengt
       if(buf){const d=buf.getChannelData(0),R=buf.sampleRate;for(const [k,s,e] of byKey[key]){const a=Math.max(0,Math.floor((s-0.08)*R)),b=Math.min(d.length,Math.ceil((e+0.15)*R));seg[k]=d.slice(a,b)}}
       done++;await sleep(0)}
     try{ctx.close()}catch(e){}
-    const sil=s=>new Float32Array(Math.round(s*SR));let n=0;const per={};let parts=[sil(0.5)],inPart=0,tot=0;
+    const sil=s=>new Float32Array(Math.round(s*SR));let n=0;const per={};let parts=[sil(0.5)],inPart=0,tot=0;const plen=()=>parts.reduce((a,p)=>a+p.length,0)/SR;const marks=[[]];
     const wavOf=ps=>{let len=0;ps.forEach(p=>len+=p.length);const wav=new DataView(new ArrayBuffer(44+len*2));const ws=(o,s)=>{for(let i=0;i<s.length;i++)wav.setUint8(o+i,s.charCodeAt(i))};
       ws(0,'RIFF');wav.setUint32(4,36+len*2,true);ws(8,'WAVE');ws(12,'fmt ');wav.setUint32(16,16,true);wav.setUint16(20,1,true);wav.setUint16(22,1,true);wav.setUint32(24,SR,true);wav.setUint32(28,SR*2,true);wav.setUint16(32,2,true);wav.setUint16(34,16,true);ws(36,'data');wav.setUint32(40,len*2,true);
       let o=44;for(const p of ps)for(let i=0;i<p.length;i++){const v=Math.max(-1,Math.min(1,p[i]));wav.setInt16(o,v<0?v*0x8000:v*0x7fff,true);o+=2}tot+=len;return URL.createObjectURL(new Blob([wav],{type:'audio/wav'}))};
     (window.bikeUrls||[]).forEach(u=>URL.revokeObjectURL(u));const urls=window.bikeUrls=[];
-    for(let k=0;k<list.length;k++){const x=list[k],a=seg[k];if(!a)continue;n++;inPart++;per[x.c]=(per[x.c]||0)+1;const dur=a.length/SR;
-      for(let r=0;r<rep;r++){parts.push(a);parts.push(sil(gapOn?Math.max(1.2,dur*1.15+0.3):0.5))}parts.push(sil(gapOn?1.0:0.5));
-      if(inPart>=20){msg(`파일 만드는 중… ${urls.length+1}`);urls.push(wavOf(parts));parts=[sil(0.3)];inPart=0;await sleep(0)}}
+    for(let k=0;k<list.length;k++){const x=list[k],a=seg[k];if(!a)continue;n++;inPart++;per[x.c]=(per[x.c]||0)+1;const dur=a.length/SR;const t0=plen();
+      for(let r=0;r<rep;r++){parts.push(a);parts.push(sil(gapOn?Math.max(1.2,dur*1.15+0.3):0.5))}parts.push(sil(gapOn?1.0:0.5));marks[marks.length-1].push({t0,t1:plen(),x});
+      if(inPart>=20){msg(`파일 만드는 중… ${urls.length+1}`);urls.push(wavOf(parts));parts=[sil(0.3)];inPart=0;marks.push([]);await sleep(0)}}
     if(inPart)urls.push(wavOf(parts));parts=null;
     if(!n){msg('음원이 연결된 문장이 없어요');return}
     const min=Math.max(1,Math.round(tot/SR/60));const nw=list.filter((x,k)=>x.nw&&seg[k]).length;const det=`틀린 문장 ${n-nw} · 새로 배울 문장 ${nw}<br>`+Object.entries(per).map(([c,k])=>`${IPYC[c][1]} ${IPYC[c][0]} ${k}`).join(' · ');
-    $('bkOut').innerHTML=`<b>${n}문장 × ${rep}번 · 약 ${min}분</b><br><small>${det}</small><audio id="bkAudio" controls src="${urls[0]}" style="width:100%;margin-top:6px"></audio><small id="bkPart" style="color:var(--sub)"></small>`;
+    $('bkOut').innerHTML=`<b>${n}문장 × ${rep}번 · 약 ${min}분</b><br><small>${det}</small><div id="bkNow" style="margin:10px 0;padding:14px;border-radius:14px;background:var(--soft,#fdf1e4);text-align:center;min-height:90px"></div><audio id="bkAudio" controls src="${urls[0]}" style="width:100%;margin-top:6px"></audio><small id="bkPart" style="color:var(--sub)"></small><details style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">📋 문장 목록 보기 (${n}개)</summary><div id="bkList" style="margin-top:6px"></div></details>`;
+    const allM=marks.flatMap((m,p)=>m.map(z=>({...z,p})));$('bkList').innerHTML=allM.map((z,j)=>`<div class="bkRow" data-j="${j}" style="padding:8px 4px;border-bottom:1px solid var(--line,#eee);cursor:pointer"><b>${esc(z.x.en||'')}</b><br><small style="color:var(--sub)">${esc(z.x.ko||'')} · ${IPYC[z.x.c][1]}</small></div>`).join('');
     const a=$('bkAudio');let pi=0;const setPart=()=>{$('bkPart').textContent=(urls.length>1?`${pi+1}/${urls.length} 부분 · `:'')+'끝나면 처음부터 다시 나와요. 잠금 화면에서도 멈추고 다시 틀 수 있어요.'};setPart();
     const goPart=k=>{pi=(k+urls.length)%urls.length;a.src=urls[pi];a.playbackRate=S.rate;setPart();a.play().catch(()=>{})};
-    a.onended=()=>goPart(pi+1);a.playbackRate=S.rate;
-    try{if('mediaSession' in navigator){navigator.mediaSession.metadata=new MediaMetadata({title:`🚲 자전거 듣기 (${n}문장)`,artist:'말하는 영어방'});
+    a.onended=()=>goPart(pi+1);a.playbackRate=S.rate;let lastJ=-1;
+    a.ontimeupdate=()=>{const ct=a.currentTime;const m=marks[pi]||[];const z=m.find(z=>ct>=z.t0-0.2&&ct<z.t1);if(!z)return;const j=allM.findIndex(q=>q.p===pi&&q.t0===z.t0);if(j===lastJ)return;lastJ=j;
+      $('bkNow').innerHTML=`<div style="font-size:13px;color:var(--sub)">${j+1} / ${allM.length} · ${IPYC[z.x.c][1]} ${IPYC[z.x.c][0]}</div><div style="font-size:21px;font-weight:800;margin:6px 0">${esc(z.x.en||'')}</div>${z.x.pr?`<div style="font-size:14px;color:var(--sub)">🗣️ ${esc(z.x.pr)}</div>`:''}<div style="font-size:16px">${esc(z.x.ko||'')}</div>`;
+      document.querySelectorAll('.bkRow').forEach(e=>e.style.background=+e.dataset.j===j?'var(--soft,#fdf1e4)':'');
+      try{if('mediaSession' in navigator)navigator.mediaSession.metadata=new MediaMetadata({title:z.x.en||'',artist:z.x.ko||'',album:'🚶 말하는 영어방'})}catch(e){}};
+    $('bkNow').innerHTML=allM[0]?`<div style="font-size:13px;color:var(--sub)">1 / ${allM.length}</div><div style="font-size:21px;font-weight:800;margin:6px 0">${esc(allM[0].x.en||'')}</div><div style="font-size:16px">${esc(allM[0].x.ko||'')}</div>`:'';
+    document.querySelectorAll('.bkRow').forEach(e=>e.onclick=()=>{const z=allM[+e.dataset.j];if(z.p!==pi){pi=z.p;a.src=urls[pi];setPart()}a.currentTime=Math.max(0,z.t0-0.1);a.play().catch(()=>{})});
+    try{if('mediaSession' in navigator){navigator.mediaSession.metadata=new MediaMetadata({title:`🚶 걷기·자전거 듣기 (${n}문장)`,artist:'말하는 영어방'});
       navigator.mediaSession.setActionHandler('nexttrack',()=>goPart(pi+1));navigator.mediaSession.setActionHandler('previoustrack',()=>goPart(pi-1))}}catch(e){}
     try{await a.play()}catch(e){}
   }catch(e){msg('만들지 못했어요: '+(e&&e.message||e))}finally{S.course=c0;activate(c0);$('bkMake').disabled=false}}
