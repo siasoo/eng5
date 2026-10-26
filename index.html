@@ -232,7 +232,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v8.9.6</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v8.9.7</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div class="courses" id="courses">
@@ -559,7 +559,7 @@ if(!S||!S.learners||!S.learners.length)S={learners:[newLearner('나')],cur:0,rat
 if(S.cur>=S.learners.length)S.cur=0;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 /* ---------- 과정: 1일 5분 영어 / 입영작 ---------- */
-let IPYD=null,IPYMAP=new Map(),IPYSIZE=new Map();   // 입영작·여행영어 데이터 (부모님이 불러온 파일, 이 기기에만 저장)
+let IPYD=null,IPYMAP=new Map(),IPYSIZE=new Map(),IPYNAME=new Map();   // 입영작·여행영어 데이터 (부모님이 불러온 파일, 이 기기에만 저장)
 const DS={};   // 과정별 데이터 {ipy, trv}
 const IPYBOOK={R:'미국교과서 읽는 리딩',V:'영어단어(이미지)',W:'기적의 영어문장 쓰기',G:'기적의 영어문장 만들기',A:'영어로 잘 대답하기',B:'영어로 더 잘 대답하기',C:'영어로 잘 물어보기',D:'영어로 진짜 길게 말하기',T:'여행영어 패턴',E:'EBS 여행편',M:'엄마의 365일 영어 한마디'};
 const IPYC={ipy:['입영작','✍️'],gw:['기적 쓰기','📗'],wd:['영어단어','🖼️'],rd:['리딩','📖'],gj:['기적 만들기','📘'],trv:['여행영어','✈️'],home:['생활영어','🏠']};
@@ -575,9 +575,9 @@ function setIpyData(d){
     // itemsAll 순서 = ex + st (어른 문장 포함) → 그 순번으로 발음을 붙여요
     x.itemsAll.forEach((it,q)=>{it[10]=d.pr[k+':'+q]||'';if(d.roles)it[11]=d.roles[k+':'+q]||null;if(d.wex)it[12]=d.wex[k+':'+q]||null;it[13]=d.img&&d.img[k+':'+q]?{g:d.img[k+':'+q]}:d.emoji&&d.emoji[k+':'+q]?{e:d.emoji[k+':'+q]}:null})});
   if(d.kidOrder&&d.lessons&&d.lessons[0]&&d.lessons[0].no!=null){const ix={};d.lessons.forEach((x,i)=>ix[x.b+x.no]=i);const o=d.kidOrder.map(k=>ix[k]).filter(x=>x!=null);if(o.length===d.lessons.length)d._order=o}
-  DS[c]=d;IPYMAP=new Map();const sz=new Map();
-  for(const D of Object.values(DS))(D.lessons||[]).forEach(x=>{if(x.files)x.files.forEach((f,j)=>{IPYMAP.set((f.n||f.f+'.mp3')+'|'+f.size,x.fk[j]);sz.set(f.size,sz.has(f.size)&&sz.get(f.size)!==x.fk[j]?null:x.fk[j])});else IPYMAP.set(x.f+'.mp3|'+x.size,'I:'+x.b+x.f)});
-  IPYSIZE=sz;IPYD=null;
+  DS[c]=d;IPYMAP=new Map();const sz=new Map(),nm=new Map();
+  for(const D of Object.values(DS))(D.lessons||[]).forEach(x=>{if(x.files)x.files.forEach((f,j)=>{IPYMAP.set((f.n||f.f+'.mp3')+'|'+f.size,x.fk[j]);if(f.n)nm.set(f.n,nm.has(f.n)&&nm.get(f.n)!==x.fk[j]?null:x.fk[j]);sz.set(f.size,sz.has(f.size)&&sz.get(f.size)!==x.fk[j]?null:x.fk[j])});else IPYMAP.set(x.f+'.mp3|'+x.size,'I:'+x.b+x.f)});
+  IPYSIZE=sz;IPYNAME=nm;IPYD=null;
 }
 function activate(c){const d=DS[c]||null;IPYD=d;RULES=d?d._rules:{};ORDERK=d?d._order:null}
 let RULES={},ORDERK=null;
@@ -676,7 +676,7 @@ async function importFiles(arr){
   for(const x of arr){
     let key=null,file=null;const p=parseName(x.name);
     if(p){if(p.k==='s'){i++;continue}key=p.day+'-'+p.k}
-    else if(Object.keys(DS).length){try{file=await x.get();key=IPYMAP.get(x.name+'|'+file.size)||IPYSIZE.get(file.size)||guessKey(x.name)}catch(e){}}
+    else if(Object.keys(DS).length){try{file=await x.get();key=IPYMAP.get(x.name+'|'+file.size)||IPYSIZE.get(file.size)||IPYNAME.get(x.name)||guessKey(x.name)}catch(e){}}
     if(!key){unknown++;i++;continue}
     try{
       if(have.has(key)){if(!FILES.has(key)){const b=await idbGet('audio',key);if(b)FILES.set(key,b)}}
