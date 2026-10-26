@@ -232,7 +232,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v8.6.2</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v8.7.0</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div class="courses" id="courses">
@@ -1086,6 +1086,7 @@ function wdChainPlan(add,cur,idx){let need=wdTarget()-wdToday()-idx.length,m=cur
     kidParts(m,0).forEach(([type])=>add({type,n:m,idx:g,kid:true,chain:true,g:'new',title:KIDNAME[type][0],sub:`${lab(m)} · ${ttl(m)} · ${g.length}단어 · ${KIDNAME[type][1]}`}));need-=g.length;m++}}
 function wdMore(){if(S.course==='wd')return;if(!CHAIN())return;const P=L().plan;if(!P||P.date!==today())return;
   if(wdToday()>=wdTarget())return;let cu=L().cur;if(cu&&cu.k)return;
+  if(!cu&&!L().placeDone&&L().placeStarted&&!Object.keys(L().partial||{}).length){const tk=skipTask(nextUnit());if(tk){tk.id='t'+P.tasks.length;P.tasks.push(tk);save();return}} // 다음 단원 전에 또 실력 확인
   if(!cu){const m=nextUnit();if(m>TOTAL())return;cu=L().cur={n:m,k:0,tries:[],s3:{sum:0,cnt:0},hist:[],g:0};const pa=(L().partial||{})[m];if(pa){cu.hist=[pa];cu.g=1;cu.fromTest=1;delete L().partial[m]}}
   migCur(cu);cu.cg=null;const idx=curGroup(cu);if(!idx.length)return;const m=cu.n,w=S.course==='wd'?'단어':'문장';
   kidParts(m,cu.fromTest&&!cu.k?0:(cu.g||0)).forEach(([type])=>{const t2={type,n:m,idx,kid:true,g:'new',title:KIDNAME[type][0],sub:`${lab(m)} · ${ttl(m)} · 오늘 ${Math.min(wdTarget(),wdToday()+newCnt(m,idx))}/${wdTarget()}${w} · ${KIDNAME[type][1]}`};t2.id='t'+P.tasks.length;P.tasks.push(t2)});save()}
@@ -1125,8 +1126,8 @@ function buildPlanIpy(force){
     add({type:'quiz',kind:'review',g:'review',items,adv:x.n,title:`${STAGE_NAME[x.st]} 복습 · ${kidMode()?'영어로 말하기':'STEP 3'}${x.retry?' (다시 도전)':''}`,sub:`${lab(x.n)} · ${ttl(x.n)} · ${x.st>=4?'전체 '+items.length+'문장':items.length+'문장'} · ${x.st===5?'모두 맞혀야 ★':'80% 넘으면 통과'}`});added++;
   }
   if(S.course==='wd'&&kidMode()){if((wkOK||wd>=1&&wd<=6)&&wdToday()<wdTarget()){const items=wdPick(wdTarget()-wdToday());if(items.length){P.newN=items[0][0];addWdDay(add,items)}}}
-  else if(kidMode()&&!['wd','rd'].includes(S.course)&&!l.placeDone&&l.placeDay!==today()&&!Object.values(l.lessons).some(x=>!x.old&&!x.skip)&&!(cur&&cur.hist&&cur.hist.length)&&nextUnit()<=TOTAL()){
-    const n=cur?cur.n:nextUnit();P.newN=n;P.place=true;add(skipTask(n))}
+  else if(kidMode()&&!['wd','rd'].includes(S.course)&&!l.placeDone&&(l.placeStarted||!Object.values(l.lessons).some(x=>!x.old&&!x.skip))&&!(cur&&(cur.hist&&cur.hist.length||cur.k>0||cur.fromTest))&&nextUnit()<=TOTAL()){
+    const n=cur?cur.n:nextUnit();const tk=skipTask(n);if(tk){P.newN=n;P.place=true;add(tk)}}
   else if(cur&&kidMode()&&S.course==='rd'){P.newN=cur.n;const n=cur.n,ex=unitIdx(n,'ex'),st=unitIdx(n,'st'),sub=`${lab(n)} · ${ttl(n)}`;
     [{type:'ipyex',n,idx:ex,title:'단어 듣고 따라 말하기',sub:sub+' · 단어 '+ex.length+'개'},{type:'rlisten',n,idx:st,title:'지문 듣기',sub:sub+' · 글을 보며 원어민 낭독 듣기'},
      {type:'ipyex',n,idx:st,title:'한 문장씩 따라 읽기',sub:sub+' · '+st.length+'문장'},{type:'step2',n,idx:st,reps:1,solo:true,rdLast:true,title:'혼자 소리 내어 읽기',sub:sub+' · 지문 전체 한 번'}]
@@ -1170,7 +1171,7 @@ function buildPlan(force){
   const l=L(),t=today(),wd=dow(t);
   const P={date:t,tasks:[],kind:'normal',idx:0,secs:0,newN:null,newNs:[]};
   if(wd===0&&!force){P.kind='rest';return P}
-  if(!l.placeDone&&l.placeDay!==t&&!Object.keys(l.lessons).length&&FILES.size&&l.next<=365){P.newN=l.next;P.tasks.push({...skipTask(l.next),id:'t0'});return P}
+  if(!l.placeDone&&(l.placeStarted||!Object.keys(l.lessons).length)&&FILES.size&&l.next<=365){const tk=skipTask(l.next);if(tk){P.newN=l.next;P.tasks.push({...tk,id:'t0'});return P}}
   const wrongKeys=Object.keys(l.wrong);
   l.next=nextAfter(l.next);const allLearned=l.next>365;
   let est=0;const add=t2=>{t2.id='t'+P.tasks.length;P.tasks.push(t2);est+=taskSec(t2)};
@@ -1241,7 +1242,7 @@ function recordResult(n,i,ok){
 }
 
 /* ---------- 오늘 공부 화면 ---------- */
-const GROUP={new:'📘 새로 배우기',review:'🔁 복습',wrong:'❗ 틀린 문장',test:'📝 토요일 시험',cycle:'🔄 전체 복습'};
+const GROUP={new:'📘 새로 배우기',review:'🔁 복습',wrong:'❗ 틀린 문장',test:'📝 토요일 시험',place:'📝 실력 확인',cycle:'🔄 전체 복습'};
 const ICON={rule:'📘',block:'🧩',listen:'🎧',repeat:'🗣️',quiz:'❓',words:'🔤',ipyex:'📖',spell:'🔤',wdl:'📖',wds:'🏆',rlisten:'🎧',step1:'✍️',step2:'🎭',step3:'🏆'};
 function renderToday(){
   const l=L(),t=today(),P=getPlan();
@@ -1358,12 +1359,13 @@ $('jumpB').onclick=()=>{const v=+$('jumpN').value;if(!isIpy()||!v||v<1||v>TOTAL(
 /* 실력 확인 테스트: 한 번에 20문장(설정 10~30) · 단원마다 4문장씩 여러 단원을 이어서 */
 const placeN=()=>LB().placeN||20;
 function skipTask(n){const N=placeN(),units=[],items=[];
-  for(let m=n;m<=TOTAL()&&items.length<N;m++){if(L().lessons[m]||(L().partial||{})[m])continue;const el=isIpy()?eligIdx(m):[...Array(nItems(m)).keys()];if(!el.length)continue;el.forEach(i=>items.push([m,i]));units.push([m,el.length])}
-  const a=units[0][0],b=units[units.length-1][0];
-  return {id:'sk'+n+'_'+Date.now(),type:'quiz',kind:'skiptest',skipN:n,units,g:'test',items,title:`📝 실력 확인 테스트 · ${a===b?lab(a):lab(a)+'~'+lab(b)}`,sub:`단원 전체 ${items.length}문장 · 다 맞힌 단원은 건너뛰고, 틀린 문장만 공부해요`}}
-$('skipTestBtn').onclick=()=>{const l=L();const n=l.cur&&!(l.cur.hist&&l.cur.hist.length)?l.cur.n:nextUnit();if(n>TOTAL())return;
+  const busy=m=>{const cu=L().cur;return L().lessons[m]||(L().partial||{})[m]||(cu&&cu.n===m&&(cu.hist&&cu.hist.length||cu.k>0||cu.fromTest))};
+  for(let m=n;m<=TOTAL()&&items.length<N;m++){if(busy(m))continue;const el=isIpy()?eligIdx(m):[...Array(nItems(m)).keys()];if(!el.length)continue;el.forEach(i=>items.push([m,i]));units.push([m,el.length])}
+  if(!units.length)return null;const a=units[0][0],b=units[units.length-1][0];
+  return {id:'sk'+n+'_'+Date.now(),type:'quiz',kind:'skiptest',skipN:n,units,g:'place',items,title:`📝 실력 확인 테스트 · ${a===b?lab(a):lab(a)+'~'+lab(b)}`,sub:`단원 전체 ${items.length}문장 · 다 맞힌 단원은 건너뛰고, 틀린 문장만 공부해요`}}
+$('skipTestBtn').onclick=()=>{const l=L();const tk=skipTask(l.next||1);if(!tk){toast('테스트할 단원이 없어요');return}const n=tk.skipN;
   if(!confirm(`📝 실력 확인 테스트\n${lab(n)}부터 ${placeN()}문장을 한국어 보고 영어로 말해요.\n단원마다 4문장 중 3개 이상 맞히면 건너뛰고,\n막히는 단원부터 공부를 시작해요.`))return;
-  const P=getPlan();P.tasks.unshift(skipTask(n));save();startSession()};
+  const P=getPlan();P.tasks.unshift(tk);save();startSession()};
 $('moreBtn').onclick=()=>{
   if(addMoreIpy()){renderAll();toast('추가했어요! ‘이어서 하기’를 눌러요')}};
 $('sExit').onclick=()=>{if(confirm('그만할까요? 다음에 하던 곳부터 이어서 해요.'))exitSession()};
@@ -1401,13 +1403,14 @@ async function runNext(){
   if(!SESS||SESS.tok!==tok||!ok)return;
   t.done=true;['q','rep','s1','sum','qs','bq','sq','fails'].forEach(k=>delete t[k]);
   if(t.type==='listen'&&t.last&&t.g==='new')markLearned(t.n);
-  if(t.kind==='skiptest'){const l=L();const wr=new Set(t.wrK||[]);let skipped=0,part=0,stop=null;l.placeDay=today();l.partial=l.partial||{};
+  if(t.kind==='skiptest'){const l=L();const wr=new Set(t.wrK||[]);let skipped=0,part=0;l.placeDay=today();l.placeStarted=true;l.partial=l.partial||{};
     for(const [m,k] of (t.units||[[t.skipN,t.items.length]])){const all=t.items.filter(([n])=>n===m).map(([,i])=>i);const bad=all.filter(i=>wr.has(m+'-'+i));
       if(!bad.length){l.lessons[m]={d:today(),st:4,due:addDays(today(),14+(m%14)),skip:1};if(l.cur&&l.cur.n===m)l.cur=null;skipped++}
-      else if(bad.length<=all.length/2){if(isIpy()){l.partial[m]=all.filter(i=>!bad.includes(i));if(l.cur&&l.cur.n===m)l.cur=null}else{l.lessons[m]={d:today(),st:1,due:addDays(today(),1)};bad.forEach(i=>l.wrong[m+'-'+i]={n:2,d:today()})}part++}
-      else{stop=m;break}}
-    if(!isIpy())while(l.lessons[l.next])l.next++;l.next=nextAfter(l.next);if(stop!=null)l.placeDone=true;
-    l.plan=buildPlan(false);save();toast(`다 맞힌 단원 ${skipped}개는 건너뛰고`+(part?`, ${part}개 단원은 틀린 문장만`:'')+(stop!=null?`, ${lab(stop)}부터 공부해요 📘`:` 공부해요 📘`))}
+      else if(isIpy()){l.partial[m]=all.filter(i=>!bad.includes(i));if(l.cur&&l.cur.n===m)l.cur=null;part++}
+      else{l.lessons[m]={d:today(),st:1,due:addDays(today(),1)};bad.forEach(i=>l.wrong[m+'-'+i]={n:2,d:today()});part++}}
+    const badAll=t.items.filter(([n,i])=>wr.has(n+'-'+i)).length;const done=badAll>t.items.length/2;if(done)l.placeDone=true;
+    if(!isIpy())while(l.lessons[l.next])l.next++;l.next=nextAfter(l.next);
+    l.plan=buildPlan(false);save();toast(`다 맞힌 단원 ${skipped}개 건너뛰기`+(part?` · ${part}개 단원은 틀린 문장만 공부`:'')+(done?' · 이제부터 차근차근 배워요 📘':' · 다음 단원 전에 또 확인해요'))}
   if(t.type==='quiz'&&t.adv){const x=L().lessons[t.adv];const ok=advance(t.adv,t.sScore);if(x){if(ok===false&&t.wr&&t.wr.length)x.rq=pickRetry(t.adv,t.wr.filter(i=>typeof i==='number'),t.items.map(z=>z[1]).filter(i=>typeof i==='number'));else if(ok)delete x.rq;save()}}
   if(t.type==='quiz'&&t.learn)markLearned(t.learn);
   if(t.type==='wds'&&t.items&&t.g==='new')wdFinish(t.items);
@@ -1436,7 +1439,7 @@ async function runListen(t,tok){
   const items=await getItems(n);const meta=await getMeta(n);
   const guide={m:'카드를 보면서 들려주는 문장을 소리 내어 따라 해요.',f:'빠르게 나와요! 입으로 같이 따라 말해 봐요.',q:'영어를 듣고, 멈춤 시간에 우리말 뜻을 소리 내어 말해 봐요.'}[t.k];
   const showText=t.k!=='q';
-  $('sMain').innerHTML=`<div class="stitle">${esc(GROUP[t.g]||'')} · ${lab(n)}</div><div class="sh">${esc(t.title)}</div><p class="sguide">${guide}</p>
+  $('sMain').innerHTML=`<div class="stitle">${esc((GROUP[t.g]||'')||'')} · ${lab(n)}</div><div class="sh">${esc(t.title)}</div><p class="sguide">${guide}</p>
     <div class="lplayer" style="margin:0 0 14px"><div class="rowp"><button class="bp" id="lpPlay">▶</button><div style="flex:1"><div class="pbar"><i id="lpBar"></i></div><div class="time" id="lpTime" style="opacity:1;color:var(--sub);margin-top:4px">0:00</div></div><button class="btn ghost sm" id="lpBack">↺5초</button></div>
     <div class="sbtns"><button class="btn green big" id="lpNext" disabled>끝까지 들으면 다음으로 ▶</button></div></div>
     <div class="lgrid"><div class="coverbox">${meta&&meta.img?`<img class="cover${t.k==='q'?' blur':''}" src="${meta.img}" alt="">`:''}</div>
@@ -1467,7 +1470,7 @@ async function runClipListen(t,tok){
   const items=await getItems(n);const meta=await getMeta(n);
   if(!items.length){toast('문장을 읽지 못했어요. 복습하기 음원을 확인해 주세요');return false}
   const guide={m:'한국어 → 영어 3번. 영어가 나온 뒤 쉬는 동안 소리 내어 따라 해요.',f:'한 문장을 한국어 1번 → 영어 5번, 두 번씩 반복해요. 입으로 같이 따라 말해요!',q:'영어를 듣고, 쉬는 동안 우리말 뜻을 소리 내어 말해요. 그다음 정답이 나와요.'}[t.k];
-  $('sMain').innerHTML=`<div class="stitle">${esc(GROUP[t.g]||'')} · ${lab(n)}</div><div class="sh">${esc(t.title)}</div><p class="sguide">${guide}</p>
+  $('sMain').innerHTML=`<div class="stitle">${esc((GROUP[t.g]||'')||'')} · ${lab(n)}</div><div class="sh">${esc(t.title)}</div><p class="sguide">${guide}</p>
     <div class="lplayer" style="margin:0 0 14px"><div class="rowp"><button class="bp" id="lpPlay">❚❚</button><div style="flex:1"><div class="pbar"><i id="lpBar"></i></div><div class="time" id="lpTime" style="opacity:1;color:var(--sub);margin-top:4px"></div></div></div>
     <div class="sbtns"><button class="btn green big" id="lpNext" disabled>끝까지 들으면 다음으로 ▶</button></div></div>
     <div class="lgrid"><div class="coverbox">${meta&&meta.img?`<img class="cover${t.k==='q'?' blur':''}" src="${meta.img}" alt="">`:''}</div>
@@ -1670,7 +1673,7 @@ async function runRepeat(t,tok){
   for(let i=0;i<items.length;i++){
     if(!SESS||SESS.tok!==tok)return false;
     const it=items[i];
-    $('sMain').innerHTML=`<div class="stitle">${esc(GROUP[t.g])} · ${lab(n)}</div><div class="sh">${esc(t.title)}</div><p class="sguide">원어민 목소리를 듣고, 똑같이 소리 내서 따라 말해요.</p>
+    $('sMain').innerHTML=`<div class="stitle">${esc((GROUP[t.g]||''))} · ${lab(n)}</div><div class="sh">${esc(t.title)}</div><p class="sguide">원어민 목소리를 듣고, 똑같이 소리 내서 따라 말해요.</p>
       <div class="qcard"><div class="cnt">${i+1} / ${items.length}</div><div class="ans"><div class="en">${esc(it.en)}</div><div class="pr">${esc(it.pr)}</div></div><div class="ko" style="font-size:17px;font-weight:400;color:var(--sub)">${esc(it.ko)}</div>
       <div id="micBox"></div><div class="sbtns"><button class="btn ghost" id="again">🔁 다시 듣기</button></div></div>`;
     const ui=micUI();ui.prompt='따라 말해요!';$('micBox').appendChild(ui.el);ui.state('play');
@@ -1941,7 +1944,7 @@ function spellOne(t,it,n,i,tok,cnt){return new Promise(res=>{
   const gen=()=>{const need=w[p].toLowerCase();const pool=shuffle('abcdefghijklmnopqrstuvwxyz'.split('').filter(x=>x!==need)).slice(0,5);opts=shuffle([need,...pool])};
   const slots=()=>[...w].map((c,k)=>!isL(c)?(c===' '?'<span class="sgap"></span>':`<span class="spunc">${esc(c)}</span>`):`<span class="sslot${k<p?' on':''}">${k<p?esc(c):''}</span>`).join('');
   skip();if(p<w.length)gen();
-  $('sMain').innerHTML=(t.day?dayHead(t,'그림과 뜻을 보고 <b>다음 글자</b>를 골라요. 틀리거나 힌트를 쓴 단어는 한 번 더 나와요.'):t.n?stepHead(t,'그림과 뜻을 보고 <b>다음 글자</b>를 골라요. 틀리거나 힌트를 쓴 단어는 한 번 더 나와요.'):`<div class="stitle">${esc(GROUP[t.g]||'')}</div><div class="sh">${esc(t.title)}</div><p class="sguide">그림과 뜻을 보고 <b>다음 글자</b>를 골라요.</p>`)+
+  $('sMain').innerHTML=(t.day?dayHead(t,'그림과 뜻을 보고 <b>다음 글자</b>를 골라요. 틀리거나 힌트를 쓴 단어는 한 번 더 나와요.'):t.n?stepHead(t,'그림과 뜻을 보고 <b>다음 글자</b>를 골라요. 틀리거나 힌트를 쓴 단어는 한 번 더 나와요.'):`<div class="stitle">${esc((GROUP[t.g]||'')||'')}</div><div class="sh">${esc(t.title)}</div><p class="sguide">그림과 뜻을 보고 <b>다음 글자</b>를 골라요.</p>`)+
     `<div class="qcard"><div class="cnt">${cnt}</div>${picHTML(it)}<div class="ko">${esc(it.ko)}</div><div class="sslots" id="ss">${slots()}</div><div class="stiles" id="st"></div>
     <div id="sres"></div><div class="sbtns" id="sb"><button class="btn ghost" id="sBk">⌫ 지우기</button><button class="btn ghost" id="sHint">💡 힌트</button></div></div>`;
   const draw=()=>{$('ss').innerHTML=slots();$('st').innerHTML=p<w.length?opts.map((o,k)=>`<button class="stile" data-k="${k}">${o}</button>`).join(''):'';
@@ -1963,7 +1966,7 @@ async function runQuiz(t,tok){
   for(let q=Math.min(Z.q||0,total);q<total;q++){
     if(!SESS||SESS.tok!==tok)return false;t.qs={q,good,sGood,sTotal};keep();
     const [n,i]=t.items[q];const it=await quizItem(n,i);if(!it)continue;
-    $('sMain').innerHTML=`<div class="stitle">${esc(GROUP[t.g])}</div><div class="sh">${esc(t.title)}</div><p class="sguide">${useSR()?'한국어를 듣고 <b>영어로 또박또박</b> 말해요. 앱이 듣고 채점해요. 모르면 ‘모르겠어요’를 눌러요.':'한국어를 듣고 <b>영어로 소리 내서</b> 말해요. 모르면 “패스”라고 말하고 ❌를 눌러요.'}</p>
+    $('sMain').innerHTML=`<div class="stitle">${esc((GROUP[t.g]||''))}</div><div class="sh">${esc(t.title)}</div><p class="sguide">${useSR()?'한국어를 듣고 <b>영어로 또박또박</b> 말해요. 앱이 듣고 채점해요. 모르면 ‘모르겠어요’를 눌러요.':'한국어를 듣고 <b>영어로 소리 내서</b> 말해요. 모르면 “패스”라고 말하고 ❌를 눌러요.'}</p>
       <div class="qcard"><div class="cnt">${q+1} / ${total} · ${lab(n)} ${esc(ttl(n))}</div>
       ${it.word?'<div class="cnt" style="margin:0">🔤 단어 · 뜻을 듣고 영어 단어를 말해요</div>':''}
       ${picHTML(it)}<div class="ko">${esc(it.ko)}</div>
