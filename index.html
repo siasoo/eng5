@@ -1173,7 +1173,7 @@ function buildPlan(force){
   const l=L(),t=today(),wd=dow(t);
   const P={date:t,tasks:[],kind:'normal',idx:0,secs:0,newN:null,newNs:[]};
   if(wd===0&&!force){P.kind='rest';return P}
-  if(!l.placeEnd&&(l.placeStarted||!Object.keys(l.lessons).length)&&FILES.size&&l.next<=365){const tk=skipTask(l.next);if(tk){P.newN=l.next;P.tasks.push({...tk,id:'t0'});return P}}
+  if(kidMode()&&!l.placeEnd&&FILES.size&&l.next<=365){const tk=skipTask(l.next);if(tk){P.newN=l.next;P.tasks.push({...tk,id:'t0'});return P}}
   const wrongKeys=Object.keys(l.wrong);
   l.next=nextAfter(l.next);const allLearned=l.next>365;
   let est=0;const add=t2=>{t2.id='t'+P.tasks.length;P.tasks.push(t2);est+=taskSec(t2)};
@@ -1218,7 +1218,11 @@ function buildPlan(force){
   return P;
 }
 function getPlan(){const l=L();if(l.mig!==89){l.mig=89;if(l.plan&&!l.plan.tasks.some(x=>x.done))l.plan=null}
-  if(!l.plan||l.plan.date!==today()){l.plan=buildPlan(false);save()}return l.plan}
+  if(!l.plan||l.plan.date!==today()){l.plan=buildPlan(false);save()}
+  // 실력 확인: 리딩·단어 빼고, 테스트가 끝날 때까지 늘 오늘 공부 맨 위에
+  const cu=l.cur;if(isIpy()&&kidMode()&&!['wd','rd'].includes(S.course)&&!l.placeEnd&&!l.plan.tasks.some(x=>x.kind==='skiptest'&&!x.done)&&!(cu&&(cu.hist&&cu.hist.length||cu.fromTest))&&!Object.keys(l.partial||{}).length&&!l.plan.tasks.some(x=>x.g==='new'&&x.done&&cu&&x.n===cu.n&&x.type!=='rule')){
+    const tk=skipTask(cu?cu.n:nextUnit());if(tk){tk.id='t'+l.plan.tasks.length;l.plan.tasks=l.plan.tasks.filter(x=>x.done||!(x.g==='new'));l.plan.tasks.unshift(tk);l.plan.place=true;save()}}
+  return l.plan}
 function markLearned(n){
   const l=L();const t=today();
   if(!l.lessons[n])l.lessons[n]=S.course==='wd'?{d:t,st:2,due:addDays(t,3)}:{d:t,st:1,due:addDays(t,1)};
@@ -1363,7 +1367,7 @@ $('jumpB').onclick=()=>{const v=+$('jumpN').value;if(!isIpy()||!v||v<1||v>TOTAL(
 /* 실력 확인 테스트: 한 번에 20문장(설정 10~30) · 단원마다 4문장씩 여러 단원을 이어서 */
 const placeN=()=>LB().placeN||20;
 function skipTask(n){const N=placeN(),units=[],items=[];
-  const busy=m=>{const cu=L().cur;return L().lessons[m]||(L().partial||{})[m]||(cu&&cu.n===m&&(cu.hist&&cu.hist.length||cu.k>0||cu.fromTest))};
+  const busy=m=>{const cu=L().cur;return L().lessons[m]||(L().partial||{})[m]||(cu&&cu.n===m&&(cu.hist&&cu.hist.length||cu.fromTest))};
   for(let m=n;m<=TOTAL()&&items.length<N;m++){if(busy(m))continue;const el=isIpy()?eligIdx(m):[...Array(nItems(m)).keys()];if(!el.length)continue;el.forEach(i=>items.push([m,i]));units.push([m,el.length])}
   if(!units.length)return null;const a=units[0][0],b=units[units.length-1][0];
   return {id:'sk'+n+'_'+Date.now(),type:'quiz',kind:'skiptest',skipN:n,units,g:'place',items,title:`📝 실력 확인 테스트 · ${a===b?lab(a):lab(a)+'~'+lab(b)}`,sub:`단원 전체 ${items.length}문장 · 다 맞힌 단원은 건너뛰고, 틀린 문장만 공부해요`}}
