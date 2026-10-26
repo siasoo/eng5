@@ -232,7 +232,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v9.1.2</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v9.1.4</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1114,7 +1114,7 @@ function buildPlanIpy(force){
   const due=dueLessons(t);const overdue=due.filter(x=>x.due<t).length;
   P.wdN=S.course==='wd'&&(wrongKeys.length>30||overdue>=15)?7:null;if(S.course==='wd')l.wdCap={d:t,n:P.wdN}; // 단어: 복습이 밀려도 새 단어는 최소 7개
   if(S.course==='wd'&&kidMode())cur=l.cur=null;
-  if(!cur&&S.course!=='wd'&&!(S.course==='rd'&&isLight())&&(wkOK||wd>=1&&wd<=6)&&l.next<=N&&(CHAIN()||wrongKeys.length<=30&&overdue<15)){const m=kidMode()?nextUnit():l.next;if(m<=N){cur=l.cur={n:m,k:0,tries:[],s3:{sum:0,cnt:0}};const pa=(l.partial||{})[m];if(pa){cur.hist=[pa];cur.g=1;cur.fromTest=1;delete l.partial[m]}}}
+  if(!cur&&S.course!=='wd'&&(wkOK||wd>=1&&wd<=6)&&l.next<=N&&(CHAIN()||wrongKeys.length<=30&&overdue<15)){const m=kidMode()?nextUnit():l.next;if(m<=N){cur=l.cur={n:m,k:0,tries:[],s3:{sum:0,cnt:0}};const pa=(l.partial||{})[m];if(pa){cur.hist=[pa];cur.g=1;cur.fromTest=1;delete l.partial[m]}}}
   const LIM=LIMITF();
   const unitSec=cur&&kidMode()?5*60:cur?partsFor(cur.n).slice(cur.k).reduce((a,[type,h])=>a+taskSec({type,n:cur.n,h}),0):0;
   let added=0;
@@ -1218,7 +1218,7 @@ function buildPlan(force){
   }else if(!allLearned&&wd>=1&&wd<=6)P.kind='reviewday';
   return P;
 }
-function getPlan(){const l=L();if(l.mig!==89){l.mig=89;if(l.plan&&!l.plan.tasks.some(x=>x.done))l.plan=null}
+function getPlan(){const l=L();if(l.plan&&l.plan.capped)l.plan.capped=false;if(l.mig!==89){l.mig=89;if(l.plan&&!l.plan.tasks.some(x=>x.done))l.plan=null}
   if(!l.plan||l.plan.date!==today()){l.plan=buildPlan(false);save()}
   if(isIpy()&&!kidMode()&&Object.keys(l.fix||{}).length&&!l.plan.tasks.some(x=>x.fixT&&!x.done)){ // 어른: 테스트에서 틀린 문장만 따라 말하기 → 읽기 → 영어로 말하기
     const m=+Object.keys(l.fix)[0],idx=l.fix[m],sub=`${lab(m)} · ${ttl(m)} · 테스트에서 틀린 ${idx.length}문장`;
@@ -1272,7 +1272,7 @@ function renderToday(){
     const allDone=P.tasks.length&&(doneN===P.tasks.length||P.capped);
     $('tHead').textContent=allDone?(P.capped?`오늘 ${LIMITF()/60}분 공부 끝! ⏰`:'오늘 공부 끝! 🎉'):P.kind==='test'?'토요일 시험 날 📝':P.kind==='reviewday'?'오늘은 복습 데이 💪':P.tasks.length?'오늘 공부':'오늘은 할 게 없어요';
     $('tSub').innerHTML=(P.kind==='reviewday'?`복습할 게 많이 쌓여서 오늘은 새 진도 없이 복습만 해요.`:
-      P.tasks.length?`모두 ${P.tasks.length}단계 · 약 ${Math.min(LIMITF()/60,Math.max(1,Math.round(total/60)))}분 (${isIpy()&&kidMode()?`오늘${isLight()?' (가벼운 날)':''} 모든 과정 합쳐 최대 ${LIMITF()/60}분 · 지금까지 ${Math.round(usedToday()/60)}분`:`최대 ${LIMITF()/60}분`})`:'')+
+      P.tasks.length?`모두 ${P.tasks.length}단계 · 약 ${Math.max(1,Math.round(total/60))}분 · 오늘 지금까지 ${Math.round(usedToday()/60)}분`:'')+
       (Object.keys(l.wrong).length?` · 다시 볼 것 ${Object.keys(l.wrong).length}개`:'')+`<br><small>${finishForecast()}</small>`;
     $('startBtn').textContent=allDone?'✓ 다 했어요':doneN?'▶ 이어서 하기':'▶ 오늘 공부 시작';
     $('startBtn').disabled=allDone||!P.tasks.length;
@@ -1326,7 +1326,8 @@ function renderKidToday(){const box=$('kidToday');if(!box)return;if(SESS){box.in
   $('kEdit').onclick=()=>{const eb=$('kEditBox');if(eb.innerHTML){eb.innerHTML='';return}
     eb.innerHTML='<div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px">'+ALL.map(([c])=>{const n=c==='eng'?['1일 5분 영어','📘']:IPYC[c];return `<label style="display:flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid var(--line,#ddd);border-radius:12px;background:#fff"><input type="checkbox" data-kc="${c}" ${b.todayList.includes(c)?'checked':''}> ${n[1]} ${n[0]}</label>`}).join('')+'</div><div style="font-size:12px;color:var(--sub);margin-top:6px">체크한 과정만 오늘의 학습에 나와요 · 위에서부터 이 순서대로</div>';
     eb.querySelectorAll('[data-kc]').forEach(x=>x.onchange=()=>{b.todayList=ALL.map(a=>a[0]).filter(c=>{const e=eb.querySelector(`[data-kc="${c}"]`);return e&&e.checked});save();renderKidToday();$('kEdit').click()})};
-  box.querySelectorAll('[data-kgo]').forEach(b=>b.onclick=()=>{const c=b.dataset.kgo;setCourse(c);if(S.course===c)startSession()});
+  box.querySelectorAll('[data-kgo]').forEach(b=>b.onclick=()=>{const c=b.dataset.kgo;setCourse(c);if(S.course!==c)return;const P=getPlan();
+    if(P.capped){P.capped=false;save()}if(!P.tasks.some(x=>!x.done)){toast('오늘 이 과정은 다 했어요 ✅');return}startSession()});
   const wb=$('weekBox');if(wb&&wb.previousElementSibling!==box)box.after(wb)}
 /* 캐릭터 · 레벨 · 코인 (예전 민채 앱 진도 그대로 이어서) */
 function roomG(){try{return (JSON.parse(localStorage.getItem('okwrite_v1')||'null')||{}).game||null}catch(e){return null}}
@@ -1426,7 +1427,6 @@ async function runNext(){
   sessHeader();
   if(i<0){showEnd();return}
   sessTick();
-  if(usedToday()>=LIMITF()&&!P.extra&&P.tasks[i].g!=='new'){P.capped=true;save();showEnd(true);return} // 시간이 다 되면 오늘은 여기까지
   const t=P.tasks[i];const tok=++SESS.tok;
   if(t.chain&&t.g==='new'){const cu=L().cur;if(!cu||cu.n!==t.n){L().cur={n:t.n,k:Math.max(0,kidParts(t.n,0).findIndex(p=>p[0]===t.type)),tries:[],s3:{sum:0,cnt:0},hist:[],g:0,cg:t.idx.slice()};save()}}
   $('sMain').scrollTop=0;window.scrollTo(0,0);$('sess').scrollTop=0;
@@ -2014,7 +2014,7 @@ async function runQuiz(t,tok){
     if(!SESS||SESS.tok!==tok)return false;t.qs={q,good,sGood,sTotal};keep();
     const [n,i]=t.items[q];const it=await quizItem(n,i);if(!it)continue;
     $('sMain').innerHTML=`<div class="stitle">${esc((GROUP[t.g]||''))}</div><div class="sh">${esc(t.title)}</div><p class="sguide">${useSR()?'한국어를 듣고 <b>영어로 또박또박</b> 말해요. 앱이 듣고 채점해요. 모르면 ‘모르겠어요’를 눌러요.':'한국어를 듣고 <b>영어로 소리 내서</b> 말해요. 모르면 “패스”라고 말하고 ❌를 눌러요.'}</p>
-      <div class="qcard"><div class="cnt">${q+1} / ${total} · ${lab(n)} ${esc(ttl(n))}</div>
+      <div class="qcard"><div class="cnt">${q+1} / ${total} · ${lab(n)}</div>
       ${it.word?'<div class="cnt" style="margin:0">🔤 단어 · 뜻을 듣고 영어 단어를 말해요</div>':''}
       ${picHTML(it)}<div class="ko">${esc(it.ko)}</div>
       ${it.word&&it.blank?`<div class="pr" style="margin-top:6px">${esc(it.blank)}</div>`:''}
