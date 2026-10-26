@@ -232,9 +232,10 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v8.9.7</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v9.1.2</span></div>
     <div class="learners" id="learners"></div>
   </header>
+  <div id="kidToday"></div>
   <div class="courses" id="courses">
     <button data-course="ipy">✍️ 입영작</button>
     <button data-course="gw">📗 기적 쓰기</button>
@@ -599,7 +600,7 @@ function migrateOld(st){try{
 const BP=new URLSearchParams(location.search);
 function bridgeStart(){const c=BP.get('course'),nm=BP.get('learner');if(!c&&!nm)return;
   if(nm){let i=S.learners.findIndex(x=>x.name===nm);if(i<0){S.learners.push(newLearner(nm));i=S.learners.length-1}S.cur=i}
-  if(c&&IPYC[c]&&DS[c])S.course=c;save();renderAll();showTab('today');
+  if(c&&(IPYC[c]||c==='eng'))S.course=c;save();renderAll();showTab('today');
   if(BP.get('from')){const b=document.createElement('button');b.className='btn ghost';b.id='backApp';b.textContent='🐶 민채 앱으로 돌아가기';b.style.cssText='position:fixed;right:12px;bottom:12px;z-index:50;background:#fff';b.onclick=()=>{location.href=BP.get('from')+'.html'};document.body.appendChild(b)}}
 function bridgeDone(){try{const P=L().plan;if(!P||!isIpy())return;const all=P.tasks.length&&(P.tasks.every(x=>x.done)||P.capped);if(!all)return;
   const k='eng5_bridge',o=JSON.parse(localStorage.getItem(k)||'{}'),t=today();o[t]=o[t]||{};
@@ -1307,7 +1308,39 @@ function renderWeek(){const box=$('weekBox');if(!box)return;if(!(isIpy()&&kidMod
   const cnt=days.filter(x=>x[1]).length,goal=5;
   box.innerHTML=`<div class="card" style="text-align:center"><b style="font-size:17px">🎯 이번 주 미션 ${Math.min(cnt,goal)} / ${goal}일</b>
     <div style="display:flex;gap:6px;justify-content:center;margin:10px 0">${days.map(([d,ok],k)=>`<span style="width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;background:${ok?'#f6c344':'var(--soft,#eee)'};color:${ok?'#5a3b00':'var(--sub)'};${d===t?'outline:2px solid var(--accent)':''}">${'월화수목금토일'[k]}</span>`).join('')}</div>
-    <div style="font-size:14px">${cnt>=goal?'🎉 이번 주 미션 성공! <b>민채 앱</b>에서 🎁 버튼을 눌러 엄마에게 <b>진짜 코인 2개</b>를 받아요':`매일 <b>하루 공부량</b>을 다 하면 동그라미가 채워져요.<br>일주일에 <b>5일</b> 채우면 엄마에게 <b>진짜 코인 2개</b> 🪙🪙`}</div></div>`}
+    <div style="font-size:14px">${(LB().weekReward||{})[mon]?`🪙🪙 이번 주 진짜 코인 2개 받았어요! (${LB().weekReward[mon]})`:cnt>=goal?'<button class="btn acc" id="weekClaim">🎁 엄마에게 진짜 코인 2개 받기</button>':`매일 <b>하루 공부량</b>을 다 하면 동그라미가 채워져요.<br>일주일에 <b>5일</b> 채우면 엄마에게 <b>진짜 코인 2개</b> 🪙🪙`}</div></div>`;
+  if($('weekClaim'))$('weekClaim').onclick=()=>{if(!confirm(`엄마! ${nm}가 이번 주 미션을 ${cnt}일 해냈어요!\n진짜 코인 2개 주세요 😊\n\n엄마가 줬으면 '확인'을 눌러요`))return;LB().weekReward=LB().weekReward||{};LB().weekReward[mon]=today();save();renderWeek();toast('🪙🪙 코인 2개 받았어요!')};
+  box.querySelectorAll('[data-room]').forEach(b=>b.onclick=()=>openRoom(b.dataset.room))}
+/* 아이: 첫 화면 '오늘의 학습' — 시작을 누르면 그 과정이 바로 시작 */
+const KIDLIST=[['gw','원어민 듣기 · 블록 · 말하기'],['gj','색깔 블록으로 문장 만들기'],['wd','그림 보고 말하기 · 스펠링'],['rd','미국교과서 읽는 리딩 · 듣고 따라 읽기'],['ipy','한국어 보고 영어로 말하기'],['trv','여행 표현 말하기'],['home','생활 표현 말하기']];
+const isKidL=()=>{const b=LB();return b&&(b.ipyMode?b.ipyMode==='kid':!b.ipyAdult)};
+function renderKidToday(){const box=$('kidToday');if(!box)return;if(SESS){box.innerHTML='';return}const kid=isKidL();
+  let o={};try{o=JSON.parse(localStorage.getItem('eng5_bridge')||'{}')[today()]||{}}catch(e){}const nm=LB().name;
+  const ALL=[...KIDLIST,['eng','하루 5분 · 듣고 따라 말하기']],b=LB();if(!Array.isArray(b.todayList))b.todayList=kid?['gw','gj','wd','rd']:['ipy','gw','gj','wd','rd','trv','home','eng'];
+  const LST=b.todayList.map(c=>ALL.find(x=>x[0]===c)).filter(Boolean);
+  const rows=LST.map(([c,sub])=>{const nmC=c==='eng'?['1일 5분 영어','📘']:IPYC[c];const d=o[c]&&o[c].done&&(!o[c].who||o[c].who===nm);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;background:#fff;border:1px solid var(--line,#eee);margin-top:8px"><div style="flex:1;min-width:0"><b style="font-size:17px">${nmC[1]} ${nmC[0]}</b><div style="font-size:13px;color:var(--sub)">${sub}</div></div>
+      <button class="btn ${d?'ghost':'green'}" data-kgo="${c}" style="min-width:92px">${d?'✅ 완료':'▶ 시작'}</button></div>`}).join('');
+  box.innerHTML=`<div class="card" style="background:linear-gradient(135deg,#e3f7df,#fff)"><b style="font-size:19px">📅 오늘의 학습</b> <small style="color:var(--sub)">${esc(nm)}</small>${rows||'<div style="margin-top:8px;color:var(--sub)">아래 ⚙️ 학습 구성 편집에서 과정을 골라요</div>'}
+    <button class="btn ghost" id="kEdit" style="width:100%;margin-top:10px">⚙️ 학습 구성 편집</button><div id="kEditBox"></div></div>`;
+  $('kEdit').onclick=()=>{const eb=$('kEditBox');if(eb.innerHTML){eb.innerHTML='';return}
+    eb.innerHTML='<div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px">'+ALL.map(([c])=>{const n=c==='eng'?['1일 5분 영어','📘']:IPYC[c];return `<label style="display:flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid var(--line,#ddd);border-radius:12px;background:#fff"><input type="checkbox" data-kc="${c}" ${b.todayList.includes(c)?'checked':''}> ${n[1]} ${n[0]}</label>`}).join('')+'</div><div style="font-size:12px;color:var(--sub);margin-top:6px">체크한 과정만 오늘의 학습에 나와요 · 위에서부터 이 순서대로</div>';
+    eb.querySelectorAll('[data-kc]').forEach(x=>x.onchange=()=>{b.todayList=ALL.map(a=>a[0]).filter(c=>{const e=eb.querySelector(`[data-kc="${c}"]`);return e&&e.checked});save();renderKidToday();$('kEdit').click()})};
+  box.querySelectorAll('[data-kgo]').forEach(b=>b.onclick=()=>{const c=b.dataset.kgo;setCourse(c);if(S.course===c)startSession()});
+  const wb=$('weekBox');if(wb&&wb.previousElementSibling!==box)box.after(wb)}
+/* 캐릭터 · 레벨 · 코인 (예전 민채 앱 진도 그대로 이어서) */
+function roomG(){try{return (JSON.parse(localStorage.getItem('okwrite_v1')||'null')||{}).game||null}catch(e){return null}}
+function roomCard(){const g=roomG()||{level:1,coins:0,stickers:[]};let o={};try{o=JSON.parse(localStorage.getItem('eng5_bridge')||'{}')[today()]||{}}catch(e){}
+  const cr=g.bridgeCred||{},pend=Object.keys(o).filter(c=>o[c]&&o[c].done&&!cr[today()+':'+c]).length;
+  return `<div class="card" style="text-align:center;background:linear-gradient(135deg,#e3f7df,#fff)"><b style="font-size:17px">🐶 내 캐릭터 · Lv ${g.level||1}</b>
+    <div style="margin:6px 0 10px;font-size:15px">🪙 코인 <b>${g.coins||0}</b> · 🏅 스티커 <b>${(g.stickers||[]).length}</b>${pend?`<br><span style="color:var(--accent);font-weight:700">🎉 오늘 공부한 코인 +${pend*10} · 캐릭터방을 열면 받아요</span>`:''}</div>
+    <div style="display:flex;gap:8px;justify-content:center"><button class="btn green" data-room="pet">🏡 캐릭터방</button><button class="btn ghost" data-room="stickers">🏅 스티커</button></div>
+    <div style="font-size:12px;color:var(--sub);margin-top:8px">과정 하나의 하루 공부를 다 하면 코인 10개 · 150문제마다 레벨 업</div></div>`}
+function openRoom(v){const m=document.createElement('div');m.id='roomBox';m.style.cssText='position:fixed;inset:0;z-index:200;background:#fff';
+  m.innerHTML=`<iframe src="minchae.html?embed=${v}" style="border:0;width:100%;height:100%"></iframe>`;document.body.appendChild(m);history.pushState({room:1},'')}
+function closeRoom(){const m=$('roomBox');if(m){m.remove();renderWeek()}}
+window.addEventListener('message',e=>{if(e.data==='closeRoom'){closeRoom();if(history.state&&history.state.room)history.back()}});
+window.addEventListener('popstate',()=>closeRoom());
 $('startBtn').onclick=()=>{
   const P=getPlan();
   if(P.kind==='rest'){L().plan=buildPlan(true);L().plan.kind='sunday';save();renderToday();if(!L().plan.tasks.length){toast('오늘 복습할 게 없어요. 푹 쉬어요!');return}}
@@ -2458,7 +2491,7 @@ function renderCourse(){
   $('sStarsL').textContent=isIpy()?'✍️ 다시 볼 문장':'⭐ 상황극 미션';
   renderBulkModes();updateFolderMsg();
 }
-function renderAll(){renderCourse();renderLearners();renderStats();renderSettings();renderMaskSeg();idxStatus();renderToday();
+function renderAll(){renderKidToday();renderCourse();renderLearners();renderStats();renderSettings();renderMaskSeg();idxStatus();renderToday();
   if(!$('tab-cal').classList.contains('hide'))renderCal();if(!$('tab-browse').classList.contains('hide'))renderBrowse()}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)sessTick();else if(SESS)SESS.t0=performance.now();
   if(!document.hidden&&!SESS&&L().plan&&L().plan.date!==today())renderAll()});
