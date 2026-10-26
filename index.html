@@ -232,7 +232,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v9.9.0</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v9.9.1</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -838,6 +838,10 @@ function idxStatus(){if(isIpy()){$('idxMsg').textContent=`${TOTAL()}${IPYV()>=2?
 
 /* ---------- 문장 원어민 음성 (복습하기 음원에서 잘라 재생) ---------- */
 const segA=new Audio();let segDay=0,segUrl=null,segTok=0,segPlaying=false;
+/* 영어 원어민 소리 키우기 (한국어 읽어 주는 소리와 크기 맞추기) */
+function segBoost(){try{if(!window.__bctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=new C(),s=c.createMediaElementSource(segA),g=c.createGain(),k=c.createDynamicsCompressor();
+  g.gain.value=2.4;k.threshold.value=-14;k.knee.value=8;k.ratio.value=6;k.attack.value=0.003;k.release.value=0.2;s.connect(g);g.connect(k);k.connect(c.destination);window.__bctx=c}
+  if(window.__bctx.state!=='running')window.__bctx.resume()}catch(e){}}
 async function ensureSeg(d){
   const key=typeof d==='string'?d:isIpy()?ipyKey(d):d;
   if(segDay===key)return true;
@@ -853,7 +857,7 @@ async function playRange(d,s,e,mul=1){
   {const w=1000-(performance.now()-(window.lastRecEnd||0));if(w>0){await sleep(w);if(tok!==segTok)return true}} // 마이크가 막 꺼진 직후엔 폰이 소리 앞부분을 먹어요
   segA.playbackRate=Math.min(2,S.rate*mul);const st=Math.max(0,s-0.15),pre=Math.min(st,0.8);segA.volume=pre>0?0:1;segA.currentTime=st-pre;const end=e+0.15; // 폰이 소리 시작 부분을 먹지 않게: 0.5초 먼저 소리 없이 틀고 문장에서 켜요
   segPlaying=true;
-  try{await segA.play()}catch(err){segPlaying=false;return false}
+  segBoost();try{await segA.play()}catch(err){segPlaying=false;return false}
   await new Promise(res=>{const tick=()=>{if(segA.volume===0&&segA.currentTime>=st-0.02)segA.volume=1;if(tok!==segTok||segA.currentTime>=end||segA.paused||segA.ended){if(tok===segTok)segA.pause();segA.volume=1;res();return}requestAnimationFrame(tick)};tick()});
   segPlaying=false;lastPlayEnd=performance.now();return true;
 }
@@ -864,7 +868,7 @@ function pickV(lang){if(!_vs.length)loadV();const p=lang.slice(0,2);return _vs.f
 function say(t,lang='en-US'){
   return new Promise(res=>{
     if(!('speechSynthesis' in window)){res();return}
-    speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang=lang;const vv=pickV(lang);if(vv)u.voice=vv;u.rate=Math.min(1.2,S.rate*0.9);
+    speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang=lang;const vv=pickV(lang);if(vv)u.voice=vv;u.rate=Math.min(1.2,S.rate*0.9);if(/^ko/.test(lang))u.volume=0.6; // 한국어는 조금 작게
     segPlaying=true;u.onend=u.onerror=()=>{segPlaying=false;lastPlayEnd=performance.now();res()};speechSynthesis.speak(u);
   });
 }
