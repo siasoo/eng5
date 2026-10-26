@@ -232,7 +232,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v8.6.1</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v8.6.2</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div class="courses" id="courses">
@@ -835,13 +835,13 @@ async function playRange(d,s,e,mul=1){
   const tok=++segTok;
   if(!audio.paused)audio.pause();if(sAudio&&!sAudio.paused)sAudio.pause();
   if(!(await ensureSeg(d)))return false;if(tok!==segTok)return true;
-  segA.playbackRate=Math.min(2,S.rate*mul);segA.currentTime=Math.max(0,s-0.12);const end=e+0.15;
+  segA.playbackRate=Math.min(2,S.rate*mul);const st=Math.max(0,s-0.15),pre=Math.min(st,0.5);segA.volume=pre>0?0:1;segA.currentTime=st-pre;const end=e+0.15; // 폰이 소리 시작 부분을 먹지 않게: 0.5초 먼저 소리 없이 틀고 문장에서 켜요
   segPlaying=true;
   try{await segA.play()}catch(err){segPlaying=false;return false}
-  await new Promise(res=>{const tick=()=>{if(tok!==segTok||segA.currentTime>=end||segA.paused||segA.ended){if(tok===segTok)segA.pause();res();return}requestAnimationFrame(tick)};tick()});
+  await new Promise(res=>{const tick=()=>{if(segA.volume===0&&segA.currentTime>=st-0.02)segA.volume=1;if(tok!==segTok||segA.currentTime>=end||segA.paused||segA.ended){if(tok===segTok)segA.pause();segA.volume=1;res();return}requestAnimationFrame(tick)};tick()});
   segPlaying=false;lastPlayEnd=performance.now();return true;
 }
-function stopSeg(){segTok++;segA.pause();segPlaying=false;if('speechSynthesis' in window)speechSynthesis.cancel()}
+function stopSeg(){segTok++;segA.pause();segA.volume=1;segPlaying=false;if('speechSynthesis' in window)speechSynthesis.cancel()}
 /* 폰 음성: 영어는 en-US 목소리를 직접 골라야 삼성폰에서도 영어로 읽어요 */
 let _vs=[];function loadV(){try{_vs=speechSynthesis.getVoices()||[]}catch(e){}}if(window.speechSynthesis){loadV();speechSynthesis.onvoiceschanged=loadV}
 function pickV(lang){if(!_vs.length)loadV();const p=lang.slice(0,2);return _vs.find(v=>v.lang.replace('_','-')===lang)||_vs.find(v=>v.lang.toLowerCase().startsWith(p))||null}
