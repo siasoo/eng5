@@ -232,7 +232,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v8.9.5</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v8.9.6</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div class="courses" id="courses">
@@ -244,7 +244,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
     <button data-course="trv">✈️ 여행영어</button>
     <button data-course="home">🏠 생활영어</button>
     <button data-course="eng">📘 1일 5분 영어</button>
-    <input type="file" id="ipyDataInput" accept=".json,application/json" class="hide">
+    <input type="file" id="ipyDataInput" class="hide">
   </div>
 
   <div class="card folder">
@@ -255,7 +255,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
       <button class="btn ghost" id="pickFilesBtn">mp3·zip 파일 고르기</button>
       <button class="btn ghost hide" id="ipyDataBtn">입영작 데이터 다시 불러오기</button>
       <input type="file" id="dirInput" webkitdirectory multiple class="hide">
-      <input type="file" id="fileInput" accept="audio/*,.mp3,.zip,application/zip" multiple class="hide">
+      <input type="file" id="fileInput" multiple class="hide">
     </div>
   </div>
 
@@ -464,7 +464,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="btn ghost sm" id="exportBtn">전체 백업 저장</button>
             <button class="btn ghost sm" id="importBtn">백업 불러오기</button>
-            <input type="file" id="importInput" accept=".json" class="hide">
+            <input type="file" id="importInput" class="hide">
           </div>
         </div>
         <div class="r"><b>비밀번호 바꾸기</b><div style="display:flex;gap:6px"><input type="password" id="pinNew" maxlength="8" style="width:120px"><button class="btn ghost sm" id="pinChange">변경</button></div></div>
