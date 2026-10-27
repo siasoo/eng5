@@ -232,7 +232,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.16.3</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.16.4</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -936,6 +936,11 @@ function taskSec(t){
   if(t.type==='repeat')return nItems(t.n)*6;
   if(t.type==='words')return nWords(t.n)*15;
   if(t.idx){const k=t.idx.length;return k*({ipyex:8,step1:11,step2:(t.reps||4)*4,step3:10,block:16,spell:15,rlisten:5,rword:7,rmean:15,rxchunk:35}[t.type]||10)}
+  if(t.type==='rxword'){const R=RDX[t.n];return (R&&R.words?R.words.length:8)*12}
+  if(t.type==='rxpoint'){const R=RDX[t.n];return (R&&R.points?R.points.length:1)*60}
+  if(t.type==='rxchunk')return (t.sk||[]).length*50;
+  if(t.type==='rxq')return 90;
+  if(t.type==='wdt')return t.items.length*35;
   if(t.type==='rule')return 60;
   if(t.type==='ipyex')return (ipyL(t.n)?ipyL(t.n).nEx:10)*7;
   if(['step1','step2','step3'].includes(t.type)){const k=ipyL(t.n)?halfIdx(t.n,t.h).length:20;return k*({step1:11,step2:15,step3:10}[t.type])}
@@ -1303,6 +1308,7 @@ function buildPlan(force){
 function getPlan(){const l=L();if(!l.cum8){const w=S.course==='wd';for(const x of Object.values(l.lessons)){if(!l.cum7){if(x.st>=6)x.st=w?7:8;else if(x.st===5)x.st=w?6:7;else if(x.st===4)x.st=5}else if(!w){if(x.st>=7)x.st=8;else if(x.st===6)x.st=7;else if(x.st===5)x.st=6}}l.cum7=1;l.cum8=1;save()}if(l.plan&&l.plan.capped)l.plan.capped=false;if(l.mig!==89){l.mig=89;if(l.plan&&!l.plan.tasks.some(x=>x.done))l.plan=null}
   if(!l.plan||l.plan.date!==today()){l.plan=buildPlan(false);save()}
   if(S.course==='rd'&&kidMode()&&l.cur&&!l.plan.rd12&&l.plan.tasks.some(x=>!x.done&&x.g==='new'&&(x.type==='rword'||x.type==='rmean'||x.type==='ipyex'||x.type==='rlisten'))){l.plan=buildPlan(false);l.plan.rd12=1;save()} // 끊어 해석 자료가 생긴 단원은 새 방식으로
+  if(S.course==='wd'&&kidMode()&&l.plan.tasks.some(x=>!x.done&&(x.type==='wdl'||x.type==='wds'||x.type==='spell'&&x.g==='new'))){l.plan=buildPlan(false);save()} // 예전 방식 단어 계획은 새 방식(17개·한 단어씩)으로
   if(isIpy()&&!kidMode()&&Object.keys(l.fix||{}).length&&!l.plan.tasks.some(x=>x.fixT&&!x.done)){ // 어른: 테스트에서 틀린 문장만 따라 말하기 → 읽기 → 영어로 말하기
     const m=+Object.keys(l.fix)[0],idx=l.fix[m],sub=`${lab(m)} · ${ttl(m)} · 테스트에서 틀린 ${idx.length}문장`;
     const fx=[{type:'ipyex',n:m,idx,title:'듣고 따라 말하기 · 틀린 문장'},{type:'step2',n:m,idx,reps:2,title:'실감 나게 읽기 · 틀린 문장'},{type:'quiz',kind:'fix',items:idx.map(i=>[m,i]),fixN:m,title:'영어로 말하기 · 틀린 문장'}].map(x=>({...x,g:'new',fixT:1,sub}));
@@ -1340,7 +1346,7 @@ function recordResult(n,i,ok){
 
 /* ---------- 오늘 공부 화면 ---------- */
 const GROUP={new:'📘 새로 배우기',review:'🔁 복습',wrong:'❗ 틀린 문장',test:'📝 토요일 시험',place:'📝 실력 확인',cycle:'🔄 전체 복습'};
-const ICON={rule:'📘',block:'🧩',listen:'🎧',repeat:'🗣️',quiz:'❓',words:'🔤',ipyex:'📖',spell:'🔤',wdl:'📖',wds:'🏆',rlisten:'🎧',step1:'✍️',step2:'🎭',step3:'🏆'};
+const ICON={rxword:'🔤',rxpoint:'🧩',rxchunk:'✂️',rxq:'❓',rword:'🔤',rmean:'📖',wdt:'🏆',skiptest:'📝',rule:'📘',block:'🧩',listen:'🎧',repeat:'🗣️',quiz:'❓',words:'🔤',ipyex:'📖',spell:'🔤',wdl:'📖',wds:'🏆',rlisten:'🎧',step1:'✍️',step2:'🎭',step3:'🏆'};
 function renderToday(){
   const l=L(),t=today(),P=getPlan();
   { // 일주일마다 백업 알림 (폰을 잃어버려도 진도가 남게)
@@ -1378,7 +1384,7 @@ function renderToday(){
   P.tasks.forEach((x,i)=>{
     if(x.g!==lastG){lastG=x.g;const g=document.createElement('div');g.className='group';g.textContent=GROUP[x.g]||'';list.appendChild(g)}
     const el=document.createElement('div');el.className='ptask'+(x.done?' done':'')+(!x.done&&i===P.tasks.findIndex(y=>!y.done)?' cur':'');
-    el.innerHTML=`<div class="ic">${x.done?'✓':ICON[x.type]}</div><div class="t"><b>${esc(x.title)}</b><small>${esc(x.sub||'')}</small></div><span class="m">${x.done?(x.score!=null?x.score+'점':'완료'):'약 '+Math.max(1,Math.round(taskSec(x)/60))+'분'}</span>`;
+    el.innerHTML=`<div class="ic">${x.done?'✓':(ICON[x.type]||'📘')}</div><div class="t"><b>${esc(x.title)}</b><small>${esc(x.sub||'')}</small></div><span class="m">${x.done?(x.score!=null?x.score+'점':'완료'):'약 '+Math.max(1,Math.round(taskSec(x)/60))+'분'}</span>`;
     list.appendChild(el);
     if(chainNote&&x.g==='new'&&(!P.tasks[i+1]||P.tasks[i+1].g!=='new')){list.insertAdjacentHTML('beforeend',chainNote);chainNote=''}
   });
