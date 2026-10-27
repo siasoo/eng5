@@ -232,7 +232,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.10.8</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.10.9</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1248,7 +1248,7 @@ function getPlan(){const l=L();if(!l.cum8){const w=S.course==='wd';for(const x o
     const fx=[{type:'ipyex',n:m,idx,title:'듣고 따라 말하기 · 틀린 문장'},{type:'step2',n:m,idx,reps:2,title:'실감 나게 읽기 · 틀린 문장'},{type:'quiz',kind:'fix',items:idx.map(i=>[m,i]),fixN:m,title:'영어로 말하기 · 틀린 문장'}].map(x=>({...x,g:'new',fixT:1,sub}));
     l.plan.tasks=l.plan.tasks.filter(x=>x.done||x.g!=='new');const ps=l.plan.tasks.findIndex(x=>!x.done&&x.g!=='wrong');l.plan.tasks.splice(ps<0?l.plan.tasks.length:ps,0,...fx);l.plan.tasks.forEach((x,k)=>x.id='t'+k);save()}
   // 실력 확인: 리딩·단어 빼고, 테스트가 끝날 때까지 늘 오늘 공부 맨 위에
-  const cu=l.cur,kd=kidMode();if(l.hardU&&l.lessons[l.hardU])delete l.hardU;if(!LB().noPlace&&!l.hardU&&isIpy()&&!['wd','rd'].includes(S.course)&&!l.plan.tasks.some(x=>x.kind==='skiptest'&&!x.done)&&!(cu&&cu.fromTest)&&!Object.keys(l.partial||{}).length&&!Object.keys(l.fix||{}).length){
+  const cu=l.cur,kd=kidMode();if(l.hardU&&l.lessons[l.hardU])delete l.hardU;if(!LB().noPlace&&!(l.ptDay===today()&&l.ptN>=2)&&!l.hardU&&isIpy()&&!['wd','rd'].includes(S.course)&&!l.plan.tasks.some(x=>x.kind==='skiptest'&&!x.done)&&!(cu&&cu.fromTest)&&!Object.keys(l.partial||{}).length&&!Object.keys(l.fix||{}).length){
     const tk=skipTask(cu?cu.n:kd?nextUnit():l.next);if(tk){tk.id='t'+l.plan.tasks.length;l.plan.tasks=l.plan.tasks.filter(x=>x.done||!(x.g==='new'));const ps=l.plan.tasks.findIndex(x=>!x.done&&x.g!=='wrong');l.plan.tasks.splice(ps<0?l.plan.tasks.length:ps,0,tk);l.plan.tasks.forEach((x,k)=>x.id='t'+k);l.plan.place=true;save()}}
   return l.plan}
 function markLearned(n){
@@ -1310,7 +1310,7 @@ function renderToday(){
       if(nx.length)chainNote=(`<div class="hint" style="margin:8px 4px 0;font-size:14px">📌 오늘 새 ${w} <b>${wdTarget()}개</b> (오늘 한 것 ${wdToday()}개) · 지금 묶음이 끝나면 이어서 나와요: ${nx.join(' → ')}</div>`)}
     $('startHint').textContent=S.course!=='wd'&&!FILES.size&&!allDone&&P.tasks.length?'먼저 위에서 음원 폴더를 연결해 주세요':'';
     const canMore=isIpy()&&IPYV()>=2&&allDone&&(L().cur||L().next<=TOTAL());
-    $('moreBtn').classList.toggle('hide',!canMore);$('skipTestBtn').classList.toggle('hide',!(!LB().noPlace&&!['wd','rd'].includes(S.course)&&!getPlan().tasks.some(x=>x.kind==='skiptest'&&!x.done)&&!!skipTask(L().next||1)));$('skipTestBtn').textContent='📝 실력 확인 테스트 하기 · 아는 단원은 건너뛰어요';$('moreBtn').textContent=kidMode()?'➕ 한 묶음 더 하기':'➕ 한 단계 더 하기';
+    $('moreBtn').classList.toggle('hide',!canMore);$('skipTestBtn').classList.toggle('hide',!(!LB().noPlace&&!(L().ptDay===today()&&L().ptN>=2)&&!['wd','rd'].includes(S.course)&&!getPlan().tasks.some(x=>x.kind==='skiptest'&&!x.done)&&!!skipTask(L().next||1)));$('skipTestBtn').textContent='📝 실력 확인 테스트 하기 · 아는 단원은 건너뛰어요';$('moreBtn').textContent=kidMode()?'➕ 한 묶음 더 하기':'➕ 한 단계 더 하기';
   }
   let lastG='';
   P.tasks.forEach((x,i)=>{
@@ -1510,7 +1510,7 @@ async function runNext(){
   if(!SESS||SESS.tok!==tok||!ok)return;
   t.done=true;['q','rep','s1','sum','qs','bq','sq','fails'].forEach(k=>delete t[k]);
   if(t.type==='listen'&&t.last&&t.g==='new')markLearned(t.n);
-  if(t.kind==='skiptest'){const l=L();const wr=new Set(t.wrK||[]);let skipped=0,part=0,hard=false,hardM=0;l.placeDay=today();l.placeStarted=true;l.partial=l.partial||{};
+  if(t.kind==='skiptest'){const l=L();const wr=new Set(t.wrK||[]);let skipped=0,part=0,hard=false,hardM=0;l.placeDay=today();l.placeStarted=true;l.partial=l.partial||{};if(l.ptDay!==today()){l.ptDay=today();l.ptN=0}l.ptN=(l.ptN||0)+1;
     for(const [m,k] of (t.units||[[t.skipN,t.items.length]])){const all=t.items.filter(([n])=>n===m).map(([,i])=>i);const bad=all.filter(i=>wr.has(m+'-'+i));
       if(bad.length>=Math.ceil(all.length*0.3)){hard=true;hardM=m;l.hardU=m;if(l.cur&&l.cur.n===m&&!l.cur.k)l.cur=null;continue} // 이 단원은 처음부터 공부
       if(!bad.length){l.lessons[m]={d:today(),st:4,due:addDays(today(),14+(m%14)),skip:1};if(l.cur&&l.cur.n===m)l.cur=null;skipped++}
@@ -1518,7 +1518,7 @@ async function runNext(){
       else if(isIpy()){l.fix=l.fix||{};l.fix[m]=bad;if(l.cur&&l.cur.n===m)l.cur=null;part++}
       else{l.lessons[m]={d:today(),st:1,due:addDays(today(),1)};if(l.cur&&l.cur.n===m)l.cur=null;bad.forEach(i=>l.wrong[m+'-'+i]={n:2,d:today()});part++}}
     if(!kidMode())while(l.lessons[l.next])l.next++;l.next=nextAfter(l.next);
-    l.plan=buildPlan(false);save();getPlan();toast(hard?`${lab(hardM)}은 처음부터 배워 볼게요 📘`:skipped?`${lab(t.units[0][0])} 다 맞혔어요! 건너뛰고 다음 단원 테스트 🎉`:'틀린 문장만 공부하고 다음 단원 테스트해요')}
+    l.plan=buildPlan(false);if(l.ptN>=2&&!hard&&!part){l.plan.tasks=[{...t,id:'t0',done:true}];save();toast('실력 확인 2번 끝! 오늘 이 과정은 다 했어요 🎉')}else{save();getPlan();if(l.ptN>=2){toast(hard?`${lab(hardM)}은 처음부터 배워 볼게요 📘`:'틀린 문장만 공부하면 오늘 끝이에요')}else toast(hard?`${lab(hardM)}은 처음부터 배워 볼게요 📘`:skipped?`${lab(t.units[0][0])} 다 맞혔어요! 건너뛰고 다음 단원 테스트 🎉`:'틀린 문장만 공부하고 다음 단원 테스트해요')}}
   if(t.type==='quiz'&&t.adv){const x=L().lessons[t.adv];const ok=advance(t.adv,t.sScore);if(x){if(ok===false&&t.wr&&t.wr.length)x.rq=pickRetry(t.adv,t.wr.filter(i=>typeof i==='number'),t.items.map(z=>z[1]).filter(i=>typeof i==='number'));else if(ok)delete x.rq;save()}}
   if(t.type==='quiz'&&t.learn)markLearned(t.learn);
   if(t.fixN){const l=L();if(l.fix)delete l.fix[t.fixN];markLearned(t.fixN);save();getPlan()}
