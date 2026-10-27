@@ -232,7 +232,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.13.3</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.14.0</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1056,18 +1056,21 @@ function wdFinish(items){const l=L();l.wdPart=l.wdPart||{};for(const [n,i] of it
   for(const n of new Set(items.map(x=>x[0]))){if(l.wdPart[n]&&eligIdx(n).every(i=>l.wdPart[n].includes(i))){markLearned(n);delete l.wdPart[n]}}
   l.wdDay={d:today(),n:wdToday()+items.length};l.cur=null;save()}
 function addWdDay(add,items){const n=items[0][0],k=items.length;
-  add({type:'wdl',items,n,g:'new',title:'듣고 따라 말하기',sub:`오늘 새 단어 ${k}개 · 그림 보고 원어민 소리 따라 말하기`});
-  add({type:'spell',items,n,g:'new',day:true,title:'스펠링',sub:`오늘 새 단어 ${k}개 · 뜻을 보고 글자 고르기`});
+  add({type:'wdl',items,n,g:'new',title:'듣고 따라 말하기',sub:`오늘 새 단어 ${k}개 · 그림 보고 소리·철자 듣고 따라 말하기`});
   add({type:'wds',items,n,g:'new',title:'영어로 말하기',sub:`오늘 새 단어 ${k}개 · 한국어 보고 영어로 · 틀린 건 맞힐 때까지`})}
 const dayHead=(t,g)=>`<div class="stitle">🖼️ 영어단어 · ${t.g==='review'?'복습 단어':'오늘 새 단어'} ${t.items.length}개</div><div class="sh">${esc(t.title)}</div><p class="sguide">${g}</p>`;
+async function spellAloud(w,tok){const L=[...w].map((c,k)=>[c,k]).filter(([c])=>/[A-Za-z]/.test(c));const reps=L.length<=4?2:1; // 짧은 단어는 두 번
+  for(let r=0;r<reps;r++){for(const [c,k] of L){if(!SESS||SESS.tok!==tok)return;document.querySelectorAll('#wdEn span').forEach(e=>e.style.color='');const el=document.querySelector(`#wdEn span[data-l="${k}"]`);if(el)el.style.color='#e0632b';await say(c.toUpperCase());await sleep(120)}await sleep(250)}
+  document.querySelectorAll('#wdEn span').forEach(e=>e.style.color='')}
 async function runWdListen(t,tok){if(S.voice&&!MIC.ok)await micInit();const A=t.items;
   for(let q=Math.min(t.q||0,A.length);q<A.length;q++){if(!SESS||SESS.tok!==tok)return false;const [n,i]=A[q];const it=(await getItems(n))[i];t.q=q;keep();if(!it)continue;
     $('sMain').innerHTML=dayHead(t,'그림을 보고 원어민 소리를 들은 뒤 <b>소리 내서</b> 따라 말해요.')+`<div class="qcard"><div class="cnt">단어 ${q+1} / ${A.length}</div>${picHTML(it)}
-      <div class="en">${esc(it.en)}</div>${prHTML(it,'learn')}<div class="ko" style="font-size:16px;font-weight:400;color:var(--sub)">${esc(it.ko)}</div>
+      <div class="en" id="wdEn">${[...it.en].map((c,k)=>`<span data-l="${k}">${esc(c)}</span>`).join('')}</div>${prHTML(it,'learn')}<div class="ko" style="font-size:16px;font-weight:400;color:var(--sub)">${esc(it.ko)}</div>
       <div id="micBox"></div><div class="ans hidden" id="ans"></div><div class="sbtns" id="qBtns"></div><div class="sbtns"><button class="btn ghost" id="again">🔁 다시 듣기</button></div></div>`;
     const ui=micUI();ui.prompt='따라 말해요!';$('micBox').appendChild(ui.el);ui.state('play');$('again').onclick=()=>playEn(n,i,it.en);
     const known=false;
     await playEn(n,i,it.en);if(!SESS||SESS.tok!==tok)return false;
+    await spellAloud(it.en,tok);if(!SESS||SESS.tok!==tok)return false;await playEn(n,i,it.en);if(!SESS||SESS.tok!==tok)return false; // 업 → U, P → 업
     {if(S.voice&&!MIC.ok)await micInit();const ok=await speak(ui,0.35,null,tok);if(!ok)return false;ui.done('잘했어요!')} // 보고 따라 말하기: 소리만 내면 통과
     ui.done(known?'아는 단어는 오늘 스펠링·말하기에서 빼요 😎':'잘했어요!');await sleep(known?900:500)}
   return true}
@@ -1094,15 +1097,15 @@ async function runWdSay(t,tok){const kn=new Set((L().plan&&L().plan.wdKnown)||[]
 const WDMIN=()=>3;
 function buildPlanWd(P,l,t,wd,wkOK){const add=t2=>{t2.id='t'+P.tasks.length;P.tasks.push(t2)};l.cur=null;
   // 어제 못 끝낸 새 단어는 멈춘 단계부터 이어서 (오늘 분량에 포함)
-  const old=l.plan&&l.plan.date<t?l.plan.tasks.filter(x=>x.g==='new'&&!x.done&&x.items):[];
+  const old=(l.plan&&l.plan.date<t?l.plan.tasks.filter(x=>x.g==='new'&&!x.done&&x.items&&x.type!=='spell'):[]).map(x=>({...x,items:x.items.slice(0,20)}));
   const carryN=old.length?old[0].items.length:0;
-  const N=NEWN(),canNew=(wkOK||wd>=1&&wd<=6)&&l.next<=TOTAL();const cap=Math.max(0,(canNew||carryN?Math.max(0,N-Math.max(WDMIN(),carryN)):N));
+  const N=Math.min(20,NEWN()),canNew=(wkOK||wd>=1&&wd<=6)&&l.next<=TOTAL();const cap=Math.max(0,(canNew||carryN?20-Math.max(WDMIN(),carryN):20)); // 복습 포함 하루 20개
   let rev=[];const units=[];
   for(const x of dueLessons(t)){if(rev.length>=cap)break;const it=sampleReview(x.n,x.st);const room=cap-rev.length;
     if(it.length<=room){rev=rev.concat(it);units.push({n:x.n,st:x.st})}else rev=rev.concat(it.slice(0,room))} // 다 못 들어간 묶음은 내일 다시
   if(carryN){P.newN=old[0].items[0][0];if(P.wdKnown==null&&l.plan&&l.plan.wdKnown)P.wdKnown=l.plan.wdKnown;old.forEach(x=>add({...x,title:x.title.startsWith('이어서')?x.title:'이어서 · '+x.title}))}
-  else if(canNew){const items=wdPick(Math.max(WDMIN(),N-rev.length));if(items.length){P.newN=items[0][0];addWdDay(add,items)}}
-  if(rev.length){add({type:'spell',items:rev,g:'review',day:true,title:'복습 · 스펠링',sub:`복습 단어 ${rev.length}개 · 1·3·7·21·40·70일`});
+  else if(canNew){const items=wdPick(Math.max(WDMIN(),20-rev.length));if(items.length){P.newN=items[0][0];addWdDay(add,items)}}
+  if(rev.length){const sp=rev.slice(0,15);add({type:'spell',items:sp,g:'review',day:true,title:'복습 · 스펠링',sub:`스펠링 ${sp.length}개 (하루 최대 15개) · 1·3·7·21·40·70일`});
     add({type:'wds',items:rev,units,g:'review',title:'복습 · 영어로 말하기',sub:`복습 단어 ${rev.length}개 · 80% 넘으면 다음 복습으로`})}
   return P}
 function wdChainPlan(add,cur,idx){let need=wdTarget()-wdToday()-idx.length,m=cur.n+1;
@@ -2126,6 +2129,13 @@ function rdOptions(n,i,ko,pool){const cand=[];const v=koVariant(ko);if(v&&v!==ko
   for(const o of others){if(cand.length>=3)break;cand.push(o)}return shuffle([ko,...cand.slice(0,3)])}
 function rdPool(n){const out=[];for(let m=Math.max(1,n-3);m<=Math.min(TOTAL(),n+3);m++){const its=ipyItems(m);unitIdx(m,'st').forEach(i=>its[i]&&out.push(its[i].ko))}return out}
 function rdExPool(n){const out=[];for(let m=Math.max(1,n-3);m<=Math.min(TOTAL(),n+3);m++){const its=ipyItems(m);unitIdx(m,'ex').forEach(i=>its[i]&&out.push(its[i].ko))}return out}
+let WDKO=null;
+function wdKoFor(w){if(!WDKO){WDKO=new Map();const d=DS.wd;if(d&&d.lessons)d.lessons.forEach(x=>(x.itemsAll||[]).forEach(it=>{const k=String(it[0]).toLowerCase();if(!WDKO.has(k))WDKO.set(k,String(it[1]).replace(/﹒/g,' '))}))}return WDKO.get(String(w).toLowerCase())||null}
+const hcj=c=>{const x=c.charCodeAt(0)-0xAC00;return x>=0&&x<11172?Math.floor(x/28):-1};
+function baseNotes(ch){const out=[];const SKIP=new Set('i you he she it we they a an the my your our their his her its to of in on at and or is am are was were be'.split(' '));
+  for(const [e,k] of ch){for(const w of String(e).toLowerCase().replace(/[^a-z' ]/g,'').split(' ')){if(!w||SKIP.has(w))continue;const m=wdKoFor(w);if(!m)continue;const verbs=m.split(/[,·]/).map(x=>x.trim()).filter(x=>/다$/.test(x));if(!verbs.length)continue;
+      const hit=verbs.some(v=>{const st=v.replace(/다$/,'').replace(/\s/g,'');if(!st)return true;const a=hcj(st[0]);return [...k].some(c=>hcj(c)===a)});
+      if(!hit&&!out.some(o=>o[0]===w))out.push([w,verbs[0],String(k).replace(/^(우리는|나는|너는|그는|그녀는|그들은|우리가|내가|그것은|사람들은)\s*/,'')])}}return out.slice(0,2)}
 let WDPIC=null;
 function wdPicFor(en){if(!WDPIC){WDPIC=new Map();const d=DS.wd;if(d&&d.lessons)d.lessons.forEach(x=>(x.itemsAll||[]).forEach(it=>{const k=String(it[0]).toLowerCase();if(it[13]&&!WDPIC.has(k))WDPIC.set(k,it[13])}))}
   const w=String(en).toLowerCase().replace(/[^a-z ]/g,'').trim();return WDPIC.get(w)||w.split(' ').reverse().map(x=>WDPIC.get(x)).find(Boolean)||null}
@@ -2177,7 +2187,7 @@ async function runRxWord(t,tok){const n=t.n,R=RDX[n],W=R.words;const pool=[];for
       if(r===null)return false;if(!r&&Z.round===1)Z.again.push(Z.queue[q])}
     Z.queue=Z.again;Z.again=[];Z.q=0;Z.round++;if(Z.round>2)break}
   delete t.rq;return true}
-function chunkTable(ch,hideKo){return `<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 0">${ch.map(([e,k],j)=>`<div style="text-align:center"><div style="background:#fff;border:1.5px solid #e6dfd2;border-radius:10px;padding:6px 10px;font-weight:700;font-size:18px">${esc(e)}</div><div id="ck${j}" style="min-width:60px;border-bottom:2px solid #ccc;margin-top:4px;padding:2px 4px;font-size:15px;color:#2b6;min-height:24px">${hideKo?'':esc(k)}</div></div>`).join('<div style="align-self:center;color:#bbb;font-size:20px">/</div>')}</div>`}
+function chunkTable(ch,hideKo){return `<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 0">${ch.map(([e,k],j)=>`<div style="text-align:center"><div data-ch="${j}" style="background:#fff;border:1.5px solid #e6dfd2;border-radius:10px;padding:6px 10px;font-weight:700;font-size:18px;cursor:pointer">${esc(e)}</div><div id="ck${j}" style="min-width:60px;border-bottom:2px solid #ccc;margin-top:4px;padding:2px 4px;font-size:15px;color:#2b6;min-height:24px">${hideKo?'':esc(k)}</div></div>`).join('<div style="align-self:center;color:#bbb;font-size:20px">/</div>')}</div>`}
 async function runRxPoint(t,tok){const n=t.n,R=RDX[n];
   $('sMain').innerHTML=stepHead(t,'오늘 글에 나오는 <b>문장 구조</b>를 먼저 알아봐요.')+`<div class="qcard" style="text-align:left">${R.points.map((p,k)=>`<div style="margin:6px 0 16px"><div style="font-weight:800;font-size:19px">${k+1}. ${esc(p.name)}</div><div style="background:#fff7ea;border-radius:10px;padding:8px 10px;margin:6px 0">💡 ${esc(p.rule)}</div>${chunkTable(p.ex)}</div>`).join('')}<div class="sbtns"><button class="btn green big" id="qNext">알았어요! ▶</button></div></div>`;
   await new Promise(r=>$('qNext').onclick=r);return !!(SESS&&SESS.tok===tok)}
@@ -2204,10 +2214,13 @@ async function runRxChunk(t,tok){const n=t.n,R=RDX[n],st=unitIdx(n,'st'),items=a
       if(t.mode==='nat'){const r=await rxNatural(t,tok,it,n,i,stepHead(t,'영어 문장을 듣고 <b>자연스러운 우리말</b>로 해석해요.'),cnt0,false,ch);if(r===null)return false;if(r===0)Z.good++;else if(r>=2&&Z.round===1)Z.again.push(k);continue}
       if(t.g==='new'&&Z.round===1){ // 먼저 덩어리마다 뜻을 보여 주고 설명 → 그다음 카드로 맞추기
         const hint0=(S0.hint||[]).map(([e,k2])=>`<div style="display:inline-block;background:#e8f6e8;border-radius:10px;padding:4px 10px;margin:4px;font-size:14px">💬 <b>${esc(e)}</b> = ‘${esc(k2)}’</div>`).join('');
-        $('sMain').innerHTML=stepHead(t,'덩어리마다 <b>뜻</b>을 먼저 봐요. 잘 보고 다음 화면에서 카드로 맞춰요.')+`<div class="qcard"><div class="cnt">${cnt0} · 뜻 알아보기</div>${chunkTable(ch,false)}${hint0}
-          <div style="margin-top:8px;background:#eef6ff;border-radius:12px;padding:10px">→ <b>${esc(it.ko||ch.map(c=>c[1]).join(' '))}</b></div>
-          <div class="sbtns"><button class="btn ghost" id="rxAg0">🔁 다시 듣기</button><button class="btn green big" id="rxGo">카드로 맞춰 보기 ▶</button></div></div>`;
+        const notes=baseNotes(ch).map(([w,b,k])=>`<div style="background:#fff7ea;border-radius:10px;padding:6px 10px;margin:4px 0;font-size:14px;text-align:left">📌 <b>${esc(w)}</b>은 원래 ‘${esc(b)}’라는 뜻이에요. 이 문장에서는 상황에 맞게 ‘${esc(k)}’라고 해석해요.</div>`).join('');
+        $('sMain').innerHTML=stepHead(t,'영어 덩어리를 <b>하나씩 눌러서</b> 소리를 듣고 뜻을 확인해요. 다 눌러야 카드로 넘어가요.')+`<div class="qcard"><div class="cnt">${cnt0} · 뜻 알아보기</div>${chunkTable(ch,true)}${hint0}<div id="rxNotes" class="hide">${notes}</div>
+          <div id="rxAll" class="hide" style="margin-top:8px;background:#eef6ff;border-radius:12px;padding:10px">→ <b>${esc(it.ko||ch.map(c=>c[1]).join(' '))}</b></div>
+          <div class="sbtns"><button class="btn ghost" id="rxAg0">🔁 문장 듣기</button><button class="btn green big" id="rxGo" disabled style="opacity:.4">카드로 맞춰 보기 ▶</button></div></div>`;
         $('rxAg0').onclick=()=>playEn(n,i,it.en);playEn(n,i,it.en);
+        const seen=new Set();document.querySelectorAll('.qcard [data-ch]').forEach(el=>el.onclick=()=>{const j=+el.dataset.ch;try{speechSynthesis.cancel()}catch(e){}say(ch[j][0]);$('ck'+j).textContent=ch[j][1];$('ck'+j).style.borderColor='#2f9e6b';seen.add(j);
+          if(seen.size>=ch.length){$('rxAll').classList.remove('hide');$('rxNotes').classList.remove('hide');$('rxGo').disabled=false;$('rxGo').style.opacity=''}});
         await new Promise(r=>$('rxGo').onclick=r);if(!SESS||SESS.tok!==tok)return false}
       const cards=shuffle([...ch.map(c=>c[1]),...(S0.decoy||[])]);let pos=0,miss=0;
       const hint=(S0.hint||[]).map(([e,k2])=>`<div style="display:inline-block;background:#e8f6e8;border-radius:10px;padding:4px 10px;margin:4px;font-size:14px">💬 <b>${esc(e)}</b>은 ‘${esc(k2)}’라는 뜻이에요</div>`).join('');
@@ -2218,8 +2231,10 @@ async function runRxChunk(t,tok){const n=t.n,R=RDX[n],st=unitIdx(n,'st'),items=a
       const r=await new Promise(res=>{document.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{if(!SESS||SESS.tok!==tok)return res(null);const c=cards[+b.dataset.c];
           if(c===ch[pos][1]){$('ck'+pos).textContent=c;$('ck'+pos).style.borderColor='#2f9e6b';b.disabled=true;b.style.opacity='.35';pos++;
             if(pos>=ch.length){document.querySelectorAll('[data-c]').forEach(x=>x.disabled=true);
-              $('rxFb').innerHTML=`<div style="margin-top:10px;background:#eef6ff;border-radius:12px;padding:12px;text-align:left"><b>${miss?'다 맞췄어요!':'⭕ 한 번에 다 맞혔어요!'}</b><br>${esc(it.en)}<br>→ <b>${esc(it.ko||ch.map(c=>c[1]).join(' '))}</b></div><div class="sbtns"><button class="btn green big" id="rdNx">다음 ▶</button></div>`;
-              $('rdNx').onclick=()=>res(miss)}}
+              const koFull=it.ko||ch.map(c=>c[1]).join(' ');
+              $('rxFb').innerHTML=`<div style="margin-top:10px;background:#eef6ff;border-radius:12px;padding:12px;text-align:left"><b>${miss?'다 맞췄어요!':'⭕ 한 번에 다 맞혔어요!'}</b><br>${esc(it.en)}<br>→ <b>${esc(koFull)}</b></div><div class="sbtns" id="rxNxB"><span style="color:#888">🔊 듣는 중…</span></div>`;
+              (async()=>{await sleep(300);if(miss){await say(koFull,'ko-KR');await sleep(250)}await playEn(n,i,it.en); // 한 번에 맞힌 문장은 영어만, 틀렸던 문장은 한국어 뜻 + 영어if(!$('rxNxB'))return;$('rxNxB').innerHTML='<button class="btn ghost" id="rxRe">🔁 다시 듣기</button><button class="btn green big" id="rdNx">다음 ▶</button>';
+                $('rxRe').onclick=async()=>{await say(koFull,'ko-KR');await playEn(n,i,it.en)};$('rdNx').onclick=()=>res(miss)})()}}
           else{miss++;b.style.borderColor='#e05a4f';b.style.background='#fdecea';setTimeout(()=>{b.style.borderColor='';b.style.background=''},600);
             const fb=$('rxFb');fb.innerHTML=`<div style="color:#c0392b;font-weight:700;margin-top:6px">‘${esc(ch[pos][0])}’의 뜻을 찾아봐요 🤔</div>`}})});
       if(r===null)return false;let mm=r;if(t.mode==='both'){const r2=await rxNatural(t,tok,it,n,i,stepHead(t,'이번엔 <b>자연스러운 우리말 순서</b>로 바꿔 봐요.'),cnt0,true,ch);if(r2===null)return false;mm+=r2}
@@ -2261,11 +2276,21 @@ async function runSpell(t,tok){
     Z.queue=Z.retry;Z.retry=[];Z.q=0;Z.round++;
   }
   return true}
-function spellOne(t,it,n,i,tok,cnt){return new Promise(res=>{
+function phraseOne(t,it,n,i,tok,cnt){return new Promise(async res=>{ // 여러 낱말 표현: 낱말 카드를 순서대로
+  const W=it.en.replace(/[^A-Za-z' ]/g,' ').trim().split(/\s+/);const others=[];for(const [m,j] of (t.items||[])){const x=(await getItems(m))[j];if(x&&x.en!==it.en)x.en.split(/\s+/).forEach(z=>{z=z.replace(/[^A-Za-z']/g,'');if(z&&!W.includes(z))others.push(z)})}
+  const cards=shuffle([...W,...shuffle([...new Set(others)]).slice(0,2)]);let p=0,miss=false;
+  $('sMain').innerHTML=dayHead(t,'뜻을 보고 <b>낱말 카드</b>를 순서대로 골라요.')+`<div class="qcard"><div class="cnt">${cnt}</div><div class="ko" style="font-size:30px;margin:18px 0 22px">${esc(it.ko)}</div>
+    <div id="pOut" style="min-height:44px;border-bottom:2px solid #ccc;font-size:24px;font-weight:800;padding:6px;margin-bottom:12px"></div><div id="pC" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">${cards.map((c,k)=>`<button class="stile" data-k="${k}" style="width:auto;padding:0 14px">${esc(c)}</button>`).join('')}</div><div id="sres"></div><div id="spic"></div></div>`;
+  $('pC').querySelectorAll('[data-k]').forEach(b=>b.onclick=async()=>{if(p>=W.length)return;const c=cards[+b.dataset.k];
+    if(c===W[p]){$('pOut').textContent+=(p?' ':'')+c;b.disabled=true;b.style.opacity='.35';p++;
+      if(p>=W.length){$('spic').innerHTML=picHTML(it);$('sres').innerHTML=miss?'<div class="sfb bad">아까운 곳이 있었어요 — 한 번 더 나와요 🔁</div>':'<div class="sfb good">정답! 🎉</div>';if(!miss)beepOK();
+        await playEn(n,i,it.en);if(SESS&&SESS.tok===tok){await sleep(200);await say(it.ko,'ko-KR')}if(!SESS||SESS.tok!==tok){res(null);return}setTimeout(()=>res(!miss),miss?1500:500)}}
+    else{miss=true;b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake')}})})}
+function spellOne(t,it,n,i,tok,cnt){if(/\s/.test(String(it.en).trim()))return phraseOne(t,it,n,i,tok,cnt);return new Promise(res=>{
   const w=it.en,isL=c=>/[A-Za-z]/.test(c);let p=0,miss=false,opts=[];
   const skip=()=>{while(p<w.length&&!isL(w[p]))p++};
   const gen=()=>{const need=w[p].toLowerCase();const SIM={a:'eou',e:'aio',i:'eyl',o:'aue',u:'oav',b:'dpq',d:'bpq',p:'bdq',q:'pdg',m:'nw',n:'mu',c:'ksz',k:'cg',s:'cz',z:'s',g:'jq',j:'gy',y:'ij',v:'wf',w:'vm',f:'vph',h:'nk',l:'ir',r:'ln',t:'fd',x:'zs'};
-    const near=shuffle((SIM[need]||'').split('').filter(x=>x!==need)).slice(0,3);const pool=shuffle('abcdefghijklmnopqrstuvwxyz'.split('').filter(x=>x!==need&&!near.includes(x))).slice(0,7-near.length);opts=shuffle([need,...near,...pool])}; // 8개 중 고르기 · 헷갈리는 글자 섞기
+    const near=shuffle((SIM[need]||'').split('').filter(x=>x!==need)).slice(0,3);const pool=shuffle('abcdefghijklmnopqrstuvwxyz'.split('').filter(x=>x!==need&&!near.includes(x))).slice(0,5-near.length);opts=shuffle([need,...near,...pool])}; // 6개 중 고르기 · 헷갈리는 글자 섞기
   const slots=()=>[...w].map((c,k)=>!isL(c)?(c===' '?'<span class="sgap"></span>':`<span class="spunc">${esc(c)}</span>`):`<span class="sslot${k<p?' on':''}">${k<p?esc(c):''}</span>`).join('');
   skip();if(p<w.length)gen();
   $('sMain').innerHTML=(t.day?dayHead(t,'뜻을 보고 <b>다음 글자</b>를 골라요. 틀리거나 힌트를 쓴 단어는 한 번 더 나와요.'):t.n?stepHead(t,'뜻을 보고 <b>다음 글자</b>를 골라요. 틀리거나 힌트를 쓴 단어는 한 번 더 나와요.'):`<div class="stitle">${esc((GROUP[t.g]||'')||'')}</div><div class="sh">${esc(t.title)}</div><p class="sguide">뜻을 보고 <b>다음 글자</b>를 골라요.</p>`)+
@@ -2275,7 +2300,7 @@ function spellOne(t,it,n,i,tok,cnt){return new Promise(res=>{
     $('st').querySelectorAll('.stile').forEach(b=>b.onclick=()=>tap(+b.dataset.k,b))};
   const fin=async()=>{$('ss').innerHTML=slots();$('st').innerHTML='';$('sb').innerHTML='';$('ss').querySelectorAll('.sslot').forEach(e=>e.classList.add(miss?'miss':'ok'));
     $('spic').innerHTML=picHTML(it);$('sres').innerHTML=miss?'<div class="sfb bad">아까운 곳이 있었어요 — 이 단어는 한 번 더 나와요 🔁</div>':'<div class="sfb good">정답! 🎉</div>';
-    if(!miss)beepOK();await playEn(n,i,w);
+    if(!miss)beepOK();await playEn(n,i,w);if(SESS&&SESS.tok===tok){await sleep(200);await say(it.ko,'ko-KR')}
     if(!SESS||SESS.tok!==tok){res(null);return}
     setTimeout(()=>res(!miss),miss?1500:500)};
   const step=()=>{p++;skip();if(p>=w.length){fin();return}gen();draw()};
