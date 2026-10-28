@@ -232,7 +232,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.16.5</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.16.6</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1747,8 +1747,9 @@ function tokEq(x,y){if(x===y)return true;const g=HOMOM.get(x);if(g&&g.includes(y
 function lev(a,b){const d=Array.from({length:a.length+1},(_,i)=>[i]);for(let j=1;j<=b.length;j++)d[0][j]=j;
   for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]}
 function wordClose(expected,got){const a=String(expected).toLowerCase().replace(/[^a-z]/g,''),b=String(got).toLowerCase().replace(/[^a-z]/g,'');
-  if(!a||!b)return false;if(b.includes(a))return true;const d=lev(a,b);return a.length>=5&&d<=(a.length>=8?2:1)} // 짧은 단어(4글자 이하)는 정확히 맞아야 해요
-function matchScore(expected,got){const nW=String(expected).trim().split(/\s+/).length;if(nW<=3&&(nW===1?wordClose(expected,got):lev(String(expected).toLowerCase().replace(/[^a-z]/g,''),String(got).toLowerCase().replace(/[^a-z]/g,''))<=1))return 1;
+  if(!a||!b)return false;if(b.includes(a))return true;const d=lev(a,b);return (a.length>=5||!strictG())&&d<=(a.length>=8?2:1)}
+const strictG=()=>kidMode()&&['gw','gj','wd'].includes(S.course); // 엄격한 채점은 민채 기적 쓰기·만들기·단어만 (어른 과정은 너그럽게) // 짧은 단어(4글자 이하)는 정확히 맞아야 해요
+function matchScore(expected,got){const SG=strictG(),nW=String(expected).trim().split(/\s+/).length;if(nW<=3&&(nW===1?wordClose(expected,got):(()=>{const e2=String(expected).toLowerCase().replace(/[^a-z]/g,'');return lev(e2,String(got).toLowerCase().replace(/[^a-z]/g,''))<=(SG?1:Math.max(1,Math.floor(e2.length*0.15)))})()))return 1;
   const a=words(expected),b=words(got);if(!a.length)return 1;if(!b.length)return 0;
   if(a.length===1){ // 단어 하나: 비슷한 철자까지 인정 (예: pale / pail)
     const sk=s=>s.replace(/[aeiouy]/g,'').replace(/(.)\1+/g,'$1'); // 자음 뼈대 (pale=pail, honored=honoured)
@@ -1757,7 +1758,7 @@ function matchScore(expected,got){const nW=String(expected).trim().split(/\s+/).
     return b.some(ok)?1:0}
   // 사람 이름 같은 고유명사는 인식기가 잘 못 알아들어서, 못 맞혀도 감점하지 않아요
   const NOTNAME=/^(chinese|korean|japanese|english|american|french|german|italian|spanish|british|canadian|australian|indian|russian|vietnamese|thai|monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|may|june|july|august|september|october|november|december|christmas|korea|china|japan|america|england|france|germany|seoul|busan|tokyo|london|paris|mom|dad)$/;
-  const names=new Set(String(expected).split(/\s+/).slice(1).filter(w=>/^[A-Z][a-z]/.test(w)&&!/^I('|$)/.test(w)).map(w=>words(w)[0]).filter(w=>w&&!NOTNAME.test(w)));
+  const names=new Set(String(expected).split(/\s+/).slice(1).filter(w=>/^[A-Z][a-z]/.test(w)&&!/^I('|$)/.test(w)).map(w=>words(w)[0]).filter(w=>w&&!(SG&&NOTNAME.test(w))));
   const dp=Array(b.length+1).fill(0);
   for(let i=1;i<=a.length;i++){let prev=0;for(let j=1;j<=b.length;j++){const tmp=dp[j];dp[j]=tokEq(a[i-1],b[j-1])?prev+1:Math.max(dp[j],dp[j-1]);prev=tmp}}
   let lcs=dp[b.length];let den=a.length;
@@ -1765,7 +1766,7 @@ function matchScore(expected,got){const nW=String(expected).trim().split(/\s+/).
   den=Math.max(1,den);const extra=Math.max(0,b.length-a.length-1)*0.5; // 쓸데없이 많이 말하면 조금 감점
   let sc=Math.min(1,Math.max(0,(lcs-extra)/den));
   // 짧은 문장(6단어 이하)은 중요한 낱말이 하나라도 다르면 틀림 (예: Chinese ↔ Korean, not 빠짐)
-  if(a.length<=6&&sc>=0.5){const FN=new Set('i you he she it we they me him her us them my your his its our their a an the is am are was were be to of in on at do does did and or this that'.split(' '));
+  if(SG&&a.length<=6&&sc>=0.5){const FN=new Set('i you he she it we they me him her us them my your his its our their a an the is am are was were be to of in on at do does did and or this that'.split(' '));
     const key=a.filter(w=>!FN.has(w)&&!names.has(w));if(key.some(w=>!b.some(x=>tokEq(w,x))))sc=Math.min(sc,0.45)}
   return sc;
 }
