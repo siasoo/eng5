@@ -235,7 +235,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.18.5</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.18.6</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1478,7 +1478,7 @@ function renderKidToday(){const box=$('kidToday');if(!box)return;if(SESS){box.in
   $('kEdit').onclick=()=>{const eb=$('kEditBox');if(eb.innerHTML){eb.innerHTML='';return}
     eb.innerHTML='<div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px">'+ALL.filter(([c])=>!(['gbb','dk','ys'].includes(c)&&!b.todayList.includes(c))).map(([c])=>{const n=cName(c);return `<label style="display:flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid var(--line,#ddd);border-radius:12px;background:#fff"><input type="checkbox" data-kc="${c}" ${b.todayList.includes(c)?'checked':''}> ${n[1]} ${n[0]}</label>`}).join('')+'</div><div style="font-size:12px;color:var(--sub);margin-top:6px">체크한 과정만 오늘의 학습에 나와요 · 위에서부터 이 순서대로</div>';
     eb.querySelectorAll('[data-kc]').forEach(x=>x.onchange=()=>{b.todayList=ALL.map(a=>a[0]).filter(c=>{const e=eb.querySelector(`[data-kc="${c}"]`);return e&&e.checked});save();renderKidToday();$('kEdit').click()})};
-  box.querySelectorAll('[data-kgo]').forEach(b=>b.onclick=()=>{const c=b.dataset.kgo;if(EXT[c]){openExt(c);return}setCourse(c);if(S.course!==c)return;const P=getPlan();
+  box.querySelectorAll('[data-kgo]').forEach(b=>b.onclick=()=>{const c=b.dataset.kgo;const dn=b.textContent.includes('완료');if(dn&&(c==='kr'||c==='wd'||DS[c])){doneChooser(c);return}if(EXT[c]){openExt(c);return}setCourse(c);if(S.course!==c)return;const P=getPlan();
     if(P.capped){P.capped=false;save()}if(!P.tasks.some(x=>!x.done)){toast('오늘 이 과정은 다 했어요 ✅');return}startSession()});
   const wb=$('weekBox');if(wb&&wb.previousElementSibling!==box)box.after(wb);if(nDone>=LST.length&&LST.length)ntfyCheck()}
 /* ===== 엄마에게: 공부 기록 · 공부 끝 알림 (ntfy) ===== */
@@ -1533,6 +1533,37 @@ async function renderRepDates(){const box=$('repBox');if(!box)return;const ds=[]
   $('repDate').onchange=renderRep;renderRep()}
 async function renderRep(){const d=$('repDate').value;$('repBox').innerHTML='<small>불러오는 중…</small>';const R=await buildReport(d);$('repBox').innerHTML=reportHTML(R);
   $('repSend').onclick=async()=>{if(!S.ntfy){toast('먼저 알림 주소를 정해 주세요');return}toast((await ntfySend(R))?'엄마 폰으로 보냈어요 📱':'보내지 못했어요 · 인터넷을 확인해 주세요')}}
+/* ===== 다 한 과정: 👀 내일 것 미리 보기 (듣고 따라 말하기만 · 기록 없음) / ➕ 더 하기 ===== */
+function pvItems(){const l=L();let out=[];
+  if(S.course==='wd'){out=wdPick(5)}
+  else if(S.course==='rd'){const cu=l.cur,n=cu?cu.n:nextUnit();if(n<=TOTAL()){const st=unitIdx(n,'st');const pos=cu&&cu.pos||0;out=st.slice(pos,pos+4).map(i=>[n,i]);if(!out.length)out=st.slice(0,4).map(i=>[n,i])}}
+  else{const cu=l.cur;let n,idx;if(cu&&cu.n<=TOTAL()){n=cu.n;const dn=doneIdx(cu);idx=cu.cg&&cu.cg.length&&!cu.cg.every(i=>dn.has(i))?cu.cg.filter(i=>!dn.has(i)):eligIdx(n).filter(i=>!dn.has(i))}else{n=nextUnit();idx=n<=TOTAL()?eligIdx(n):[]}out=(idx||[]).slice(0,4).map(i=>[n,i])}
+  return out}
+function doneChooser(c){const m=document.createElement('div');m.id='pvBox';m.style.cssText='position:fixed;inset:0;z-index:210;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:16px';
+  const nmC=cName(c);const crs=c!=='kr';
+  m.innerHTML=`<div class="card" style="max-width:420px;width:100%;text-align:center"><div style="font-size:40px">🎉</div><b style="font-size:18px">${nmC[1]} ${nmC[0]} 오늘 분량 끝!</b><p style="color:var(--sub);font-size:14px;margin:6px 0 12px">더 하고 싶으면 골라요</p>
+    <button class="btn green" id="pvGo" style="width:100%;margin-bottom:8px">👀 내일 것 미리 보기<br><small style="font-weight:400">${crs?'듣고 따라 말하기만 · 내일이 쉬워져요':'내일 나올 낱말 뜻 미리 보기'}</small></button>
+    ${crs?'<button class="btn ghost" id="pvMore" style="width:100%;margin-bottom:8px">➕ 더 하기 <small>(진도 더 나가기)</small></button>':''}<button class="btn ghost" id="pvX" style="width:100%">닫기</button></div>`;
+  document.body.appendChild(m);const close=()=>m.remove();$('pvX').onclick=close;
+  if($('pvMore'))$('pvMore').onclick=()=>{close();setCourse(c);if(S.course!==c)return;if(addMoreIpy()){renderAll();startSession()}else toast('더 할 수 있는 게 없어요')};
+  $('pvGo').onclick=()=>{close();if(c==='kr'){pvWords();return}setCourse(c);if(S.course!==c)return;runPreview()}}
+function pvWords(){let w=[];try{w=JSON.parse(localStorage.getItem('dk_next_words_'+LB().name)||'[]')}catch(e){}
+  if(!w.length){toast('미리 볼 낱말이 아직 없어요');return}const m=document.createElement('div');m.id='pvBox';m.style.cssText='position:fixed;inset:0;z-index:210;background:#fff;overflow:auto;padding:16px';
+  m.innerHTML=`<div style="max-width:560px;margin:0 auto"><h2>👀 내일 나올 낱말</h2><p style="color:var(--sub)">뜻을 소리 내서 한 번씩 읽어 봐요.</p>${w.map(x=>`<div class="card" style="margin:8px 0"><b style="font-size:20px;color:var(--accent)">${esc(x.expr)}</b><div style="margin-top:4px">${esc(x.mean)}</div></div>`).join('')}<button class="btn green" id="pvX" style="width:100%;margin-top:10px">다 봤어요 👍</button></div>`;
+  document.body.appendChild(m);$('pvX').onclick=()=>m.remove()}
+async function runPreview(){const A=pvItems();if(!A.length){toast('미리 볼 게 없어요');return}
+  const m=document.createElement('div');m.id='pvBox';m.style.cssText='position:fixed;inset:0;z-index:210;background:var(--bg,#fbf8f2);overflow:auto;padding:16px';document.body.appendChild(m);
+  const tok=Date.now();SESS={tok,t0:performance.now(),pv:1};const live=()=>SESS&&SESS.tok===tok&&document.body.contains(m);
+  const fin=()=>{try{stopRec();stopSeg()}catch(e){}if(SESS&&SESS.tok===tok)SESS=null;m.remove();renderAll()};
+  for(let q=0;q<A.length;q++){if(!live())return;const [n,i]=A[q];const it=(await getItems(n))[i];if(!it)continue;
+    m.innerHTML=`<div style="max-width:560px;margin:0 auto"><div style="display:flex;justify-content:space-between;align-items:center"><b>👀 내일 것 미리 보기 · ${q+1} / ${A.length}</b><button class="btn ghost sm" id="pvX">✕ 그만</button></div>
+      <div class="qcard" style="margin-top:12px">${S.course==='wd'?picHTML(it):''}<div class="en" style="font-size:26px;margin:10px 0">${esc(it.en)}</div><div class="ko" style="font-size:17px;font-weight:400;color:var(--sub)">${esc(it.ko)}</div>
+      <div id="micBox"></div><div class="sbtns"><button class="btn ghost" id="again">🔁 다시 듣기</button></div></div></div>`;
+    $('pvX').onclick=fin;$('again').onclick=()=>playEn(n,i,it.en);
+    const ui=micUI();ui.prompt='따라 말해요!';$('micBox').appendChild(ui.el);ui.state('play');
+    await playEn(n,i,it.en);if(!live())return;
+    if(S.voice&&!MIC.ok)await micInit();const ok=await speak(ui,0.35,null,tok);if(!ok||!live())return;ui.done('잘했어요!');await sleep(500)} // 말하면 넘어가요 (채점·기록 없음)
+  if(!live())return;m.innerHTML=`<div class="card" style="max-width:420px;margin:40px auto;text-align:center"><div style="font-size:48px">👍</div><b style="font-size:18px">내일 것 미리 봤어요!</b><p style="color:var(--sub)">내일은 훨씬 쉬울 거예요.</p><button class="btn green" id="pvX" style="width:100%">닫기</button></div>`;$('pvX').onclick=fin}
 /* 캐릭터 · 레벨 · 코인 (예전 민채 앱 진도 그대로 이어서) */
 function roomG(){try{return (JSON.parse(localStorage.getItem('okwrite_v1')||'null')||{}).game||null}catch(e){return null}}
 function roomCard(){const g=roomG()||{level:1,coins:0,stickers:[]};let o={};try{o=JSON.parse(localStorage.getItem('eng5_bridge')||'{}')[today()]||{}}catch(e){}
