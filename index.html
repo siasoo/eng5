@@ -232,7 +232,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.16.6</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.16.7</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -860,8 +860,10 @@ async function playRange(d,s,e,mul=1){
   {const w=1000-(performance.now()-(window.lastRecEnd||0));if(w>0){await sleep(w);if(tok!==segTok)return true}} // 마이크가 막 꺼진 직후엔 폰이 소리 앞부분을 먹어요
   await segBoost();if(tok!==segTok)return true;segA.playbackRate=Math.min(2,S.rate*mul);const st=Math.max(0,s-0.25),pre=Math.min(st,0.8);const G=v=>{segA.volume=v;if(window.__segG)window.__segG.gain.value=v?1.8:0};G(pre>0?0:1);const seekTo=async x=>{segA.currentTime=x;await new Promise(r=>{if(!segA.seeking){r();return}segA.addEventListener('seeked',r,{once:true});setTimeout(r,1500)})};await seekTo(st-pre);if(Math.abs(segA.currentTime-(st-pre))>0.4)await seekTo(st-pre);if(tok!==segTok){G(1);return true}const end=e+0.15; // 폰이 소리 시작 부분을 먹지 않게: 0.5초 먼저 소리 없이 틀고 문장에서 켜요
   segPlaying=true;let wrongPos=false;
-  try{await segA.play()}catch(err){segPlaying=false;return false}
-  await new Promise(res=>{const tick=()=>{if(segA.volume===0&&segA.currentTime>=st-0.02)G(1);if(segA.currentTime<st-pre-0.5||segA.currentTime>end+1){segA.pause();G(1);wrongPos=true;res();return} // 엉뚱한 곳이면 멈추고 기계 목소리로
+  try{const ok=await Promise.race([segA.play().then(()=>true),sleep(4000).then(()=>false)]);if(!ok){segA.pause();segPlaying=false;return false}}catch(err){segPlaying=false;return false}
+  let lastT=-1,lastMove=performance.now();
+  await new Promise(res=>{const tick=()=>{if(segA.currentTime!==lastT){lastT=segA.currentTime;lastMove=performance.now()}else if(performance.now()-lastMove>3000){segA.pause();G(1);res();return} // 소리가 멈춰 있으면 끝내요
+    if(segA.volume===0&&segA.currentTime>=st-0.02)G(1);if(segA.currentTime<st-pre-0.5||segA.currentTime>end+1){segA.pause();G(1);wrongPos=true;res();return} // 엉뚱한 곳이면 멈추고 기계 목소리로
     if(tok!==segTok||segA.currentTime>=end||segA.paused||segA.ended){if(tok===segTok)segA.pause();G(1);res();return}requestAnimationFrame(tick)};tick()});
   segPlaying=false;lastPlayEnd=performance.now();return wrongPos?false:true;
 }
@@ -873,7 +875,8 @@ function say(t,lang='en-US'){
   return new Promise(res=>{
     if(!('speechSynthesis' in window)){res();return}
     speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang=lang;const vv=pickV(lang);if(vv)u.voice=vv;u.rate=Math.min(1.2,S.rate*0.9);u.volume=1; // 한국어도 크게
-    segPlaying=true;u.onend=u.onerror=()=>{segPlaying=false;lastPlayEnd=performance.now();res()};speechSynthesis.speak(u);
+    segPlaying=true;let fin=false;const done=()=>{if(fin)return;fin=true;clearTimeout(tm);segPlaying=false;lastPlayEnd=performance.now();res()};u.onend=u.onerror=done;const tm=setTimeout(()=>{try{speechSynthesis.cancel()}catch(e){}done()},2500+t.length*(/^ko/.test(lang)?220:110)/Math.max(0.5,u.rate)); // 폰이 끝났다는 신호를 안 줄 때가 있어서 시간이 지나면 끝난 걸로
+    speechSynthesis.speak(u);
   });
 }
 function clip(d,i){if(isIpy()){const x=ipyL(d)&&ipyL(d).items[i];return x?[null,null,x[2],x[3],x[9]||ipyKey(d)]:null}return (CLIPS[d]||[])[i]}
@@ -2281,9 +2284,9 @@ async function runRxChunk(t,tok){const n=t.n,R=RDX[n],st=unitIdx(n,'st'),items=a
           if(c===ch[pos][1]){$('ck'+pos).textContent=c;$('ck'+pos).style.borderColor='#2f9e6b';b.disabled=true;b.style.opacity='.35';pos++;
             if(pos>=ch.length){document.querySelectorAll('[data-c]').forEach(x=>x.disabled=true);
               const koFull=it.ko||ch.map(c=>c[1]).join(' ');
-              $('rxFb').innerHTML=`<div style="margin-top:10px;background:#eef6ff;border-radius:12px;padding:12px;text-align:left"><b>${miss?'다 맞췄어요!':'⭕ 한 번에 다 맞혔어요!'}</b><br>${esc(it.en)}<br>→ <b>${esc(koFull)}</b></div><div class="sbtns" id="rxNxB"><span style="color:#888">🔊 듣는 중…</span></div>`;
-              (async()=>{await sleep(300);if(miss){await say(koFull,'ko-KR');await sleep(250)}await playEn(n,i,it.en); // 한 번에 맞힌 문장은 영어만, 틀렸던 문장은 한국어 뜻 + 영어if(!$('rxNxB'))return;$('rxNxB').innerHTML='<button class="btn ghost" id="rxRe">🔁 다시 듣기</button><button class="btn green big" id="rdNx">다음 ▶</button>';
-                $('rxRe').onclick=async()=>{await say(koFull,'ko-KR');await playEn(n,i,it.en)};$('rdNx').onclick=()=>res(miss)})()}}
+              $('rxFb').innerHTML=`<div style="margin-top:10px;background:#eef6ff;border-radius:12px;padding:12px;text-align:left"><b>${miss?'다 맞췄어요!':'⭕ 한 번에 다 맞혔어요!'}</b><br>${esc(it.en)}<br>→ <b>${esc(koFull)}</b></div><div class="sbtns" id="rxNxB"><button class="btn ghost" id="rxRe">🔁 다시 듣기</button><button class="btn green big" id="rdNx">다음 ▶</button></div>`;
+              $('rxRe').onclick=async()=>{await say(koFull,'ko-KR');await playEn(n,i,it.en)};let gone=false;$('rdNx').onclick=()=>{gone=true;stopSeg();res(miss)}; // 버튼은 바로 보여줘요 (소리가 멈춰도 넘어갈 수 있게)
+              (async()=>{await sleep(300);if(miss&&!gone){await say(koFull,'ko-KR');await sleep(250)}if(!gone)await playEn(n,i,it.en)})()}}
           else{miss++;b.style.borderColor='#e05a4f';b.style.background='#fdecea';setTimeout(()=>{b.style.borderColor='';b.style.background=''},600);
             const fb=$('rxFb');fb.innerHTML=`<div style="color:#c0392b;font-weight:700;margin-top:6px">‘${esc(ch[pos][0])}’의 뜻을 찾아봐요 🤔</div>`}})});
       if(r===null)return false;let mm=r;if(t.mode==='both'){const r2=await rxNatural(t,tok,it,n,i,stepHead(t,'이번엔 <b>자연스러운 우리말 순서</b>로 바꿔 봐요.'),cnt0,true,ch);if(r2===null)return false;mm+=r2}
