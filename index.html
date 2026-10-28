@@ -232,7 +232,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.17.0</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.17.2</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1264,7 +1264,8 @@ function buildPlanIpyV1(P,l,t,wd){
     add({type:'quiz',kind:'cycle',g:'cycle',items,cycleTo:c,title:'전체 복습 바퀴',sub:`${ns[0]}~${ns[ns.length-1]}과`})}
   return P;
 }
-function buildPlan(force){
+const buildPlan=force=>{const o=L().plan,P=buildPlan0(force);if(o&&P&&o.date===P.date&&o.secs&&!P.secs)P.secs=o.secs;return P}; // 같은 날 계획을 다시 만들어도 공부 시간은 이어서
+function buildPlan0(force){
   if(isIpy())return buildPlanIpy(force);
   const l=L(),t=today(),wd=dow(t);
   const P={date:t,tasks:[],kind:'normal',idx:0,secs:0,newN:null,newNs:[]};
@@ -1435,11 +1436,14 @@ function openExt(c,mom){const x=EXT[c];const m=document.createElement('div');m.i
   m.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #eee;background:#fffdf8"><b style="flex:1">${x[1]} ${x[0]}</b>${mom?'<small style="color:var(--sub)">엄마용 설정</small>':''}<button class="btn ghost sm" id="extClose">← 영어방</button></div><iframe id="extFrame" allow="microphone; autoplay" style="border:0;flex:1;width:100%"></iframe>`;
   document.body.appendChild(m);document.body.style.overflow='hidden';let src=EXTSRC[c];if(c==='bk')src=src.replace("const WHO=(window.LEARNER||'민채');",'const WHO='+JSON.stringify(LB().name)+';'); // 사람마다 책갈피 따로
   $('extFrame').srcdoc=mom||!EXTKID[c]?src:src.replace('</body>',EXTKID[c]+'</body>');if(mom)m.dataset.mom=1;
-  const close=()=>{m.remove();document.body.style.overflow='';renderAll()};
+  let iv=null;if(!mom&&c!=='bk'){let last=Date.now();const act=()=>{last=Date.now()};const fr=$('extFrame');fr.addEventListener('load',()=>{try{const d=fr.contentDocument;['pointerdown','keydown','input','touchstart','scroll'].forEach(ev=>d.addEventListener(ev,act,true))}catch(e){}});
+    iv=setInterval(()=>{if(Date.now()-last>60000||document.hidden)return;try{const k='eng5_ext_secs',o=JSON.parse(localStorage.getItem(k)||'{}'),t=today();o[t]=o[t]||{};o[t][c]=(o[t][c]||0)+5;for(const d in o)if(d<addDays(t,-60))delete o[d];localStorage.setItem(k,JSON.stringify(o))}catch(e){}},5000)} // 예습·공부방·서술형: 화면을 만진 지 1분 안이면 공부 시간으로
+  const close=()=>{if(iv)clearInterval(iv);m.remove();document.body.style.overflow='';renderAll()};
   $('extClose').onclick=close}
 const isKidL=()=>{const b=LB();return b&&(b.ipyMode?b.ipyMode==='kid':!b.ipyAdult)};
 /* 오늘 남은 분량 (홈 화면에 바로 표시) */
 const YSDATES=["2026-10-28", "2026-10-29", "2026-10-30"];
+const YSQ={"2026-10-28#0#w0": {"s": "국어", "t": "동시 「가을 운동장」", "q": "이 시에서 가장 마음에 드는 표현을 하나 골라 쓰고, 그 까닭을 써 보세요."}, "2026-10-28#0#w1": {"s": "국어", "t": "동시 「가을 운동장」", "q": "이 시를 읽고 떠오른 나의 경험을 써 보세요. (언제, 어디서, 어떤 느낌이었는지)"}, "2026-10-28#1#w0": {"s": "사회", "t": "햇살마을 놀이터 앞 주차 문제", "q": "주민들이 고른 해결 방안 ①과 ③이 좋은 까닭을 기준과 연결해서 써 보세요."}, "2026-10-28#1#w1": {"s": "사회", "t": "햇살마을 놀이터 앞 주차 문제", "q": "우리 동네나 학교 주변의 문제 한 가지를 쓰고, 합리적인 해결 방안과 그 까닭을 써 보세요."}, "2026-10-29#2#w0": {"s": "국어", "t": "이야기 「빨간 우산」", "q": "하은이의 마음은 이야기 처음과 끝에서 어떻게 바뀌었나요? 까닭과 함께 써 보세요."}, "2026-10-29#2#w1": {"s": "국어", "t": "이야기 「빨간 우산」", "q": "내가 하은이였다면 어떻게 했을지 쓰고, 그렇게 생각한 까닭을 써 보세요."}, "2026-10-29#3#w0": {"s": "사회", "t": "우리 지역을 알리는 방법", "q": "지역을 홍보하면 좋은 점을 두 가지 써 보세요."}, "2026-10-29#3#w1": {"s": "사회", "t": "우리 지역을 알리는 방법", "q": "우리 지역에서 알리고 싶은 것 한 가지와, 어떤 방법으로 홍보하면 좋을지 까닭과 함께 써 보세요."}, "2026-10-30#4#w0": {"s": "과학+도덕", "t": "늑대가 돌아온 공원", "q": "늑대가 사라진 뒤 생태계에 어떤 변화가 생겼는지 순서대로 써 보세요."}, "2026-10-30#4#w1": {"s": "과학+도덕", "t": "늑대가 돌아온 공원", "q": "생태계를 지키기 위해 내가 실천할 수 있는 일 한 가지와 그 까닭을 써 보세요."}}; // 예습 서술형 질문 (엄마 기록용)
 function ysFree(){const t=today(),dw=new Date().getDay();return !YSDATES.some(d=>d>t)&&!(dw===0||dw===6)}
 function kidLeft(c,done){if(done)return '';if(c==='ys'&&ysFree())return '다음 주 예습 준비 중이에요';
   try{if(c==='bk'){let st={};try{st=JSON.parse(localStorage.getItem('books_v1_'+LB().name)||'{}')}catch(e){}const sec=(st.secs||{})[today()]||0;return `📖 오늘 ${Math.floor(sec/60)}분 / 15분 읽음`}
@@ -1476,12 +1480,15 @@ async function buildReport(d){const b=LB(),nm=b.name,br=lsJ('eng5_bridge')[d]||{
   for(const c of list){const n=cName(c);const done=!!(br[c]&&br[c].done&&(!br[c].who||br[c].who===nm))||(c==='ys'&&d===today()&&ysFree());if(done)nDone++;let info='';
     if(c==='wd'||DS[c]){const r=withCourse(c,()=>{if(d===today()){const P=getPlan();if(P&&P.date===d)repSnap()}const l=L();return {rep:(l.rep||{})[d],day:(l.days||{})[d],id:l.id}});
       const rp=r.rep;if(rp){info=`${rp.cnt}${c==='wd'?'단어':'문장'} · ${rp.k}/${rp.n}단계${rp.sc!=null?' · 평균 '+rp.sc+'점':''} · ${Math.round(rp.secs/60)}분`;out.mins+=rp.secs/60}
-      for(const k of recKeys.filter(k=>String(k).startsWith(r.id+'|'+d+'|')&&/\|퀴즈$/.test(k))){const v=await idbGet('rec',k);if(!v||v.ok)continue;const [n0,i0]=parseKey(k.split('|')[2]);
-        const it=withCourse(c,()=>{try{return c==='wd'?null:ipyItems(n0)[i0]}catch(e){return null}});if(it)out.wrong.push({c:n[0],en:it.en,ko:it.ko,heard:v.text||''})}}
+      for(const k of recKeys.filter(k=>String(k).startsWith(r.id+'|'+d+'|')&&/\|퀴즈$/.test(k))){const v=await idbGet('rec',k);if(!v||v instanceof Blob||v.ok!==false)continue;const [n0,i0]=parseKey(k.split('|')[2]);
+        const it=withCourse(c,()=>{try{return c==='wd'?null:ipyItems(n0)[i0]}catch(e){return null}});if(it)out.wrong.push({c:n[0],en:it.en,ko:it.ko,heard:typeof v.text==='string'?v.text:''})}}
     else if(c==='bk'){const st=lsJ('books_v1_'+nm);const sec=(st.secs||{})[d]||0;info=`${Math.floor(sec/60)}분 읽음`;out.mins+=sec/60;
       const reps=Object.values(st.rep||{}).filter(r=>r&&r.date===d);if(reps.length)out.bk=reps}
-    else if(c==='ys'){const st=lsJ('yeseup_minchae_v1');for(const [aid,lg] of Object.entries(st.log||{}))if(lg&&lg.d===d&&(st.ans||{})[aid])out.ys.push({s:lg.s,t:lg.t,q:lg.q,a:st.ans[aid]})}
+    else if(c==='ys'){const st=lsJ('yeseup_minchae_v1'),lg0=st.log||{};for(const [aid,lg] of Object.entries(lg0))if(lg&&lg.d===d&&(st.ans||{})[aid])out.ys.push({s:lg.s,t:lg.t,q:lg.q,a:st.ans[aid]});
+      const tg=YSDATES.filter(x=>x>d).sort()[0]; // 예전에 쓴 글(날짜 기록 없음): 그날 예습했을 수업일의 글
+      if(tg)for(const [aid,a] of Object.entries(st.ans||{}))if(!lg0[aid]&&aid.startsWith(tg+'#')&&YSQ[aid]&&String(a).trim())out.ys.push({...YSQ[aid],a})}
     else if(c==='gbb'&&d===today()){const g=lsJ('gongbubang_v1_minchae'),se=g.settings||{};const td=Math.floor((Date.now()-new Date().getTimezoneOffset()*60000)/86400000);if(se.corrDay===td)info=`정답 ${se.corrCount||0}개`}
+    if(['ys','gbb','ss'].includes(c)){const sec=((lsJ('eng5_ext_secs')[d]||{})[c])||0;if(sec>=60){info=(info?info+' · ':'')+Math.round(sec/60)+'분';out.mins+=sec/60}}
     out.rows.push({c,name:n[0],em:n[1],done,info})}
   out.allDone=list.length>0&&nDone>=list.length;out.nDone=nDone;out.mins=Math.round(out.mins);return out}
 function reportText(R){const L1=[`${R.allDone?'🎉':'📋'} ${R.nm} ${R.d.slice(5).replace('-','/')} 공부 ${R.allDone?'끝!':R.nDone+'/'+R.rows.length}${R.mins?' · 약 '+R.mins+'분':''}`,''];
