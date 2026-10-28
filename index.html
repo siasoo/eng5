@@ -232,7 +232,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.16.4</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.16.5</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -841,37 +841,38 @@ function idxStatus(){if(isIpy()){$('idxMsg').textContent=`${TOTAL()}${IPYV()>=2?
 const segA=new Audio();let segDay=0,segUrl=null,segTok=0,segPlaying=false;
 /* 영어 원어민 소리 키우기 (한국어 읽어 주는 소리와 크기 맞추기) */
 async function segBoost(){try{if(!window.__bctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=new C(),s=c.createMediaElementSource(segA),g=c.createGain(),k=c.createDynamicsCompressor();
-  g.gain.value=2.4;k.threshold.value=-14;k.knee.value=8;k.ratio.value=6;k.attack.value=0.003;k.release.value=0.2;s.connect(g);g.connect(k);k.connect(c.destination);
+  g.gain.value=1.8;k.threshold.value=-14;k.knee.value=8;k.ratio.value=6;k.attack.value=0.003;k.release.value=0.2;s.connect(g);g.connect(k);k.connect(c.destination);window.__segG=g;
   const o=c.createOscillator(),og=c.createGain();o.frequency.value=40;og.gain.value=0.0004;o.connect(og);og.connect(c.destination);o.start(); // 안 들리는 작은 소리로 스피커를 깨어 있게
   window.__bctx=c}
   if(window.__bctx.state!=='running'){await Promise.race([window.__bctx.resume(),sleep(400)]);await sleep(120)}}catch(e){}}
 async function ensureSeg(d){
   const key=typeof d==='string'?d:isIpy()?ipyKey(d):d;
-  if(segDay===key)return true;
-  const f=typeof d==='string'?await getFile(d,'key'):await getFile(d,isIpy()?'o':'r');if(!f)return false;
-  if(segUrl)URL.revokeObjectURL(segUrl);segUrl=URL.createObjectURL(f);segDay=key;segA.src=segUrl;
-  await new Promise(r=>{segA.addEventListener('loadedmetadata',r,{once:true});segA.addEventListener('error',r,{once:true})});
-  return true;
+  if(segDay===key)return true;if(window.__segLoad&&window.__segLoad.key===key)return window.__segLoad.p; // 불러오는 중이면 같이 기다려요
+  const p=(async()=>{const f=typeof d==='string'?await getFile(d,'key'):await getFile(d,isIpy()?'o':'r');if(!f)return false;
+  if(segUrl)URL.revokeObjectURL(segUrl);segUrl=URL.createObjectURL(f);segDay=0;segA.src=segUrl;
+  await new Promise(r=>{segA.addEventListener('loadedmetadata',r,{once:true});segA.addEventListener('error',r,{once:true});setTimeout(r,5000)});
+  segDay=key;return true})();window.__segLoad={key,p};const r=await p;if(window.__segLoad&&window.__segLoad.p===p)window.__segLoad=null;return r;
 }
 async function playRange(d,s,e,mul=1){
   const tok=++segTok;
   if(!audio.paused)audio.pause();if(sAudio&&!sAudio.paused)sAudio.pause();
   if(!(await ensureSeg(d)))return false;if(tok!==segTok)return true;
   {const w=1000-(performance.now()-(window.lastRecEnd||0));if(w>0){await sleep(w);if(tok!==segTok)return true}} // 마이크가 막 꺼진 직후엔 폰이 소리 앞부분을 먹어요
-  await segBoost();if(tok!==segTok)return true;segA.playbackRate=Math.min(2,S.rate*mul);const st=Math.max(0,s-0.25),pre=Math.min(st,0.8);segA.volume=pre>0?0:1;segA.currentTime=st-pre;const end=e+0.15; // 폰이 소리 시작 부분을 먹지 않게: 0.5초 먼저 소리 없이 틀고 문장에서 켜요
-  segPlaying=true;
+  await segBoost();if(tok!==segTok)return true;segA.playbackRate=Math.min(2,S.rate*mul);const st=Math.max(0,s-0.25),pre=Math.min(st,0.8);const G=v=>{segA.volume=v;if(window.__segG)window.__segG.gain.value=v?1.8:0};G(pre>0?0:1);const seekTo=async x=>{segA.currentTime=x;await new Promise(r=>{if(!segA.seeking){r();return}segA.addEventListener('seeked',r,{once:true});setTimeout(r,1500)})};await seekTo(st-pre);if(Math.abs(segA.currentTime-(st-pre))>0.4)await seekTo(st-pre);if(tok!==segTok){G(1);return true}const end=e+0.15; // 폰이 소리 시작 부분을 먹지 않게: 0.5초 먼저 소리 없이 틀고 문장에서 켜요
+  segPlaying=true;let wrongPos=false;
   try{await segA.play()}catch(err){segPlaying=false;return false}
-  await new Promise(res=>{const tick=()=>{if(segA.volume===0&&segA.currentTime>=st-0.02)segA.volume=1;if(tok!==segTok||segA.currentTime>=end||segA.paused||segA.ended){if(tok===segTok)segA.pause();segA.volume=1;res();return}requestAnimationFrame(tick)};tick()});
-  segPlaying=false;lastPlayEnd=performance.now();return true;
+  await new Promise(res=>{const tick=()=>{if(segA.volume===0&&segA.currentTime>=st-0.02)G(1);if(segA.currentTime<st-pre-0.5||segA.currentTime>end+1){segA.pause();G(1);wrongPos=true;res();return} // 엉뚱한 곳이면 멈추고 기계 목소리로
+    if(tok!==segTok||segA.currentTime>=end||segA.paused||segA.ended){if(tok===segTok)segA.pause();G(1);res();return}requestAnimationFrame(tick)};tick()});
+  segPlaying=false;lastPlayEnd=performance.now();return wrongPos?false:true;
 }
-function stopSeg(){segTok++;segA.pause();segA.volume=1;segPlaying=false;if('speechSynthesis' in window)speechSynthesis.cancel()}
+function stopSeg(){segTok++;segA.pause();segA.volume=1;if(window.__segG)window.__segG.gain.value=1.8;segPlaying=false;if('speechSynthesis' in window)speechSynthesis.cancel()}
 /* 폰 음성: 영어는 en-US 목소리를 직접 골라야 삼성폰에서도 영어로 읽어요 */
 let _vs=[];function loadV(){try{_vs=speechSynthesis.getVoices()||[]}catch(e){}}if(window.speechSynthesis){loadV();speechSynthesis.onvoiceschanged=loadV}
 function pickV(lang){if(!_vs.length)loadV();const p=lang.slice(0,2);return _vs.find(v=>v.lang.replace('_','-')===lang)||_vs.find(v=>v.lang.toLowerCase().startsWith(p))||null}
 function say(t,lang='en-US'){
   return new Promise(res=>{
     if(!('speechSynthesis' in window)){res();return}
-    speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang=lang;const vv=pickV(lang);if(vv)u.voice=vv;u.rate=Math.min(1.2,S.rate*0.9);if(/^ko/.test(lang))u.volume=0.6; // 한국어는 조금 작게
+    speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang=lang;const vv=pickV(lang);if(vv)u.voice=vv;u.rate=Math.min(1.2,S.rate*0.9);u.volume=1; // 한국어도 크게
     segPlaying=true;u.onend=u.onerror=()=>{segPlaying=false;lastPlayEnd=performance.now();res()};speechSynthesis.speak(u);
   });
 }
@@ -1157,7 +1158,7 @@ function wdChainPlan(add,cur,idx){let need=wdTarget()-wdToday()-idx.length,m=cur
     kidParts(m,0).forEach(([type])=>add({type,n:m,idx:g,kid:true,chain:true,g:'new',title:KIDNAME[type][0],sub:`${lab(m)} · ${ttl(m)} · ${g.length}단어 · ${KIDNAME[type][1]}`}));need-=g.length;m++}}
 function wdMore(){if(S.course==='wd')return;if(!CHAIN())return;const P=L().plan;if(!P||P.date!==today())return;
   if(wdToday()>=wdTarget())return;let cu=L().cur;if(cu&&cu.k)return;
-  if(!cu&&!LB().noPlace&&!(L().hardU&&!L().lessons[L().hardU])&&L().placeStarted&&!Object.keys(L().partial||{}).length){const tk=skipTask(nextUnit());if(tk){tk.id='t'+P.tasks.length;P.tasks.push(tk);save();return}} // 다음 단원 전에 또 실력 확인
+  if(!cu&&!LB().noPlace&&!(L().hardU&&!L().lessons[L().hardU])&&L().placeStarted&&!Object.keys(L().partial||{}).length&&!(L().ptDay===today()&&L().ptN>=2)){const tk=BUDC()?sizeTest(skipTask(nextUnit()),TEST_MAX):skipTask(nextUnit());if(tk){tk.id='t'+P.tasks.length;P.tasks.push(tk);save();return}} // 다음 단원 전에 또 실력 확인
   if(!cu){const m=nextUnit();if(m>TOTAL())return;cu=L().cur={n:m,k:0,tries:[],s3:{sum:0,cnt:0},hist:[],g:0};const pa=(L().partial||{})[m];if(pa){cu.hist=[pa];cu.g=1;cu.fromTest=1;delete L().partial[m]}}
   migCur(cu);cu.cg=null;const idx=curGroup(cu);if(!idx.length)return;const m=cu.n,w=S.course==='wd'?'단어':'문장';
   kidParts(m,cu.fromTest&&!cu.k?0:(cu.g||0)).forEach(([type])=>{const t2={type,n:m,idx,kid:true,g:'new',title:KIDNAME[type][0],sub:`${lab(m)} · ${ttl(m)} · 오늘 ${Math.min(wdTarget(),wdToday()+newCnt(m,idx))}/${wdTarget()}${w} · ${KIDNAME[type][1]}`};t2.id='t'+P.tasks.length;P.tasks.push(t2)});save()}
@@ -1315,9 +1316,10 @@ function getPlan(){const l=L();if(!l.cum8){const w=S.course==='wd';for(const x o
     l.plan.tasks=l.plan.tasks.filter(x=>x.done||x.g!=='new');const ps=l.plan.tasks.findIndex(x=>!x.done&&x.g!=='wrong');l.plan.tasks.splice(ps<0?l.plan.tasks.length:ps,0,...fx);l.plan.tasks.forEach((x,k)=>x.id='t'+k);save()}
   // 실력 확인: 리딩·단어 빼고, 테스트가 끝날 때까지 늘 오늘 공부 맨 위에
   if(l.placeDay===today()&&l.ptDay!==today()){l.ptDay=today();l.ptN=2;save()} // 새 버전 전에 오늘 이미 테스트를 했으면 오늘은 더 안 함
+  if(BUDC())l.plan.tasks.forEach(x=>{if(x.kind==='skiptest'&&!x.done&&!(x.qs&&x.qs.q)&&x.items.length>TEST_MAX){let u=[],it=[];for(const [m,k] of (x.units||[...new Set(x.items.map(z=>z[0]))].map(m=>[m,x.items.filter(z=>z[0]===m).length]))){if(u.length&&it.length+k>TEST_MAX)break;u.push([m,k]);it=it.concat(x.items.filter(z=>z[0]===m))}if(it.length>TEST_MAX){it=shuffle(it.slice()).slice(0,TEST_MAX).sort((a,b)=>a[1]-b[1]);u=[[u[0][0],it.length]]}x.items=it;x.units=u;const a=u[0][0],b=u[u.length-1][0];x.title=`📝 실력 확인 · ${lab(a)}${b!==a?' ~ '+lab(b):''}`;x.sub=`${it.length}문장 · 다 맞히면 건너뛰기 · 1~2개 틀리면 그것만 · 30% 넘게 틀리면 바로 이 단원 공부`;save()}}); // 예전에 만든 큰 테스트는 25문장 안으로
   if(l.ptDay===today()&&l.ptN>=2&&!l.plan.ptEnd&&l.plan.tasks.some(x=>!x.done)){l.plan.ptEnd=1;l.plan.tasks=l.plan.tasks.filter(x=>x.done);if(!l.plan.tasks.length)l.plan.tasks=[{id:'t0',type:'quiz',kind:'skiptest',title:'📝 실력 확인 (오늘 끝)',items:[],done:true}];l.plan.tasks.forEach((x,k)=>x.id='t'+k);save();bridgeDone()}
   const cu=l.cur,kd=kidMode();if(l.hardU&&l.lessons[l.hardU])delete l.hardU;if(!LB().noPlace&&!(l.ptDay===today()&&l.ptN>=2)&&!l.hardU&&isIpy()&&!['wd','rd'].includes(S.course)&&!l.plan.tasks.some(x=>x.kind==='skiptest'&&!x.done)&&!(cu&&cu.fromTest)&&!Object.keys(l.partial||{}).length&&!Object.keys(l.fix||{}).length){
-    let tk=skipTask(cu?cu.n:kd?nextUnit():l.next);if(BUDC())tk=dow(today())===1?null:sizeTest(tk,BUD-planCnt({tasks:l.plan.tasks.filter(x=>x.done||x.g!=='new')}));if(tk&&!(l.ptDay===today()&&(l.ptN||0)>=1&&tk.items.length>20)){tk.id='t'+l.plan.tasks.length;l.plan.tasks=l.plan.tasks.filter(x=>x.done||!(x.g==='new'));const ps=l.plan.tasks.findIndex(x=>!x.done&&x.g!=='wrong');l.plan.tasks.splice(ps<0?l.plan.tasks.length:ps,0,tk);l.plan.tasks.forEach((x,k)=>x.id='t'+k);l.plan.place=true;save()}}
+    let tk=skipTask(cu?cu.n:kd?nextUnit():l.next);if(BUDC())tk=dow(today())===1?null:sizeTest(tk,BUD-planCnt({tasks:l.plan.tasks.filter(x=>x.done||x.g!=='new')}));if(tk&&!(l.ptDay===today()&&(l.ptN||0)>=1&&tk.items.length>TEST_MAX)){tk.id='t'+l.plan.tasks.length;l.plan.tasks=l.plan.tasks.filter(x=>x.done||!(x.g==='new'));const ps=l.plan.tasks.findIndex(x=>!x.done&&x.g!=='wrong');l.plan.tasks.splice(ps<0?l.plan.tasks.length:ps,0,tk);l.plan.tasks.forEach((x,k)=>x.id='t'+k);l.plan.place=true;save()}}
   return l.plan}
 function markLearned(n){
   const l=L();const t=today();
@@ -1535,9 +1537,9 @@ $('jumpB').onclick=()=>{const v=+$('jumpN').value;if(!isIpy()||!v||v<1||v>TOTAL(
 /* 실력 확인 테스트: 한 번에 20문장(설정 10~30) · 단원마다 4문장씩 여러 단원을 이어서 */
 const placeN=()=>LB().placeN||20;
 /* 기적 쓰기·만들기(아이): 하루 최대 30문장 (복습 → 틀린 것 공부 → 실력 확인), 월요일은 복습만 */
-const BUD=25,BUDC=()=>kidMode()&&['gw','gj'].includes(S.course);
+const TEST_MAX=25,BUD=25,BUDC=()=>kidMode()&&['gw','gj'].includes(S.course);
 function planCnt(P){let n=0;const seenNew=new Set();for(const x of P.tasks){if(x.type==='quiz')n+=(x.items||[]).length;else if(x.g==='new'&&x.kid&&!seenNew.has(x.n)){seenNew.add(x.n);n+=(x.grp||x.idx||[]).length}}return n}
-function sizeTest(tk,room){if(!tk)return null;room=Math.min(room,20);if(room<6)return null;if(tk.units.length===1&&tk.items.length<room){const t2=skipTask(tk.units[0][0],room);if(t2)tk=t2}if(tk.units.length===1&&tk.items.length>room){const m=tk.units[0][0];const pick=shuffle(tk.items.slice()).slice(0,room).sort((a,b)=>a[1]-b[1]);tk.items=pick;tk.units=[[m,pick.length]];tk.sub=`${pick.length}문장 · 다 맞히면 건너뛰기 · 1~2개 틀리면 그것만 · 30% 넘게 틀리면 바로 이 단원 공부`}return tk}
+function sizeTest(tk,room){if(!tk)return null;room=Math.min(room,TEST_MAX);if(room<6)return null;if(tk.units.length===1&&tk.items.length<room){const t2=skipTask(tk.units[0][0],room);if(t2)tk=t2}if(tk.units.length===1&&tk.items.length>room){const m=tk.units[0][0];const pick=shuffle(tk.items.slice()).slice(0,room).sort((a,b)=>a[1]-b[1]);tk.items=pick;tk.units=[[m,pick.length]];tk.sub=`${pick.length}문장 · 다 맞히면 건너뛰기 · 1~2개 틀리면 그것만 · 30% 넘게 틀리면 바로 이 단원 공부`}return tk}
 function skipTask(n,maxN){const N=placeN(),units=[],items=[];
   const busy=m=>{const cu=L().cur;return L().lessons[m]||(L().partial||{})[m]||(L().fix||{})[m]||(cu&&cu.n===m&&cu.fromTest)};
   for(let m=n;m<=TOTAL()&&(maxN?items.length<maxN:!units.length);m++){if(busy(m))continue;const el=isIpy()?eligIdx(m):[...Array(nItems(m)).keys()];if(!el.length)continue;if(maxN&&units.length&&items.length+el.length>maxN)break;el.forEach(i=>items.push([m,i]));units.push([m,el.length])} // 단원 하나씩 (30문장 안에서 여러 단원 묶기)
@@ -1592,7 +1594,7 @@ async function runNext(){
   if(t.rxRemN){const x=L().lessons[t.rxRemN];if(x){x.rxrem=t.rxRem;save()}}
   if(t.rdAdv&&t.type==='rxchunk'){const x=L().lessons[t.rdAdv];if(x&&x.rxrem)delete x.rxrem}
   if(t.type==='listen'&&t.last&&t.g==='new')markLearned(t.n);
-  if(t.kind==='skiptest'){const l=L();const wr=new Set(t.wrK||[]);let skipped=0,part=0,hard=false,hardM=0;l.placeDay=today();l.placeStarted=true;l.partial=l.partial||{};if(l.ptDay!==today()){l.ptDay=today();l.ptN=0}l.ptN=(l.ptN||0)+((t.items||[]).length>20?2:1); // 20문장 넘는 큰 테스트는 하루 1번
+  if(t.kind==='skiptest'){const l=L();const wr=new Set(t.wrK||[]);let skipped=0,part=0,hard=false,hardM=0;l.placeDay=today();l.placeStarted=true;l.partial=l.partial||{};if(l.ptDay!==today()){l.ptDay=today();l.ptN=0}l.ptN=(l.ptN||0)+((t.items||[]).length>TEST_MAX?2:1); // 20문장 넘는 큰 테스트는 하루 1번
     const lastPos=t.early?Math.max(-1,...(t.wrK||[]).map(k=>t.items.findIndex(([n,i])=>n+'-'+i===k))):1e9; // 중간에 멈춘 테스트: 못 푼 단원은 그대로 둬요
     for(const [m,k] of (t.units||[[t.skipN,t.items.length]])){const all=t.items.filter(([n])=>n===m).map(([,i])=>i);const bad=all.filter(i=>wr.has(m+'-'+i));
       const firstPos=t.items.findIndex(([n])=>n===m),endPos=firstPos+all.length-1;if(endPos>lastPos){if(firstPos<=lastPos){hard=true;hardM=m;l.hardU=m;if(l.cur&&l.cur.n===m&&!l.cur.k)l.cur=null}continue}
