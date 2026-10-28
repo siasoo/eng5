@@ -232,7 +232,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.16.7</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.16.11</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1101,11 +1101,13 @@ async function runWdTest(t,tok){const A=t.items;const Z=t.wq||{q:0};
     const r=await sayAndGrade(ui,it,tok,passLine());if(!r)return false;$('qBtns').innerHTML='';$('ans').classList.remove('hidden');await playEn(n,i,it.en);if(!SESS||SESS.tok!==tok)return false;await sleep(300);
     // 2) 객관식 (판정은 여기서)
     const m=await wdMC(t,it,n,i,tok,cnt+' · 고르기');if(m===null)return false;
-    // 3) 스펠링 · 틀리면 철자 3번 듣고 다시 (3번까지)
-    let ok=false;for(let tr=1;tr<=3&&!ok;tr++){if(tr>1){$('sMain').innerHTML=wdLearnHTML(t,it,`${cnt} · 철자 다시 듣기`,'틀렸어요. <b>철자를 3번</b> 듣고 다시 써 봐요.');$('again').onclick=()=>playEn(n,i,it.en);await playEn(n,i,it.en);await spellAloud3(it,n,i,tok,3);if(!SESS||SESS.tok!==tok)return false}
-      const s=await spellOne(t,it,n,i,tok,cnt+` · 스펠링${tr>1?' ('+tr+'번째)':''}`);if(s===null)return false;ok=s}
+    // 3) 스펠링 · 틀리면 철자를 1번 천천히 듣고, 단어를 보면서 한 번 더 (2번까지)
+    let ok=false,ok2=false;for(let tr=1;tr<=2&&!ok&&!ok2;tr++){if(tr>1){$('sMain').innerHTML=wdLearnHTML(t,it,`${cnt} · 철자 다시 듣기`,'틀렸어요. <b>철자를 천천히</b> 듣고 다시 써 봐요.');$('again').onclick=()=>playEn(n,i,it.en);await playEn(n,i,it.en);await spellAloud3(it,n,i,tok,1);if(!SESS||SESS.tok!==tok)return false}
+      const s=await spellOne(t,tr>1?{...it,_show:true}:it,n,i,tok,cnt+` · 스펠링${tr>1?' (다시)':''}`);if(s===null)return false;if(tr===1)ok=s;else ok2=s} // 두 번째는 보면서 쓰니까 맞혀도 기록은 다시 볼 단어
     recordResult(n,i,!!(m&&ok));
-    if(!ok){$('sMain').innerHTML=wdLearnHTML(t,it,cnt,'괜찮아요! 이 단어는 <b>내일 복습</b>에서 다시 만나요.');$('again').onclick=()=>playEn(n,i,it.en);await playEn(n,i,it.en);await sleep(1500)}}
+    if(!(m&&ok)){Z.bad=(Z.bad||0)+1;t.wq=Z}
+    if(!ok&&!ok2){$('sMain').innerHTML=wdLearnHTML(t,it,cnt,'괜찮아요! 이 단어는 <b>내일 복습</b>에서 다시 만나요.');$('again').onclick=()=>playEn(n,i,it.en);await playEn(n,i,it.en);await sleep(1500)}
+    if((Z.bad||0)>=5&&q<A.length-1){t.items=A.slice(0,q+1);t.short=A.length-q-1;delete t.wq;toast(`오늘 잘했어요! 남은 새 단어 ${A.length-q-1}개는 내일 해요 😊`);return true}} // 어려운 날: 5개 틀리면 여기까지
   delete t.wq;return true}
 
 async function spellAloud(w,tok){const L=[...w].map((c,k)=>[c,k]).filter(([c])=>/[A-Za-z]/.test(c));const reps=L.length<=4?2:1; // 짧은 단어는 두 번
@@ -1984,7 +1986,7 @@ async function gradeSR(ui,en,need,tok){
   if(r.fallback||r.skip||r.score>=need)return r;
   const m=ui.el.querySelector('#micS');let r2=r;
   // 단어 하나는 폰 인식기가 특히 잘 못 알아들어요 → 다시 말하게 하지 않고 바로 정답 보고 ⭕/❌
-  if(words(en).length>2){if(m)m.innerHTML='잘 못 알아들었어요 🤔<small>또박또박 한 번 더 말해 봐요</small>';ui.nagged=true;
+  if(words(en).length>2||kidMode()){if(m)m.innerHTML='잘 못 알아들었어요 🤔<small>또박또박 한 번 더 말해 봐요</small>';ui.nagged=true;
     r2=await listenAnswer(ui,en,tok,need);if(!SESS||SESS.tok!==tok||r2===null)return null;ui.nagged=false}
   if(r2.fallback||r2.skip)return {...r2,retry:true};
   const b=r2.score>r.score?r2:r;if(b.score>=need)return {...b,retry:true};
@@ -2350,7 +2352,7 @@ function spellOne(t,it,n,i,tok,cnt){if(/\s/.test(String(it.en).trim()))return ph
   const slots=()=>[...w].map((c,k)=>!isL(c)?(c===' '?'<span class="sgap"></span>':`<span class="spunc">${esc(c)}</span>`):`<span class="sslot${k<p?' on':''}">${k<p?esc(c):''}</span>`).join('');
   skip();if(p<w.length)gen();
   $('sMain').innerHTML=(t.day?dayHead(t,'뜻을 보고 <b>다음 글자</b>를 골라요. 틀리거나 힌트를 쓴 단어는 한 번 더 나와요.'):t.n?stepHead(t,'뜻을 보고 <b>다음 글자</b>를 골라요. 틀리거나 힌트를 쓴 단어는 한 번 더 나와요.'):`<div class="stitle">${esc((GROUP[t.g]||'')||'')}</div><div class="sh">${esc(t.title)}</div><p class="sguide">뜻을 보고 <b>다음 글자</b>를 골라요.</p>`)+
-    `<div class="qcard"><div class="cnt">${cnt}</div><div class="ko" style="font-size:30px;margin:18px 0 22px">${esc(it.ko)}</div><div class="sslots" id="ss">${slots()}</div><div class="stiles" id="st"></div>
+    `<div class="qcard"><div class="cnt">${cnt}</div><div class="ko" style="font-size:30px;margin:18px 0 ${it._show?'6px':'22px'}">${esc(it.ko)}</div>${it._show?`<div style="font-size:34px;font-weight:800;letter-spacing:4px;color:#e0632b;margin:0 0 16px">${esc(it.en)}</div>`:''}<div class="sslots" id="ss">${slots()}</div><div class="stiles" id="st"></div>
     <div id="sres"></div><div id="spic"></div><div class="sbtns" id="sb"><button class="btn ghost" id="sBk">⌫ 지우기</button><button class="btn ghost" id="sHint">💡 힌트</button></div></div>`;
   const draw=()=>{$('ss').innerHTML=slots();$('st').innerHTML=p<w.length?opts.map((o,k)=>`<button class="stile" data-k="${k}">${o}</button>`).join(''):'';
     $('st').querySelectorAll('.stile').forEach(b=>b.onclick=()=>tap(+b.dataset.k,b))};
@@ -2445,17 +2447,24 @@ async function autoQuizItem(n,i,it,ui,tok){
   if(r.fallback){if(!r.manual)toast('음성 인식을 쓸 수 없어서 직접 체크로 바꿔요 ('+SESS.noSR+')');return 'fallback'}
   const key=`${L().id}|${today()}|${n}-${i}|퀴즈`;
   const pl=it.flag==='?'?STRICT.easy:passLine();
-  const ok=!r.skip&&r.score>=pl;
+  const ok=!r.skip&&!r.pass2&&r.score>=pl;
   idbPut('rec',key,{text:(r.skip?'(모르겠어요)':r.text)+(r.judged?' (직접 확인)':''),score:r.skip?0:Math.round(r.score*100),ok,hint:!!SESS.hinted});
   $('qBtns').innerHTML='';
   $('ans').classList.remove('hidden');
   const h=ui.el.querySelector('.heard');if(h)h.className='heard '+(ok?'ok':'ng');
-  ui.el.insertAdjacentHTML('beforeend',`<div class="verdict ${ok?'ok':'ng'}">${ok?'⭕ 정답! 👏':r.skip?'정답을 듣고 따라 말해 봐요':'❌ 아쉬워요. 정답을 들어 봐요'}</div>`);
-  if(ok)ui.done('잘했어요!');else{ui.state('play');ui.el.querySelector('#micI').textContent='🔊';ui.el.querySelector('#micS').innerHTML='정답을 들어 봐요';ui.el.querySelector('#micC').style.background='var(--soft)'}
+  ui.el.insertAdjacentHTML('beforeend',`<div class="verdict ${ok||r.pass2?'ok':'ng'}">${ok?'⭕ 정답! 👏':r.pass2?'⭕ 맞혔어요! <small>(다음 복습 때 한 번 더 나와요)</small>':r.skip?'정답을 듣고 따라 말해 봐요':'❌ 아쉬워요. 정답을 들어 봐요'}</div>`);
+  if(ok||r.pass2)ui.done(ok?'잘했어요!':'정답을 들어 봐요');else{ui.state('play');ui.el.querySelector('#micI').textContent='🔊';ui.el.querySelector('#micS').innerHTML='정답을 들어 봐요';ui.el.querySelector('#micC').style.background='var(--soft)'}
   recordResult(n,i,ok);
   await playEn(n,i,it.en);
   if(!live())return null;
   if(ok){await sleep(900);return true}
+  if(r.pass2||kidMode()){ // 민채: 정답을 2번 따라 말하기 (소리만 나면 넘어가요)
+    for(let k=0;k<2;k++){if(!live())return null;
+      $('micBox').innerHTML='';const u2=micUI();u2.prompt=`정답을 따라 말해요! (${k+1}/2)`;$('micBox').appendChild(u2.el);
+      $('qBtns').innerHTML='<button class="btn ghost" id="again3">🔁 정답 다시 듣기</button>';$('again3').onclick=async()=>{if(SESS){SESS.replayNow=true;stopRec()}await playEn(n,i,it.en)};
+      if(k>0){u2.state('play');await playEn(n,i,it.en);if(!live())return null}
+      if(S.voice&&!MIC.ok)await micInit();const ok3=await speak(u2,0.35,null,tok);if(!ok3||!live())return null;u2.done(k?'잘했어요!':'좋아요! 한 번 더');await sleep(400)}
+    $('qBtns').innerHTML='';return false}
   // 틀리면 정답을 맞게 따라 말할 때까지 (최대 3번)
   for(let k=0;k<3;k++){
     $('micBox').innerHTML='';const u2=micUI();u2.prompt='정답을 따라 말해요!';$('micBox').appendChild(u2.el);
