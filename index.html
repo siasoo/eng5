@@ -235,7 +235,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.19.0</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.19.1</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1174,9 +1174,10 @@ function wdChainPlan(add,cur,idx){let need=wdTarget()-wdToday()-idx.length,m=cur
     kidParts(m,0).forEach(([type])=>add({type,n:m,idx:g,kid:true,chain:true,g:'new',title:KIDNAME[type][0],sub:`${lab(m)} · ${ttl(m)} · ${g.length}단어 · ${KIDNAME[type][1]}`}));need-=g.length;m++}}
 function wdMore(){if(S.course==='wd')return;if(!CHAIN())return;const P=L().plan;if(!P||P.date!==today())return;
   if(wdToday()>=wdTarget())return;let cu=L().cur;if(cu&&cu.k)return;
-  if(!cu&&!LB().noPlace&&!(L().hardU&&!L().lessons[L().hardU])&&L().placeStarted&&!Object.keys(L().partial||{}).length&&!(L().ptDay===today()&&L().ptN>=2)){const tk=BUDC()?sizeTest(skipTask(nextUnit()),TEST_MAX):skipTask(nextUnit());if(tk){tk.id='t'+P.tasks.length;P.tasks.push(tk);save();return}} // 다음 단원 전에 또 실력 확인
+  if(!cu&&!LB().noPlace&&!(L().hardU&&!L().lessons[L().hardU])&&L().placeStarted&&!Object.keys(L().partial||{}).length&&!(L().ptDay===today()&&L().ptN>=2)){const tk=BUDC()?sizeTest(skipTask(nextUnit()),Math.min(TEST_MAX,BUDL()-planCnt(P))):skipTask(nextUnit());if(tk){tk.id='t'+P.tasks.length;P.tasks.push(tk);save();return}} // 다음 단원 전에 또 실력 확인
   if(!cu){const m=nextUnit();if(m>TOTAL())return;cu=L().cur={n:m,k:0,tries:[],s3:{sum:0,cnt:0},hist:[],g:0};const pa=(L().partial||{})[m];if(pa){cu.hist=[pa];cu.g=1;cu.fromTest=1;delete L().partial[m]}}
-  migCur(cu);cu.cg=null;const idx=curGroup(cu);if(!idx.length)return;const m=cu.n,w=S.course==='wd'?'단어':'문장';
+  migCur(cu);cu.cg=null;const idx=curGroup(cu);if(!idx.length)return;if(BUDC()&&BUDL()-planCnt(P)<idx.length)return; // 25문장이 차면 더 안 붙여요
+  const m=cu.n,w=S.course==='wd'?'단어':'문장';
   kidParts(m,cu.fromTest&&!cu.k?0:(cu.g||0)).forEach(([type])=>{const t2={type,n:m,idx,kid:true,g:'new',title:KIDNAME[type][0],sub:`${lab(m)} · ${ttl(m)} · 오늘 ${Math.min(wdTarget(),wdToday()+newCnt(m,idx))}/${wdTarget()}${w} · ${KIDNAME[type][1]}`};t2.id='t'+P.tasks.length;P.tasks.push(t2)});save()}
 function kidParts(n,g){if(S.course==='wd')return [['ipyex'],['spell'],['step3']];const ps=[];if(g===0&&RULES[ruleKey(n)])ps.push(['rule']);ps.push(['ipyex'],['step2'],['block'],['step3']);return ps}
 const KIDNAME={spell:['스펠링','뜻을 보고 글자를 하나씩 골라요'],rule:['오늘의 규칙','규칙을 읽고 예문 듣기'],ipyex:['듣고 따라 말하기','원어민 소리를 듣고 따라 말해요'],step2:['실감 나게 5번 읽기','영어를 보면서 연기하듯 읽어요'],block:['블록 맞추기','한국어를 보고 영어 블록을 순서대로'],step3:['영어로 말하기','한국어만 보고 영어로 · 80점 넘으면 통과']};
@@ -1207,7 +1208,7 @@ function buildPlanIpy(force){
   for(const x of due){
     let items=sampleReview(x.n,x.st);const s2=x.st<=2?taskSec({type:'step2',n:x.n,h:'all'}):0;const sec=s2+items.length*10;
     let partRem=null;
-    if(bud){const room=BUD-used;if(room<=0)break;if(items.length>room){partRem=items.slice(room).map(z=>z[1]);items=items.slice(0,room)}used+=items.length}
+    if(bud){const room=BUDL()-used;if(room<=0)break;if(items.length>room){partRem=items.slice(room).map(z=>z[1]);items=items.slice(0,room)}used+=items.length}
     else if(added>=1&&est+sec>LIM-Math.min(unitSec,9*60))break;
     // 1일·3일 복습: 연기낭독 5회 더 (마지막은 영어 가리고)
     if(S.course==='rd'&&kidMode()&&RDX[x.n]){const room=RD_REV-rdCnt(P);if(room<=0)break; // 다른 과정과 같은 복습: 1·3·7·14일은 10문장, 30·60·90일은 전체 · 넘치면 나눠서
@@ -1222,7 +1223,7 @@ function buildPlanIpy(force){
   }
   if(S.course==='wd'&&kidMode()){if((wkOK||wd>=1&&wd<=6)&&wdToday()<wdTarget()){const items=wdPick(wdTarget()-wdToday());if(items.length){P.newN=items[0][0];addWdDay(add,items)}}}
   else if(!LB().noPlace&&!(l.hardU&&!l.lessons[l.hardU])&&kidMode()&&!['wd','rd'].includes(S.course)&&(l.placeStarted||!Object.values(l.lessons).some(x=>!x.old&&!x.skip))&&!(cur&&(cur.hist&&cur.hist.length||cur.k>0||cur.fromTest))&&nextUnit()<=TOTAL()){
-    const n=cur?cur.n:nextUnit();let tk=skipTask(n);if(bud)tk=wd===1?null:sizeTest(tk,BUD-planCnt(P));if(tk){P.newN=n;P.place=true;add(tk)}}
+    const n=cur?cur.n:nextUnit();let tk=skipTask(n);if(bud)tk=wd===1?null:sizeTest(tk,BUDL()-planCnt(P));if(tk){P.newN=n;P.place=true;add(tk)}}
   else if(cur&&kidMode()&&S.course==='rd'&&RDX[cur.n]){P.newN=cur.n;cur.pos=cur.pos||0; // 복습 포함 하루 12문장 꼭 채우기 (단원이 끝나면 다음 단원으로 이어서)
     let n=cur.n,pos=cur.pos,guard=0;
     while(rdCnt(P)<RD_MAX&&RDX[n]&&guard++<5){const R=RDX[n],sub=`${lab(n)} · ${ttl(n)}`,room=RD_MAX-rdCnt(P),end=Math.min(R.sents.length,pos+room);
@@ -1233,7 +1234,7 @@ function buildPlanIpy(force){
     cur.pos=cur.pos||0;const room=Math.max(1,RD_MAX-rdCnt(P)),end=Math.min(st.length,cur.pos+room); // 자료 없는 단원도 복습 포함 하루 12문장
     if(!cur.pos&&ex.length&&!(cur.k>0))add({type:'rword',n,idx:ex,g:'new',title:'단어 뜻 익히기',sub:sub+' · 단어 '+ex.length+'개 · 뜻 고르기'});
     if(end>cur.pos)add({type:'rmean',n,idx:st.slice(cur.pos,end),rxEnd:end,g:'new',rd:end>=st.length,rdLast:end>=st.length,title:'한 문장씩 해석하기',sub:sub+` · ${cur.pos+1}~${end}번째 문장 · 듣고 뜻 고르기`})}
-  else if(cur&&kidMode()&&bud&&(wd===1||BUD-planCnt(P)<Math.min(4,curGroup(cur).length))){P.kind='reviewday'} // 월요일·자리 없음: 복습만
+  else if(cur&&kidMode()&&bud&&(wd===1||BUDL()-planCnt(P)<Math.min(4,curGroup(cur).length))){P.kind='reviewday'} // 월요일·자리 없음: 복습만
   else if(cur&&kidMode()){P.newN=cur.n;
     const idx=curGroup(cur);const grs=unitGroups(cur.n);
     if(cur.g>0&&cur.k===0&&S.course!=='wd'&&!cur.fromTest){const pv=grs[cur.g-1],rp=pv.length>10?2:4;add({type:'step2',n:cur.n,idx:pv,reps:rp,g:'review',title:'어제 배운 문장 다시 읽기',sub:`${lab(cur.n)} · ${pv.length}문장 · ${rp}번씩`})}
@@ -1242,7 +1243,7 @@ function buildPlanIpy(force){
   else if(cur){P.newN=cur.n;
     partsFor(cur.n).slice(cur.k).forEach(([type,h])=>{const [,title,sub]=STEPNAME[type];add({type,n:cur.n,h,g:'new',title:title+halfLabel(cur.n,h),sub:`${lab(cur.n)} · ${ttl(cur.n)} · ${sub}`})})}
   else if(l.next<=N&&(wkOK||wd>=1&&wd<=6))P.kind='reviewday';
-  if(bud&&wd!==1&&cur&&cur.fromTest&&!LB().noPlace&&!(l.ptDay===t&&l.ptN>=2)){const tk=sizeTest(skipTask(cur.n),BUD-planCnt(P));if(tk){P.place=true;add(tk)}} // 틀린 문장 공부 뒤 바로 다음 단원 실력 확인
+  if(bud&&wd!==1&&cur&&cur.fromTest&&!LB().noPlace&&!(l.ptDay===t&&l.ptN>=2)){const tk=sizeTest(skipTask(cur.n),BUDL()-planCnt(P));if(tk){P.place=true;add(tk)}} // 틀린 문장 공부 뒤 바로 다음 단원 실력 확인
   if(S.course==='rd'&&kidMode()&&rdCnt(P)<RD_MAX){const inP=new Set(P.tasks.filter(x=>x.g==='review').map(x=>x.n));for(const x of due){const room=RD_MAX-rdCnt(P);if(room<=0)break;if(inP.has(x.n)||!RDX[x.n])continue; // 새 문장이 모자라면 복습으로 12문장 채우기
       const L0=l.lessons[x.n],all=RDX[x.n].sents.map((_,k)=>k);let list=L0.rxrem&&L0.rxrem.length?L0.rxrem:(x.st>=5?all:shuffle(all.slice()).slice(0,10).sort((a,b)=>a-b));let rem=null;if(list.length>room){rem=list.slice(room);list=list.slice(0,room)}
       add({type:'rxchunk',mode:x.st>=5?'nat':x.st===4?'both':'chunk',n:x.n,sk:list,rdAdv:rem?null:x.n,rxRemN:rem?x.n:null,rxRem:rem,g:'review',title:`${STAGE_NAME[x.st]} 복습 · ${x.st>=5?'자연스럽게 해석하기':x.st===4?'끊어 해석 → 자연스럽게':'끊어 해석하기'}${rem?' (나눠서 · 나머지는 내일)':''}`,sub:`${lab(x.n)} · ${ttl(x.n)} · ${list.length}문장`})}}
@@ -1272,7 +1273,7 @@ function buildPlanIpyV1(P,l,t,wd){
     add({type:'quiz',kind:'cycle',g:'cycle',items,cycleTo:c,title:'전체 복습 바퀴',sub:`${ns[0]}~${ns[ns.length-1]}과`})}
   return P;
 }
-const buildPlan=force=>{const o=L().plan,P=buildPlan0(force);if(o&&P&&o.date===P.date&&o.secs&&!P.secs)P.secs=o.secs;return P}; // 같은 날 계획을 다시 만들어도 공부 시간은 이어서
+const buildPlan=force=>{const o=L().plan;if(o&&o.date===today()&&BUDC()){const l=L();const k=planCnt({tasks:o.tasks.filter(x=>x.done)});if(k){l.bc={d:today(),n:bud0()+k}}}const P=buildPlan0(force);if(o&&P&&o.date===P.date&&o.secs&&!P.secs)P.secs=o.secs;return P}; // 같은 날 계획을 다시 만들어도 공부 시간은 이어서
 function buildPlan0(force){
   if(isIpy())return buildPlanIpy(force);
   const l=L(),t=today(),wd=dow(t);
@@ -1336,7 +1337,7 @@ function getPlan(){const l=L();if(!l.cum8){const w=S.course==='wd';for(const x o
   if(BUDC())l.plan.tasks.forEach(x=>{if(x.kind==='skiptest'&&!x.done&&!(x.qs&&x.qs.q)&&x.items.length>TEST_MAX){let u=[],it=[];for(const [m,k] of (x.units||[...new Set(x.items.map(z=>z[0]))].map(m=>[m,x.items.filter(z=>z[0]===m).length]))){if(u.length&&it.length+k>TEST_MAX)break;u.push([m,k]);it=it.concat(x.items.filter(z=>z[0]===m))}if(it.length>TEST_MAX){it=shuffle(it.slice()).slice(0,TEST_MAX).sort((a,b)=>a[1]-b[1]);u=[[u[0][0],it.length]]}x.items=it;x.units=u;const a=u[0][0],b=u[u.length-1][0];x.title=`📝 실력 확인 · ${lab(a)}${b!==a?' ~ '+lab(b):''}`;x.sub=`${it.length}문장 · 다 맞히면 건너뛰기 · 1~2개 틀리면 그것만 · 30% 넘게 틀리면 바로 이 단원 공부`;save()}}); // 예전에 만든 큰 테스트는 25문장 안으로
   if(l.ptDay===today()&&l.ptN>=2&&!l.plan.ptEnd&&l.plan.tasks.some(x=>!x.done)){l.plan.ptEnd=1;l.plan.tasks=l.plan.tasks.filter(x=>x.done);if(!l.plan.tasks.length)l.plan.tasks=[{id:'t0',type:'quiz',kind:'skiptest',title:'📝 실력 확인 (오늘 끝)',items:[],done:true}];l.plan.tasks.forEach((x,k)=>x.id='t'+k);save();bridgeDone()}
   const cu=l.cur,kd=kidMode();if(l.hardU&&l.lessons[l.hardU])delete l.hardU;if(!LB().noPlace&&!(l.ptDay===today()&&l.ptN>=2)&&!l.hardU&&isIpy()&&!['wd','rd'].includes(S.course)&&!l.plan.tasks.some(x=>x.kind==='skiptest'&&!x.done)&&!(cu&&cu.fromTest)&&!Object.keys(l.partial||{}).length&&!Object.keys(l.fix||{}).length){
-    let tk=skipTask(cu?cu.n:kd?nextUnit():l.next);if(BUDC())tk=dow(today())===1?null:sizeTest(tk,BUD-planCnt({tasks:l.plan.tasks.filter(x=>x.done||x.g!=='new')}));if(tk&&!(l.ptDay===today()&&(l.ptN||0)>=1&&tk.items.length>TEST_MAX)){tk.id='t'+l.plan.tasks.length;l.plan.tasks=l.plan.tasks.filter(x=>x.done||!(x.g==='new'));const ps=l.plan.tasks.findIndex(x=>!x.done&&x.g!=='wrong');l.plan.tasks.splice(ps<0?l.plan.tasks.length:ps,0,tk);l.plan.tasks.forEach((x,k)=>x.id='t'+k);l.plan.place=true;save()}}
+    let tk=skipTask(cu?cu.n:kd?nextUnit():l.next);if(BUDC())tk=dow(today())===1?null:sizeTest(tk,BUDL()-planCnt({tasks:l.plan.tasks.filter(x=>x.done||x.g!=='new')}));if(tk&&!(l.ptDay===today()&&(l.ptN||0)>=1&&tk.items.length>TEST_MAX)){tk.id='t'+l.plan.tasks.length;l.plan.tasks=l.plan.tasks.filter(x=>x.done||!(x.g==='new'));const ps=l.plan.tasks.findIndex(x=>!x.done&&x.g!=='wrong');l.plan.tasks.splice(ps<0?l.plan.tasks.length:ps,0,tk);l.plan.tasks.forEach((x,k)=>x.id='t'+k);l.plan.place=true;save()}}
   return l.plan}
 function markLearned(n){
   const l=L();const t=today();
@@ -1702,6 +1703,7 @@ $('jumpB').onclick=()=>{const v=+$('jumpN').value;if(!isIpy()||!v||v<1||v>TOTAL(
 const placeN=()=>LB().placeN||20;
 /* 기적 쓰기·만들기(아이): 하루 최대 30문장 (복습 → 틀린 것 공부 → 실력 확인), 월요일은 복습만 */
 const TEST_MAX=25,BUD=25,BUDC=()=>kidMode()&&['gw','gj'].includes(S.course);
+const bud0=()=>{const l=L();return l.bc&&l.bc.d===today()?l.bc.n:0},BUDL=()=>Math.max(0,BUD-bud0()); // 오늘 이미 끝낸 계획(테스트 등)도 25문장에 포함
 function planCnt(P){let n=0;const seenNew=new Set();for(const x of P.tasks){if(x.type==='quiz')n+=(x.items||[]).length;else if(x.g==='new'&&x.kid&&!seenNew.has(x.n)){seenNew.add(x.n);n+=(x.grp||x.idx||[]).length}}return n}
 function sizeTest(tk,room){if(!tk)return null;room=Math.min(room,TEST_MAX);if(room<6)return null;if(tk.units.length===1&&tk.items.length<room){const t2=skipTask(tk.units[0][0],room);if(t2)tk=t2}if(tk.units.length===1&&tk.items.length>room){const m=tk.units[0][0];const pick=shuffle(tk.items.slice()).slice(0,room).sort((a,b)=>a[1]-b[1]);tk.items=pick;tk.units=[[m,pick.length]];tk.sub=`${pick.length}문장 · 다 맞히면 건너뛰기 · 1~2개 틀리면 그것만 · 30% 넘게 틀리면 바로 이 단원 공부`}return tk}
 function skipTask(n,maxN){const N=placeN(),units=[],items=[];
@@ -1931,7 +1933,7 @@ function matchScore(expected,got){const SG=strictG(),nW=String(expected).trim().
   let sc=Math.min(1,Math.max(0,(lcs-extra)/den));
   // 짧은 문장(6단어 이하)은 중요한 낱말이 하나라도 다르면 틀림 (예: Chinese ↔ Korean, not 빠짐)
   if(SG&&a.length<=6&&sc>=0.5){const FN=new Set('i you he she it we they me him her us them my your his its our their a an the is am are was were be to of in on at do does did and or this that'.split(' '));
-    const key=a.filter(w=>!FN.has(w)&&!names.has(w));if(key.some(w=>!b.some(x=>tokEq(w,x))))sc=Math.min(sc,0.45)}
+    const key=a.filter(w=>/^(not|never|no|nothing|nobody|cannot|can't|won't|don't|doesn't|didn't|isn't|aren't|wasn't|weren't)$/.test(w)||NOTNAME.test(w));if(key.some(w=>!b.some(x=>tokEq(w,x))))sc=Math.min(sc,0.45)} // 뜻이 바뀌는 낱말(not, 나라·요일 등)만 꼭 맞아야 해요
   return sc;
 }
 const STRICT={easy:0.5,mid:0.65,hard:0.85};
@@ -2145,7 +2147,7 @@ async function gradeSR(ui,en,need,tok){
   if(r.fallback||r.skip||r.score>=need)return r;
   const m=ui.el.querySelector('#micS');let r2=r;
   // 단어 하나는 폰 인식기가 특히 잘 못 알아들어요 → 다시 말하게 하지 않고 바로 정답 보고 ⭕/❌
-  if(words(en).length>2||kidMode()){if(m)m.innerHTML='잘 못 알아들었어요 🤔<small>또박또박 한 번 더 말해 봐요</small>';ui.nagged=true;
+  if(words(en).length>2&&!kidMode()){if(m)m.innerHTML='잘 못 알아들었어요 🤔<small>또박또박 한 번 더 말해 봐요</small>';ui.nagged=true;
     r2=await listenAnswer(ui,en,tok,need);if(!SESS||SESS.tok!==tok||r2===null)return null;ui.nagged=false}
   if(r2.fallback||r2.skip)return {...r2,retry:true};
   const b=r2.score>r.score?r2:r;if(b.score>=need)return {...b,retry:true};
