@@ -235,7 +235,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.19.1</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.19.2</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -443,6 +443,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
         <div class="r"><b>마이크 민감도</b><div class="seg" id="sensSeg"></div></div>
         <div class="r"><b>365일치 목표</b><div class="seg" id="goalSeg"></div></div>
         <div class="r"><b>입영작 공부 방식<br><small style="font-weight:400;color:var(--sub)">이 학습자만 · 바꾸면 진도가 따로 저장돼요</small></b><div class="seg" id="ipyModeSeg"></div></div>
+        <div class="r"><b>✅ 오늘 이 과정 완료로<br><small style="font-weight:400;color:var(--sub)">지금 과정 · 남은 오늘 분량을 끝난 걸로 해요</small></b><button class="btn ghost sm" id="dayDoneB">✅ 완료로 하기</button></div>
         <div class="r"><b>🎉 칭찬 화면<br><small style="font-weight:400;color:var(--sub)">이 학습자만 · 과정을 끝낼 때 캐리커처 축하</small></b><div class="seg" id="cheerSeg"></div></div>
         <div class="r"><b>📰 독해 수준<br><small style="font-weight:400;color:var(--sub)">이 학습자만 · 중학교 준비로 바꾸면 오늘의 학습이 독해 하나만 돼요</small></b><div class="seg" id="dkLvSeg"></div></div>
         <div class="r"><b>한글 발음 표시<br><small style="font-weight:400;color:var(--sub)">이 학습자만</small></b><div class="seg" id="prSeg"></div></div>
@@ -2990,6 +2991,7 @@ $('pinBtn').onclick=()=>{
 $('ntfyIn').onchange=e=>{S.ntfy=e.target.value.trim().replace(/^https?:\/\/ntfy\.sh\//,'');e.target.value=S.ntfy;save()};
 $('ntfyNew').onclick=()=>{if(S.ntfy&&!confirm('새 주소로 바꾸면 엄마 폰에서도 새 주소를 다시 구독해야 해요. 바꿀까요?'))return;S.ntfy=ntfyNewTopic();$('ntfyIn').value=S.ntfy;save();toast('새 알림 주소를 만들었어요')};
 $('ntfyTest').onclick=async()=>{if(!S.ntfy){toast('먼저 ‘새 주소’를 눌러 주세요');return}const R=await buildReport(today());toast((await ntfySend(R,true))?'테스트 알림을 보냈어요 📱':'보내지 못했어요 · 인터넷을 확인해 주세요')};
+$('dayDoneB').onclick=()=>{const c=S.course;if(!(isIpy()||c==='wd')){toast('영어 과정에서 눌러 주세요');return}const n=cName(c);if(!confirm(`${n[1]} ${n[0]} 오늘 공부를 완료로 할까요?`))return;const P=getPlan(),l=L();P.tasks.forEach(x=>x.done=true);l.days=l.days||{};l.days[today()]={done:1,secs:Math.round(P.secs||0)};save();bridgeDone();markDone(c);renderAll();toast(`${n[0]} 오늘 완료로 했어요 ✅`)};
 $('pinChange').onclick=()=>{const v=$('pinNew').value.trim();if(!v)return;S.pin=v;save();$('pinNew').value='';toast('비밀번호를 바꿨어요')};
 $('rewardInput').onchange=e=>{S.reward=e.target.value.trim();save();renderReward()};
 $('nextSave').onclick=()=>{const v=Math.max(1,Math.min(366,+$('nextInput').value|0));
