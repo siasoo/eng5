@@ -236,7 +236,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.22.6</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.23.0</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -447,6 +447,8 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
         <div class="r"><b>✅ 오늘 이 과정 완료로<br><small style="font-weight:400;color:var(--sub)">지금 과정 · 남은 오늘 분량을 끝난 걸로 해요</small></b><button class="btn ghost sm" id="dayDoneB">✅ 완료로 하기</button></div>
         <div class="r"><b>✍️ 서술 문제 수<br><small style="font-weight:400;color:var(--sub)">이 학습자만 · 예습 하루 쓰기 문제</small></b><div class="seg" id="wrNSeg"></div></div>
         <div class="r"><b>✍️ 쓰기 글자 수<br><small style="font-weight:400;color:var(--sub)">이 학습자만 · 예습·독해 쓰기</small></b><div class="seg" id="wrLenSeg"></div></div>
+        <div class="r"><b>📌 규칙 연습 (하루 5문제)<br><small style="font-weight:400;color:var(--sub)">이 학습자만 · He goes / I am 같은 규칙을 어디 앞에서 풀지</small></b><div class="seg" id="grLocSeg"></div></div>
+        <div class="r"><b>📌 규칙 단계<br><small style="font-weight:400;color:var(--sub)">자동으로 올라가요 (10일 이상 + 최근 5일 80%) · 직접 바꿔도 돼요</small></b><div class="seg" id="grStSeg"></div></div>
         <div class="r"><b>🔤 스펠링 불러주기<br><small style="font-weight:400;color:var(--sub)">이 학습자만 · 틀렸을 때 철자를 몇 번</small></b><div class="seg" id="spNSeg"></div></div>
         <div class="r"><b>🎉 칭찬 화면<br><small style="font-weight:400;color:var(--sub)">이 학습자만 · 과정을 끝낼 때 캐리커처 축하</small></b><div class="seg" id="cheerSeg"></div></div>
         <div class="r"><b>📰 독해 수준<br><small style="font-weight:400;color:var(--sub)">이 학습자만 · 중학교 준비로 바꾸면 오늘의 학습이 독해 하나만 돼요</small></b><div class="seg" id="dkLvSeg"></div></div>
@@ -1498,6 +1500,1848 @@ function wrFb(q,a,o){o=o||{};a=String(a||'').trim();const good=[],next=[],hg=(a.
 const fbTxt=f=>f?[f.good.length?'👍 '+f.good.join(' · '):'',f.next.length?'💡 다음엔: '+f.next.join(' · '):'',f.m?'📗 모범 답안: '+f.m:''].filter(Boolean):[];
 const fbHTML=f=>f?`<div style="margin-top:6px;font-size:13px;line-height:1.6">${f.good.length?`<div style="color:#2e7d32">👍 ${esc(f.good.join(' · '))}</div>`:''}${f.next.length?`<div style="color:#b26a00">💡 다음엔: ${esc(f.next.join(' · '))}</div>`:''}${f.m?`<details><summary style="cursor:pointer;color:var(--sub)">📗 모범 답안</summary>${esc(f.m)}</details>`:''}</div>`:'';
 function ysFree(){const t=today(),dw=new Date().getDay();return !YSDATES.some(d=>d>t)&&!(dw===0||dw===6)}
+/* ===== 📌 오늘의 규칙 연습 (하루 5문제: 고르기 3 + 블록 2 · 기적 쓰기 앞 또는 리딩 앞) ===== */
+const GRAM=[
+[
+"s",
+"그녀는 사과를 좋아해요.",
+"She likes apples.",
+"She like apples.",
+"She is like apples.",
+"like"
+],
+[
+"s",
+"그는 매일 축구를 해요.",
+"He plays soccer every day.",
+"He play soccer every day.",
+"He is play soccer every day.",
+"play"
+],
+[
+"s",
+"내 남동생은 TV를 봐요.",
+"My brother watches TV.",
+"My brother watch TV.",
+"My brother is watch TV.",
+"watch"
+],
+[
+"s",
+"그녀는 매일 아침 우유를 마셔요.",
+"She drinks milk every morning.",
+"She drink milk every morning.",
+"She is drink milk every morning.",
+"drink"
+],
+[
+"s",
+"그 개는 빨리 달려요.",
+"The dog runs fast.",
+"The dog run fast.",
+"The dog is run fast.",
+"run"
+],
+[
+"s",
+"아빠는 차로 출근해요.",
+"Dad goes to work by car.",
+"Dad go to work by car.",
+"Dad is go to work by car.",
+"go"
+],
+[
+"s",
+"그는 영어를 공부해요.",
+"He studies English.",
+"He study English.",
+"He is study English.",
+"study"
+],
+[
+"s",
+"민지는 피아노를 쳐요.",
+"Minji plays the piano.",
+"Minji play the piano.",
+"Minji is play the piano.",
+"play"
+],
+[
+"s",
+"그녀는 9시에 자요.",
+"She sleeps at nine.",
+"She sleep at nine.",
+"She is sleep at nine.",
+"sleep"
+],
+[
+"s",
+"고양이는 생선을 먹어요.",
+"The cat eats fish.",
+"The cat eat fish.",
+"The cat is eat fish.",
+"eat"
+],
+[
+"s",
+"그는 안경을 써요.",
+"He wears glasses.",
+"He wear glasses.",
+"He is wear glasses.",
+"wear"
+],
+[
+"s",
+"엄마는 요리를 잘해요.",
+"Mom cooks well.",
+"Mom cook well.",
+"Mom is cook well.",
+"cook"
+],
+[
+"s",
+"그녀는 노래를 불러요.",
+"She sings a song.",
+"She sing a song.",
+"She is sing a song.",
+"sing"
+],
+[
+"s",
+"그는 일찍 일어나요.",
+"He gets up early.",
+"He get up early.",
+"He is get up early.",
+"get"
+],
+[
+"s",
+"내 친구는 서울에 살아요.",
+"My friend lives in Seoul.",
+"My friend live in Seoul.",
+"My friend is live in Seoul.",
+"live"
+],
+[
+"s0",
+"나는 바나나를 좋아해요.",
+"I like bananas.",
+"I likes bananas.",
+"I am like bananas.",
+"likes"
+],
+[
+"s0",
+"우리는 학교에 가요.",
+"We go to school.",
+"We goes to school.",
+"We are go to school.",
+"goes"
+],
+[
+"s0",
+"그들은 축구를 해요.",
+"They play soccer.",
+"They plays soccer.",
+"They are play soccer.",
+"plays"
+],
+[
+"s0",
+"너는 영어를 잘해.",
+"You speak English well.",
+"You speaks English well.",
+"You are speak English well.",
+"speaks"
+],
+[
+"s0",
+"나는 매일 책을 읽어요.",
+"I read books every day.",
+"I reads books every day.",
+"I am read books every day.",
+"reads"
+],
+[
+"be",
+"나는 행복해요.",
+"I am happy.",
+"I is happy.",
+"I are happy.",
+"is"
+],
+[
+"be",
+"그녀는 키가 커요.",
+"She is tall.",
+"She are tall.",
+"She am tall.",
+"are"
+],
+[
+"be",
+"우리는 배가 고파요.",
+"We are hungry.",
+"We is hungry.",
+"We am hungry.",
+"is"
+],
+[
+"be",
+"그들은 내 친구들이에요.",
+"They are my friends.",
+"They is my friends.",
+"They am my friends.",
+"is"
+],
+[
+"be",
+"그는 선생님이에요.",
+"He is a teacher.",
+"He are a teacher.",
+"He am a teacher.",
+"are"
+],
+[
+"be",
+"너는 정말 친절해.",
+"You are very kind.",
+"You is very kind.",
+"You am very kind.",
+"is"
+],
+[
+"be",
+"그것은 내 가방이에요.",
+"It is my bag.",
+"It are my bag.",
+"It am my bag.",
+"are"
+],
+[
+"be",
+"나는 열한 살이에요.",
+"I am eleven years old.",
+"I is eleven years old.",
+"I are eleven years old.",
+"is"
+],
+[
+"be",
+"내 여동생은 아파요.",
+"My sister is sick.",
+"My sister are sick.",
+"My sister am sick.",
+"are"
+],
+[
+"be",
+"그 꽃들은 예뻐요.",
+"The flowers are pretty.",
+"The flowers is pretty.",
+"The flowers am pretty.",
+"is"
+],
+[
+"was",
+"나는 어제 피곤했어요.",
+"I was tired yesterday.",
+"I were tired yesterday.",
+"I am tired yesterday.",
+"were"
+],
+[
+"was",
+"우리는 공원에 있었어요.",
+"We were at the park.",
+"We was at the park.",
+"We is at the park.",
+"was"
+],
+[
+"was",
+"그는 어제 집에 있었어요.",
+"He was at home yesterday.",
+"He were at home yesterday.",
+"He is at home yesterday.",
+"were"
+],
+[
+"was",
+"그들은 아주 신났어요.",
+"They were very excited.",
+"They was very excited.",
+"They is very excited.",
+"was"
+],
+[
+"past",
+"나는 어제 공원에 갔어요.",
+"I went to the park yesterday.",
+"I go to the park yesterday.",
+"I am went to the park yesterday.",
+"go"
+],
+[
+"past",
+"그는 어제 공원에 갔어요.",
+"He went to the park yesterday.",
+"He goes to the park yesterday.",
+"He is went to the park yesterday.",
+"goes"
+],
+[
+"past",
+"그녀는 아침에 빵을 먹었어요.",
+"She ate bread in the morning.",
+"She eats bread in the morning.",
+"She is ate bread in the morning.",
+"eats"
+],
+[
+"past",
+"우리는 영화를 봤어요.",
+"We watched a movie.",
+"We watch a movie.",
+"We are watched a movie.",
+"watch"
+],
+[
+"past",
+"그는 지난주에 책을 샀어요.",
+"He bought a book last week.",
+"He buys a book last week.",
+"He buyed a book last week.",
+"buys"
+],
+[
+"past",
+"나는 숙제를 했어요.",
+"I did my homework.",
+"I do my homework.",
+"I am did my homework.",
+"do"
+],
+[
+"past",
+"그녀는 어제 친구를 만났어요.",
+"She met her friend yesterday.",
+"She meets her friend yesterday.",
+"She is met her friend yesterday.",
+"meets"
+],
+[
+"past",
+"우리는 해변에서 놀았어요.",
+"We played on the beach.",
+"We play on the beach.",
+"We are played on the beach.",
+"play"
+],
+[
+"past",
+"그는 어젯밤 일찍 잤어요.",
+"He slept early last night.",
+"He sleeps early last night.",
+"He sleeped early last night.",
+"sleeps"
+],
+[
+"past",
+"민채는 그림을 그렸어요.",
+"Minchae drew a picture.",
+"Minchae draws a picture.",
+"Minchae drawed a picture.",
+"draws"
+],
+[
+"past",
+"그들은 버스를 탔어요.",
+"They took a bus.",
+"They take a bus.",
+"They taked a bus.",
+"take"
+],
+[
+"past",
+"나는 편지를 썼어요.",
+"I wrote a letter.",
+"I write a letter.",
+"I writed a letter.",
+"write"
+],
+[
+"past",
+"그녀는 집에 왔어요.",
+"She came home.",
+"She comes home.",
+"She comed home.",
+"comes"
+],
+[
+"past",
+"아빠는 차를 닦았어요.",
+"Dad washed the car.",
+"Dad washes the car.",
+"Dad is washed the car.",
+"washes"
+],
+[
+"isv",
+"그는 학교에 가요.",
+"He goes to school.",
+"He is go to school.",
+"He go to school.",
+"is"
+],
+[
+"isv",
+"그녀는 피자를 먹어요.",
+"She eats pizza.",
+"She is eat pizza.",
+"She eat pizza.",
+"is"
+],
+[
+"isv",
+"나는 수영을 좋아해요.",
+"I like swimming.",
+"I am like swimming.",
+"I likes swimming.",
+"am"
+],
+[
+"isv",
+"우리는 매일 운동해요.",
+"We exercise every day.",
+"We are exercise every day.",
+"We exercises every day.",
+"are"
+],
+[
+"isv",
+"그는 피아노를 쳐요.",
+"He plays the piano.",
+"He is play the piano.",
+"He play the piano.",
+"is"
+],
+[
+"isv",
+"나는 그를 알아요.",
+"I know him.",
+"I am know him.",
+"I knows him.",
+"am"
+],
+[
+"isv",
+"그녀는 고양이를 키워요.",
+"She has a cat.",
+"She is have a cat.",
+"She have a cat.",
+"is"
+],
+[
+"isv",
+"그들은 영어를 배워요.",
+"They learn English.",
+"They are learn English.",
+"They learns English.",
+"are"
+],
+[
+"isv",
+"나는 매일 아침 이를 닦아요.",
+"I brush my teeth every morning.",
+"I am brush my teeth every morning.",
+"I brushes my teeth every morning.",
+"am"
+],
+[
+"isv",
+"그녀는 학교까지 걸어가요.",
+"She walks to school.",
+"She is walk to school.",
+"She walk to school.",
+"is"
+],
+[
+"isv",
+"그는 수학을 좋아해요.",
+"He likes math.",
+"He is like math.",
+"He like math.",
+"is"
+],
+[
+"isv",
+"우리 엄마는 커피를 마셔요.",
+"My mom drinks coffee.",
+"My mom is drink coffee.",
+"My mom drink coffee.",
+"is"
+],
+[
+"n",
+"강아지 세 마리가 있어요.",
+"There are three dogs.",
+"There are three dog.",
+"There are three doges.",
+"dog"
+],
+[
+"n",
+"나는 연필 두 자루가 있어요.",
+"I have two pencils.",
+"I have two pencil.",
+"I have two pencilies.",
+"pencil"
+],
+[
+"n",
+"상자 다섯 개가 있어요.",
+"There are five boxes.",
+"There are five boxs.",
+"There are five box.",
+"boxs"
+],
+[
+"n",
+"아기가 두 명 있어요.",
+"There are two babies.",
+"There are two babys.",
+"There are two baby.",
+"babys"
+],
+[
+"n",
+"나는 시계가 두 개 있어요.",
+"I have two watches.",
+"I have two watchs.",
+"I have two watch.",
+"watchs"
+],
+[
+"n",
+"아이들이 공원에 있어요.",
+"The children are in the park.",
+"The childs are in the park.",
+"The children is in the park.",
+"childs"
+],
+[
+"n",
+"남자 세 명이 있어요.",
+"There are three men.",
+"There are three mans.",
+"There are three man.",
+"mans"
+],
+[
+"n",
+"나는 사탕 열 개를 원해요.",
+"I want ten candies.",
+"I want ten candys.",
+"I want ten candy.",
+"candys"
+],
+[
+"n",
+"그녀는 고양이 두 마리를 키워요.",
+"She has two cats.",
+"She has two cat.",
+"She have two cats.",
+"cat"
+],
+[
+"n",
+"나는 책을 많이 가지고 있어요.",
+"I have many books.",
+"I have many book.",
+"I have much books.",
+"book"
+],
+[
+"n",
+"나는 발이 두 개 있어요.",
+"I have two feet.",
+"I have two foots.",
+"I have two feets.",
+"foots"
+],
+[
+"n",
+"접시 네 개가 있어요.",
+"There are four dishes.",
+"There are four dishs.",
+"There are four dish.",
+"dishs"
+],
+[
+"n",
+"여우 두 마리가 있어요.",
+"There are two foxes.",
+"There are two foxs.",
+"There are two fox.",
+"foxs"
+],
+[
+"n",
+"나는 딸기를 좋아해요.",
+"I like strawberries.",
+"I like strawberrys.",
+"I like strawberry.",
+"strawberrys"
+],
+[
+"n",
+"생쥐 세 마리가 있어요.",
+"There are three mice.",
+"There are three mouses.",
+"There are three mouse.",
+"mouses"
+],
+[
+"a",
+"나는 사과를 하나 먹어요.",
+"I eat an apple.",
+"I eat a apple.",
+"I eat apple.",
+"a"
+],
+[
+"a",
+"그녀는 바나나 하나를 먹어요.",
+"She eats a banana.",
+"She eats an banana.",
+"She eats banana.",
+"an"
+],
+[
+"a",
+"나는 달걀이 하나 있어요.",
+"I have an egg.",
+"I have a egg.",
+"I have egg.",
+"a"
+],
+[
+"a",
+"그는 우산이 하나 있어요.",
+"He has an umbrella.",
+"He has a umbrella.",
+"He has umbrella.",
+"a"
+],
+[
+"a",
+"나는 오렌지 하나를 원해요.",
+"I want an orange.",
+"I want a orange.",
+"I want orange.",
+"a"
+],
+[
+"a",
+"그것은 코끼리예요.",
+"It is an elephant.",
+"It is a elephant.",
+"It is elephant.",
+"a"
+],
+[
+"a",
+"나는 개가 한 마리 있어요.",
+"I have a dog.",
+"I have an dog.",
+"I have dog.",
+"an"
+],
+[
+"a",
+"나는 물을 마셔요.",
+"I drink water.",
+"I drink a water.",
+"I drink waters.",
+"a"
+],
+[
+"a",
+"그녀는 우유를 좋아해요.",
+"She likes milk.",
+"She likes a milk.",
+"She likes milks.",
+"a"
+],
+[
+"a",
+"우리는 빵을 먹어요.",
+"We eat bread.",
+"We eat a bread.",
+"We eat breads.",
+"breads"
+],
+[
+"a",
+"나는 숙제가 있어요.",
+"I have homework.",
+"I have a homework.",
+"I have homeworks.",
+"homeworks"
+],
+[
+"a",
+"해가 밝아요.",
+"The sun is bright.",
+"A sun is bright.",
+"Sun is bright.",
+"A"
+],
+[
+"a",
+"달이 하늘에 떠 있어요.",
+"The moon is in the sky.",
+"A moon is in the sky.",
+"Moon is in the sky.",
+"A"
+],
+[
+"a",
+"나는 한 시간 동안 공부해요.",
+"I study for an hour.",
+"I study for a hour.",
+"I study for hour.",
+"a"
+],
+[
+"a",
+"그것은 쉬운 문제예요.",
+"It is an easy question.",
+"It is a easy question.",
+"It is easy question.",
+"a"
+],
+[
+"pr",
+"나는 그를 좋아해요.",
+"I like him.",
+"I like he.",
+"I like his.",
+"he"
+],
+[
+"pr",
+"그녀는 나를 도와줘요.",
+"She helps me.",
+"She helps I.",
+"She helps my.",
+"I"
+],
+[
+"pr",
+"이건 그녀의 가방이에요.",
+"This is her bag.",
+"This is she bag.",
+"This is hers bag.",
+"she"
+],
+[
+"pr",
+"그들은 우리를 알아요.",
+"They know us.",
+"They know we.",
+"They know our.",
+"we"
+],
+[
+"pr",
+"나는 그들을 만나요.",
+"I meet them.",
+"I meet they.",
+"I meet their.",
+"they"
+],
+[
+"pr",
+"그는 그의 엄마를 사랑해요.",
+"He loves his mom.",
+"He loves him mom.",
+"He loves he mom.",
+"him"
+],
+[
+"pr",
+"우리 선생님은 친절해요.",
+"Our teacher is kind.",
+"We teacher is kind.",
+"Us teacher is kind.",
+"We"
+],
+[
+"pr",
+"그것의 꼬리는 길어요.",
+"Its tail is long.",
+"It tail is long.",
+"It's tail is long.",
+"It"
+],
+[
+"pr",
+"나는 그녀에게 전화해요.",
+"I call her.",
+"I call she.",
+"I call hers.",
+"she"
+],
+[
+"pr",
+"그들의 집은 커요.",
+"Their house is big.",
+"They house is big.",
+"Them house is big.",
+"They"
+],
+[
+"pr",
+"내 이름은 민채예요.",
+"My name is Minchae.",
+"I name is Minchae.",
+"Me name is Minchae.",
+"I"
+],
+[
+"pr",
+"너의 신발은 예뻐요.",
+"Your shoes are pretty.",
+"You shoes are pretty.",
+"Your shoes is pretty.",
+"You"
+],
+[
+"pr",
+"선생님이 우리를 불러요.",
+"The teacher calls us.",
+"The teacher calls we.",
+"The teacher call us.",
+"we"
+],
+[
+"pr",
+"나는 그것을 원해요.",
+"I want it.",
+"I want its.",
+"I wants it.",
+"its"
+],
+[
+"pr",
+"그는 나의 친구예요.",
+"He is my friend.",
+"He is me friend.",
+"He is I friend.",
+"me"
+],
+[
+"dm",
+"이것은 내 책이에요.",
+"This is my book.",
+"These is my book.",
+"This are my book.",
+"These"
+],
+[
+"dm",
+"이것들은 내 책들이에요.",
+"These are my books.",
+"This are my books.",
+"These is my books.",
+"This"
+],
+[
+"dm",
+"저것은 고양이예요.",
+"That is a cat.",
+"Those is a cat.",
+"That are a cat.",
+"Those"
+],
+[
+"dm",
+"저것들은 새들이에요.",
+"Those are birds.",
+"That are birds.",
+"Those is birds.",
+"That"
+],
+[
+"dm",
+"이 사과는 달아요.",
+"This apple is sweet.",
+"These apple is sweet.",
+"This apple are sweet.",
+"These"
+],
+[
+"dm",
+"저 신발들은 커요.",
+"Those shoes are big.",
+"That shoes are big.",
+"Those shoes is big.",
+"That"
+],
+[
+"dm",
+"이 아이들은 내 친구들이에요.",
+"These children are my friends.",
+"This children are my friends.",
+"These children is my friends.",
+"This"
+],
+[
+"dm",
+"저 집은 오래됐어요.",
+"That house is old.",
+"Those house is old.",
+"That house are old.",
+"Those"
+],
+[
+"dm",
+"이분은 우리 엄마예요.",
+"This is my mom.",
+"These is my mom.",
+"This are my mom.",
+"These"
+],
+[
+"dm",
+"이 꽃들은 예뻐요.",
+"These flowers are pretty.",
+"This flowers are pretty.",
+"These flower are pretty.",
+"This"
+],
+[
+"bn",
+"그녀는 키가 크지 않아요.",
+"She isn't tall.",
+"She not tall.",
+"She doesn't tall.",
+"doesn't"
+],
+[
+"bn",
+"나는 배고프지 않아요.",
+"I am not hungry.",
+"I not hungry.",
+"I don't hungry.",
+"don't"
+],
+[
+"bn",
+"그들은 학생이 아니에요.",
+"They aren't students.",
+"They isn't students.",
+"They don't students.",
+"isn't"
+],
+[
+"bn",
+"그는 집에 없어요.",
+"He isn't at home.",
+"He not at home.",
+"He doesn't at home.",
+"doesn't"
+],
+[
+"bn",
+"이것은 내 펜이 아니에요.",
+"This isn't my pen.",
+"This not my pen.",
+"This aren't my pen.",
+"aren't"
+],
+[
+"bn",
+"그는 네 오빠니?",
+"Is he your brother?",
+"He is your brother?",
+"Does he your brother?",
+"Does"
+],
+[
+"bn",
+"너는 배고프니?",
+"Are you hungry?",
+"Is you hungry?",
+"Do you hungry?",
+"Do"
+],
+[
+"bn",
+"그녀는 선생님이니?",
+"Is she a teacher?",
+"Does she a teacher?",
+"Are she a teacher?",
+"Does"
+],
+[
+"bn",
+"그들은 네 친구들이니?",
+"Are they your friends?",
+"Is they your friends?",
+"Do they your friends?",
+"Is"
+],
+[
+"bn",
+"그것은 네 고양이니?",
+"Is it your cat?",
+"Are it your cat?",
+"Does it your cat?",
+"Does"
+],
+[
+"bn",
+"우리는 늦지 않아요.",
+"We aren't late.",
+"We isn't late.",
+"We don't late.",
+"isn't"
+],
+[
+"bn",
+"그 사과들은 빨갛지 않아요.",
+"The apples aren't red.",
+"The apples isn't red.",
+"The apples don't red.",
+"isn't"
+],
+[
+"dn",
+"그는 우유를 좋아하지 않아요.",
+"He doesn't like milk.",
+"He don't like milk.",
+"He doesn't likes milk.",
+"don't"
+],
+[
+"dn",
+"나는 커피를 마시지 않아요.",
+"I don't drink coffee.",
+"I doesn't drink coffee.",
+"I am not drink coffee.",
+"doesn't"
+],
+[
+"dn",
+"그녀는 TV를 보지 않아요.",
+"She doesn't watch TV.",
+"She don't watch TV.",
+"She isn't watch TV.",
+"don't"
+],
+[
+"dn",
+"우리는 일요일에 학교에 가지 않아요.",
+"We don't go to school on Sundays.",
+"We doesn't go to school on Sundays.",
+"We aren't go to school on Sundays.",
+"doesn't"
+],
+[
+"dn",
+"그들은 고기를 먹지 않아요.",
+"They don't eat meat.",
+"They doesn't eat meat.",
+"They don't eats meat.",
+"doesn't"
+],
+[
+"dn",
+"내 남동생은 채소를 먹지 않아요.",
+"My brother doesn't eat vegetables.",
+"My brother don't eat vegetables.",
+"My brother doesn't eats vegetables.",
+"eats"
+],
+[
+"dn",
+"고양이들은 물을 좋아하지 않아요.",
+"Cats don't like water.",
+"Cats doesn't like water.",
+"Cats aren't like water.",
+"doesn't"
+],
+[
+"dn",
+"아빠는 아침을 먹지 않아요.",
+"Dad doesn't eat breakfast.",
+"Dad don't eat breakfast.",
+"Dad isn't eat breakfast.",
+"don't"
+],
+[
+"dn",
+"나는 그를 몰라요.",
+"I don't know him.",
+"I doesn't know him.",
+"I not know him.",
+"doesn't"
+],
+[
+"dn",
+"그녀는 개를 키우지 않아요.",
+"She doesn't have a dog.",
+"She doesn't has a dog.",
+"She don't have a dog.",
+"has"
+],
+[
+"dn",
+"너는 피아노를 치지 않아.",
+"You don't play the piano.",
+"You doesn't play the piano.",
+"You aren't play the piano.",
+"doesn't"
+],
+[
+"dn",
+"그는 늦게 일어나지 않아요.",
+"He doesn't get up late.",
+"He don't get up late.",
+"He doesn't gets up late.",
+"gets"
+],
+[
+"dq",
+"너는 사과를 좋아하니?",
+"Do you like apples?",
+"Does you like apples?",
+"Are you like apples?",
+"Does"
+],
+[
+"dq",
+"그는 축구를 하니?",
+"Does he play soccer?",
+"Do he play soccer?",
+"Does he plays soccer?",
+"plays"
+],
+[
+"dq",
+"그녀는 영어를 말하니?",
+"Does she speak English?",
+"Do she speak English?",
+"Is she speak English?",
+"Do"
+],
+[
+"dq",
+"그들은 서울에 사니?",
+"Do they live in Seoul?",
+"Does they live in Seoul?",
+"Are they live in Seoul?",
+"Does"
+],
+[
+"dq",
+"너는 남동생이 있니?",
+"Do you have a brother?",
+"Does you have a brother?",
+"Do you has a brother?",
+"has"
+],
+[
+"dq",
+"네 엄마는 요리하시니?",
+"Does your mom cook?",
+"Do your mom cook?",
+"Does your mom cooks?",
+"cooks"
+],
+[
+"dq",
+"그 개는 빨리 달리니?",
+"Does the dog run fast?",
+"Do the dog run fast?",
+"Is the dog run fast?",
+"Do"
+],
+[
+"dq",
+"너희는 학교에 걸어가니?",
+"Do you walk to school?",
+"Does you walk to school?",
+"Are you walk to school?",
+"Does"
+],
+[
+"dq",
+"그는 우유를 마시니?",
+"Does he drink milk?",
+"Does he drinks milk?",
+"Is he drink milk?",
+"drinks"
+],
+[
+"dq",
+"민채는 그림을 그리니?",
+"Does Minchae draw pictures?",
+"Do Minchae draw pictures?",
+"Does Minchae draws pictures?",
+"draws"
+],
+[
+"dq",
+"(고양이 좋아하니?) 응, 좋아해.",
+"Yes, I do.",
+"Yes, I am.",
+"Yes, I like.",
+"am"
+],
+[
+"dq",
+"(그는 피아노 치니?) 아니, 안 쳐.",
+"No, he doesn't.",
+"No, he isn't.",
+"No, he don't.",
+"isn't"
+],
+[
+"dq",
+"그녀는 매일 운동하니?",
+"Does she exercise every day?",
+"Do she exercise every day?",
+"Does she exercises every day?",
+"exercises"
+],
+[
+"dq",
+"그들은 숙제를 하니?",
+"Do they do their homework?",
+"Does they do their homework?",
+"Are they do their homework?",
+"Does"
+],
+[
+"dq",
+"너는 일찍 일어나니?",
+"Do you get up early?",
+"Are you get up early?",
+"Does you get up early?",
+"Are"
+],
+[
+"ing",
+"그는 지금 축구를 하고 있어요.",
+"He is playing soccer now.",
+"He is play soccer now.",
+"He playing soccer now.",
+"play"
+],
+[
+"ing",
+"나는 책을 읽고 있어요.",
+"I am reading a book.",
+"I am read a book.",
+"I reading a book.",
+"read"
+],
+[
+"ing",
+"그녀는 노래를 부르고 있어요.",
+"She is singing a song.",
+"She is sing a song.",
+"She singing a song.",
+"sing"
+],
+[
+"ing",
+"우리는 점심을 먹고 있어요.",
+"We are eating lunch.",
+"We are eat lunch.",
+"We is eating lunch.",
+"is"
+],
+[
+"ing",
+"그들은 공원에서 뛰고 있어요.",
+"They are running in the park.",
+"They are runing in the park.",
+"They running in the park.",
+"runing"
+],
+[
+"ing",
+"아기가 자고 있어요.",
+"The baby is sleeping.",
+"The baby is sleep.",
+"The baby sleeping.",
+"sleep"
+],
+[
+"ing",
+"엄마는 요리하고 있어요.",
+"Mom is cooking.",
+"Mom is cook.",
+"Mom cooking.",
+"cook"
+],
+[
+"ing",
+"나는 숙제를 하고 있어요.",
+"I am doing my homework.",
+"I am do my homework.",
+"I doing my homework.",
+"do"
+],
+[
+"ing",
+"비가 오고 있어요.",
+"It is raining.",
+"It is rain.",
+"It raining.",
+"rain"
+],
+[
+"ing",
+"그는 수영하고 있어요.",
+"He is swimming.",
+"He is swiming.",
+"He swimming.",
+"swiming"
+],
+[
+"ing",
+"너는 무엇을 하고 있니?",
+"What are you doing?",
+"What are you do?",
+"What you doing?",
+"do"
+],
+[
+"ing",
+"그녀는 TV를 보고 있지 않아요.",
+"She isn't watching TV.",
+"She isn't watch TV.",
+"She doesn't watching TV.",
+"watch"
+],
+[
+"ing",
+"고양이가 물을 마시고 있어요.",
+"The cat is drinking water.",
+"The cat is drink water.",
+"The cat drinking water.",
+"drink"
+],
+[
+"ing",
+"우리는 춤추고 있어요.",
+"We are dancing.",
+"We are danceing.",
+"We dancing.",
+"danceing"
+],
+[
+"ing",
+"그는 편지를 쓰고 있어요.",
+"He is writing a letter.",
+"He is writeing a letter.",
+"He writing a letter.",
+"writeing"
+],
+[
+"past",
+"나는 어제 TV를 보지 않았어요.",
+"I didn't watch TV yesterday.",
+"I didn't watched TV yesterday.",
+"I don't watch TV yesterday.",
+"watched"
+],
+[
+"past",
+"그는 어제 학교에 가지 않았어요.",
+"He didn't go to school yesterday.",
+"He didn't went to school yesterday.",
+"He doesn't go to school yesterday.",
+"went"
+],
+[
+"past",
+"너는 어제 축구를 했니?",
+"Did you play soccer yesterday?",
+"Did you played soccer yesterday?",
+"Do you play soccer yesterday?",
+"played"
+],
+[
+"past",
+"그녀는 어제 숙제를 했니?",
+"Did she do her homework yesterday?",
+"Did she did her homework yesterday?",
+"Does she do her homework yesterday?",
+"Does"
+],
+[
+"past",
+"우리는 공원에서 걸었어요.",
+"We walked in the park.",
+"We walk in the park.",
+"We walkd in the park.",
+"walk"
+],
+[
+"past",
+"그는 문을 열었어요.",
+"He opened the door.",
+"He opens the door.",
+"He open the door.",
+"opens"
+],
+[
+"was",
+"그녀는 어제 아팠어요.",
+"She was sick yesterday.",
+"She were sick yesterday.",
+"She is sick yesterday.",
+"were"
+],
+[
+"was",
+"너는 어제 학교에 있었니?",
+"Were you at school yesterday?",
+"Was you at school yesterday?",
+"Are you at school yesterday?",
+"Was"
+],
+[
+"cw",
+"나는 수영할 수 있어요.",
+"I can swim.",
+"I can swims.",
+"I can swimming.",
+"swims"
+],
+[
+"cw",
+"그는 영어를 말할 수 있어요.",
+"He can speak English.",
+"He can speaks English.",
+"He cans speak English.",
+"speaks"
+],
+[
+"cw",
+"그녀는 피아노를 칠 수 있어요.",
+"She can play the piano.",
+"She can plays the piano.",
+"She is can play the piano.",
+"plays"
+],
+[
+"cw",
+"나는 날 수 없어요.",
+"I can't fly.",
+"I don't can fly.",
+"I can't flying.",
+"flying"
+],
+[
+"cw",
+"너는 자전거를 탈 수 있니?",
+"Can you ride a bike?",
+"Do you can ride a bike?",
+"Can you rides a bike?",
+"rides"
+],
+[
+"cw",
+"그는 빨리 달릴 수 없어요.",
+"He can't run fast.",
+"He can't runs fast.",
+"He doesn't can run fast.",
+"runs"
+],
+[
+"cw",
+"나는 내일 할머니 댁에 갈 거예요.",
+"I will visit my grandma tomorrow.",
+"I will visits my grandma tomorrow.",
+"I will visiting my grandma tomorrow.",
+"visits"
+],
+[
+"cw",
+"그녀는 곧 올 거예요.",
+"She will come soon.",
+"She will comes soon.",
+"She wills come soon.",
+"comes"
+],
+[
+"cw",
+"우리는 내일 축구를 할 거예요.",
+"We will play soccer tomorrow.",
+"We will played soccer tomorrow.",
+"We will playing soccer tomorrow.",
+"played"
+],
+[
+"cw",
+"그는 늦지 않을 거예요.",
+"He won't be late.",
+"He won't is late.",
+"He will not late.",
+"is"
+],
+[
+"cw",
+"내일 비가 올 거예요.",
+"It will rain tomorrow.",
+"It will rains tomorrow.",
+"It will raining tomorrow.",
+"rains"
+],
+[
+"cw",
+"나 좀 도와줄 수 있니?",
+"Can you help me?",
+"Can you helps me?",
+"Do you can help me?",
+"helps"
+],
+[
+"cw",
+"나는 열심히 공부할 거예요.",
+"I will study hard.",
+"I will studies hard.",
+"I will studying hard.",
+"studies"
+],
+[
+"cw",
+"그녀는 요리를 잘할 수 있어요.",
+"She can cook well.",
+"She can cooks well.",
+"She cans cook well.",
+"cooks"
+],
+[
+"cw",
+"너는 내일 올 거니?",
+"Will you come tomorrow?",
+"Will you comes tomorrow?",
+"Do you will come tomorrow?",
+"comes"
+],
+[
+"obj",
+"나는 그것들을 좋아해요.",
+"I like them.",
+"I like they.",
+"I like their.",
+"they"
+],
+[
+"obj",
+"나는 동물들이 좋아요. 나는 그것들을 사랑해요.",
+"I love them.",
+"I love they.",
+"I love it.",
+"they"
+],
+[
+"obj",
+"그는 우리를 도와줘요.",
+"He helps us.",
+"He helps we.",
+"He helps our.",
+"we"
+],
+[
+"obj",
+"우리는 그녀를 좋아해요.",
+"We like her.",
+"We like she.",
+"We like hers.",
+"she"
+],
+[
+"obj",
+"나의 개는 나를 좋아해요.",
+"My dog likes me.",
+"My dog likes I.",
+"My dog likes my.",
+"I"
+],
+[
+"obj",
+"엄마는 우리를 사랑해요.",
+"Mom loves us.",
+"Mom loves we.",
+"Mom loves our.",
+"we"
+],
+[
+"obj",
+"나는 장난감이 있어요. 나는 그것을 좋아해요.",
+"I like it.",
+"I like they.",
+"I like its.",
+"they"
+],
+[
+"obj",
+"선생님이 그들을 불러요.",
+"The teacher calls them.",
+"The teacher calls they.",
+"The teacher calls their.",
+"they"
+],
+[
+"pos",
+"이것은 나의 선물이에요.",
+"This is my gift.",
+"This is your gift.",
+"This is me gift.",
+"your"
+],
+[
+"pos",
+"그들의 엄마는 친절해요.",
+"Their mother is kind.",
+"His mother is kind.",
+"They mother is kind.",
+"His"
+],
+[
+"pos",
+"그녀의 개는 귀여워요.",
+"Her dog is cute.",
+"His dog is cute.",
+"She dog is cute.",
+"His"
+],
+[
+"pos",
+"우리의 교실은 커요.",
+"Our classroom is big.",
+"Their classroom is big.",
+"Us classroom is big.",
+"Their"
+],
+[
+"pos",
+"너의 모자는 빨개요.",
+"Your cap is red.",
+"My cap is red.",
+"You cap is red.",
+"My"
+],
+[
+"pos",
+"이것은 그의 스케이트보드예요.",
+"This is his skateboard.",
+"This is her skateboard.",
+"This is him skateboard.",
+"her"
+],
+[
+"far",
+"저 사람은 경찰관이에요.",
+"That is a police officer.",
+"This is a police officer.",
+"Those is a police officer.",
+"This"
+],
+[
+"far",
+"저 사람들은 내 학생들이에요.",
+"Those are my students.",
+"These are my students.",
+"That are my students.",
+"These"
+],
+[
+"far",
+"이 사람은 소방관이에요.",
+"This is a firefighter.",
+"That is a firefighter.",
+"These is a firefighter.",
+"That"
+],
+[
+"far",
+"저것들은 그의 장갑이에요.",
+"Those are his gloves.",
+"These are his gloves.",
+"That are his gloves.",
+"These"
+],
+[
+"far",
+"저것은 그녀의 드레스예요.",
+"That is her dress.",
+"This is her dress.",
+"Those is her dress.",
+"This"
+],
+[
+"nn",
+"그는 책을 좋아하지 않아요.",
+"He doesn't like books.",
+"He doesn't like book.",
+"He doesn't likes books.",
+"book"
+],
+[
+"nn",
+"나는 고양이를 좋아해요.",
+"I like cats.",
+"I like cat.",
+"I likes cats.",
+"cat"
+],
+[
+"nn",
+"그녀는 병원을 좋아하지 않아요.",
+"She doesn't like hospitals.",
+"She doesn't like hospital.",
+"She don't like hospitals.",
+"hospital"
+],
+[
+"nn",
+"우리는 게임을 좋아해요.",
+"We like games.",
+"We like game.",
+"We likes games.",
+"game"
+],
+[
+"nn",
+"그는 양파를 좋아하지 않아요.",
+"He doesn't like onions.",
+"He doesn't like onion.",
+"He don't like onions.",
+"onion"
+],
+[
+"the",
+"그녀는 바이올린을 켜요.",
+"She plays the violin.",
+"She plays violin.",
+"She plays a violin.",
+"a"
+],
+[
+"the",
+"나는 피아노를 쳐요.",
+"I play the piano.",
+"I play piano.",
+"I play a piano.",
+"a"
+],
+[
+"the",
+"그녀는 바이올린을 좋아해요.",
+"She likes the violin.",
+"She likes violin.",
+"She like the violin.",
+"like"
+],
+[
+"unc",
+"나는 빵을 좋아해요.",
+"I like bread.",
+"I like breads.",
+"I like a bread.",
+"breads"
+],
+[
+"unc",
+"우리는 밥(쌀)을 먹어요.",
+"We eat rice.",
+"We eat rices.",
+"We eat a rice.",
+"rices"
+],
+[
+"unc",
+"그는 케첩을 좋아해요.",
+"He likes ketchup.",
+"He likes ketchups.",
+"He likes a ketchup.",
+"ketchups"
+],
+[
+"unc",
+"나는 주스를 마셔요.",
+"I drink juice.",
+"I drink a juice.",
+"I drink juices.",
+"juices"
+]
+];
+const GRDICT={"a":"하나의","am":"~이다·~있다 (I)","an":"하나의 (a·e·i·o·u 소리 앞)","apple":"사과","apples":"사과들","are":"~이다·~있다 (you·we·they)","aren't":"~이 아니다 (are not)","at":"~에","ate":"먹었다 (eat의 과거)","babies":"아기들","baby":"아기","bag":"가방","banana":"바나나","bananas":"바나나들","be":"~이다·~있다 (원래 모양)","beach":"해변","big":"큰","bike":"자전거","birds":"새들","book":"책","books":"책들","bought":"샀다 (buy의 과거)","boxes":"상자들","bread":"빵","breakfast":"아침밥","bright":"밝은","brother":"남자 형제 (오빠·형·남동생)","brush":"닦다 (솔질하다)","bus":"버스","by":"~로 (타고)","call":"부르다·전화하다","calls":"부르다·전화하다","came":"왔다 (come의 과거)","can":"~할 수 있다","can't":"~할 수 없다","candies":"사탕들","cap":"모자","car":"자동차","cat":"고양이","cats":"고양이들","children":"아이들 (child의 복수)","classroom":"교실","coffee":"커피","come":"오다","cook":"요리하다","cooking":"요리하고 있는","cooks":"요리하다","cute":"귀여운","dad":"아빠","dancing":"춤추고 있는","day":"날·하루","did":"했다 (do의 과거)","didn't":"~하지 않았다","dishes":"접시들","do":"하다","does":"하다 (he·she·it)","doesn't":"~하지 않다 (he·she·it)","dog":"개","dogs":"개들","doing":"하고 있는","don't":"~하지 않다 (I·you·we·they)","door":"문","draw":"그리다","dress":"드레스·원피스","drew":"그렸다 (draw의 과거)","drink":"마시다","drinking":"마시고 있는","drinks":"마시다","early":"일찍","easy":"쉬운","eat":"먹다","eating":"먹고 있는","eats":"먹다","egg":"달걀","elephant":"코끼리","eleven":"11, 열하나","english":"영어","every":"매~ (every day 매일)","excited":"신난","exercise":"운동하다","fast":"빨리·빠른","feet":"발들 (foot의 복수)","firefighter":"소방관","fish":"물고기·생선","five":"5, 다섯","flowers":"꽃들","fly":"날다","for":"~동안·~를 위해","four":"4, 넷","foxes":"여우들","friend":"친구","friends":"친구들","games":"게임들","get":"얻다 (get up 일어나다)","gets":"얻다 (gets up 일어나다)","gift":"선물","glasses":"안경","gloves":"장갑들","go":"가다","goes":"가다 (he·she·it)","grandma":"할머니","happy":"행복한","hard":"열심히·어려운","has":"가지고 있다 (he·she·it)","have":"가지고 있다","he":"그는","help":"돕다","helps":"돕다","her":"그녀를·그녀의","him":"그를","his":"그의","home":"집","homework":"숙제","hospitals":"병원들","hour":"시간 (한 시간)","house":"집","hungry":"배고픈","i":"나는","in":"~안에","is":"~이다·~있다 (he·she·it)","isn't":"~이 아니다 (is not)","it":"그것은·그것을","its":"그것의","juice":"주스","ketchup":"케첩","kind":"친절한","know":"알다","last":"지난 (last week 지난주)","late":"늦은·늦게","learn":"배우다","letter":"편지","like":"좋아하다","likes":"좋아하다 (he·she·it)","live":"살다","lives":"살다 (he·she·it)","long":"긴","love":"사랑하다","loves":"사랑하다 (he·she·it)","lunch":"점심","many":"많은","math":"수학","me":"나를","meat":"고기","meet":"만나다","men":"남자들 (man의 복수)","met":"만났다 (meet의 과거)","mice":"생쥐들 (mouse의 복수)","milk":"우유","minchae":"민채","minji":"민지","mom":"엄마","moon":"달","morning":"아침","mother":"어머니","movie":"영화","my":"나의","name":"이름","night":"밤","nine":"9, 아홉","no":"아니","not":"~아니다·~않다","now":"지금","officer":"관 (police officer 경찰관)","old":"오래된·나이 든","on":"~위에·~에","onions":"양파들","opened":"열었다","orange":"오렌지","our":"우리의","park":"공원","pen":"펜","pencils":"연필들","piano":"피아노","picture":"그림","pictures":"그림들","pizza":"피자","play":"놀다·(운동)하다·(악기)치다","played":"놀았다·했다","playing":"놀고 있는·하고 있는","plays":"놀다·하다·치다 (he·she·it)","police":"경찰","pretty":"예쁜","question":"문제·질문","rain":"비가 오다·비","raining":"비가 오고 있는","read":"읽다","reading":"읽고 있는","red":"빨간","rice":"쌀·밥","ride":"타다","run":"달리다","running":"달리고 있는","runs":"달리다 (he·she·it)","school":"학교","seoul":"서울","she":"그녀는","shoes":"신발","sick":"아픈","singing":"노래하고 있는","sings":"노래하다 (he·she·it)","sister":"여자 형제 (언니·누나·여동생)","skateboard":"스케이트보드","sky":"하늘","sleeping":"자고 있는","sleeps":"자다 (he·she·it)","slept":"잤다 (sleep의 과거)","soccer":"축구","song":"노래","soon":"곧","speak":"말하다","strawberries":"딸기들","students":"학생들","studies":"공부하다 (he·she·it)","study":"공부하다","sun":"해","sundays":"일요일마다","sweet":"달콤한","swim":"수영하다","swimming":"수영·수영하고 있는","tail":"꼬리","tall":"키가 큰","teacher":"선생님","teeth":"이들 (tooth의 복수)","ten":"10, 열","that":"저것·저 사람 (하나)","the":"그 (정해진 것)","their":"그들의","them":"그들을·그것들을","there":"거기 (There are ~ 가 있다)","these":"이것들·이 사람들","they":"그들은·그것들은","this":"이것·이 사람 (하나)","those":"저것들·저 사람들","three":"3, 셋","tired":"피곤한","to":"~로·~에","tomorrow":"내일","took":"탔다·가져갔다 (take의 과거)","tv":"텔레비전","two":"2, 둘","umbrella":"우산","up":"위로 (get up 일어나다)","us":"우리를","vegetables":"채소들","very":"매우","violin":"바이올린","visit":"방문하다","walk":"걷다","walked":"걸었다","walks":"걷다 (he·she·it)","want":"원하다","was":"~였다·있었다 (I·he·she·it)","washed":"닦았다·씻었다","watch":"보다·시계","watched":"봤다","watches":"보다 (he·she·it)·시계들","watching":"보고 있는","water":"물","we":"우리는","wears":"입다·쓰다 (he·she·it)","week":"주","well":"잘","went":"갔다 (go의 과거)","were":"~였다·있었다 (you·we·they)","what":"무엇","will":"~할 것이다","won't":"~하지 않을 것이다","work":"일·회사","writing":"쓰고 있는","wrote":"썼다 (write의 과거)","years":"해·살 (years old ~살)","yes":"응·네","yesterday":"어제","you":"너는·너를","your":"너의"}
+; /* 규칙 연습 단어 뜻 (누르면 나와요) */
+const grTap=h=>h.replace(/[A-Za-z']+/g,w=>GRDICT[w.toLowerCase()]?`<span data-gw="${w}" style="border-bottom:1px dotted #888;cursor:pointer">${w}</span>`:w);
+function grBindTap(box){box.querySelectorAll('[data-gw]').forEach(x=>x.onclick=e=>{e.stopPropagation();const w=x.dataset.gw,t=$('grTip');if(t){t.innerHTML=`🔊 <b>${esc(w)}</b> = ${esc(GRDICT[w.toLowerCase()])}`;t.style.display='block'}say(w)})}
+const GR_RULE={s:'He·She·It·한 명 → 동사에 s (He goes, She likes)',s0:'I·You·We·They·두 명 이상 → s 없음 (I go, They like)',be:'I → am · He·She·It·한 명 → is · You·We·They → are',was:'과거: I·He·She·It → was · You·We·They → were',past:'과거는 누구든 똑같아요 (I went, He went) · s도 is도 안 붙여요',isv:'is·am·are랑 동작(go, eat…)은 같이 안 써요: He is go ❌ → He goes ⭕',
+  n:'여러 개면 s (dogs) · s·sh·ch·x로 끝나면 es (boxes) · 자음+y는 ies (babies) · 특별: child→children, man→men, foot→feet, mouse→mice',
+  a:'하나면 a · a·e·i·o·u 소리 앞엔 an (an apple) · 셀 수 없는 것(water, milk, bread)은 a도 s도 없어요 · 하나뿐인 것(해·달)엔 the',
+  pr:'~는: I 나는 · He 그는 · She 그녀는 · We 우리는 · They 그들은 / ~를: me 나를 · him 그를 · her 그녀를 · us 우리를 · them 그들을 / ~의: my 나의 · his 그의 · her 그녀의 · our 우리의 · their 그들의',
+  dm:'가까운 하나 this 이것 · 먼 하나 that 저것 · 가까운 여러 개 these 이것들 · 먼 여러 개 those 저것들 (These are ⭕ This are ❌)',
+  bn:'아니다: am not · isn\'t · aren\'t (She isn\'t tall) · 물어볼 땐 am·is·are를 맨 앞으로: Is she tall?',
+  dn:'동작을 안 할 때: I·You·We·They → don\'t · He·She·It → doesn\'t + 원래 모양 (He doesn\'t like ⭕ likes ❌)',
+  dq:'동작을 물어볼 때: Do you like~? · Does he like~? (Does 다음엔 원래 모양) · 대답: Yes, I do. / No, he doesn\'t.',
+  ing:'지금 하고 있어요: am·is·are + ~ing (He is playing) · 이때만 is랑 동작을 같이 써요 · run→running, dance→dancing',
+  obj:'~를: me 나를 · him 그를 · her 그녀를 · us 우리를 · them 그들을·그것들을 · it 그것을 (I like them ⭕ they ❌)',
+  pos:'~의: my 나의 · your 너의 · his 그의 · her 그녀의 · our 우리의 · their 그들의',
+  far:'이 → this 이것(하나) · these 이것들(여럿) / 저 → that 저것(하나) · those 저것들(여럿) · ‘저 사람’은 That!',
+  nn:'좋아하는 것·싫어하는 것은 보통 여러 개로: I like cats. He doesn\'t like books.',
+  the:'악기 앞엔 the: play the piano, the violin',
+  unc:'셀 수 없는 것(water, milk, bread, rice, juice, ketchup)은 a도 s도 안 붙여요',
+  cw:'can·will 다음엔 원래 모양: He can swim ⭕ swims ❌ · I will go · 못 해요 can\'t · 안 할 거예요 won\'t'};
+const GR_WEAK=['obj','pos','far','nn','the','unc']; /* 민채가 책에서 헷갈린 것 → 2배 자주 */
+const GR_STG=[null,['s','s0','isv','be','n','a','pr','dm','bn','dn','obj','pos','far','nn','the','unc'],['dq'],['ing'],['past','was'],['cw']]; /* 1: 777 0권 복습 · 2 Do/Does · 3 ~ing · 4 과거 · 5 can/will */
+const GR_SNAME=['','이미 배운 것 복습','Do/Does 물어보기','지금 하는 중 (~ing)','과거 (was·went·didn\'t)','can / will'];
+const grSt=()=>{const b=LB();b.gr=b.gr||{day:'',seen:{},wrong:[],log:{}};if(!b.gr.stage)b.gr.stage=1;return b.gr};
+const grLoc=()=>LB().grLoc||'gw';
+function grPick(){const g=grSt(),ids=GRAM.map((_,i)=>i),used=new Set(),out=[];const take=i=>{if(i==null||used.has(i))return;used.add(i);out.push(i)};
+  const st=Math.min(5,g.stage||1),cur=GR_STG[st],prev=GR_STG.slice(1,st).flat(),okR=new Set(cur.concat(prev));
+  g.wrong.filter(i=>GRAM[i]&&okR.has(GRAM[i][0])).slice(0,2).forEach(take);
+  const curR=shuffle(cur.slice()),prevR=shuffle(prev.slice());let k=0;
+  const plan=st===1?shuffle(cur.concat(GR_WEAK)):[curR[0],curR[1%curR.length],curR[2%curR.length],prevR[0],prevR[1%prevR.length]]; /* 새 단계 3 + 지난 단계 2 */
+  while(out.length<5&&k<40){const r=plan[k%plan.length];const c=ids.filter(i=>GRAM[i][0]===r&&!used.has(i)).sort((a,b)=>(g.seen[a]||0)-(g.seen[b]||0)||Math.random()-.5);take(c[0]);k++}
+  return shuffle(out).map((i,j)=>({i,blk:j>=3}))}
+function grNeed(c){return isKidN()&&kidMode()&&grLoc()===c&&grSt().day!==today()&&(LB().todayList||[]).includes(c)}
+function grRun(done){const g=grSt(),Q=grPick();let n=0,ok=0;const m=document.createElement('div');m.id='grBox';m.style.cssText='position:fixed;inset:0;z-index:235;background:var(--bg,#faf6ef);overflow:auto;padding:16px';document.body.appendChild(m);
+  const fin=()=>{g.day=today();g.log[today()]={ok,n:Q.length,st:g.stage};
+    {const st=g.stage,L5=Object.entries(g.log).filter(([d,x])=>x.st===st).sort().map(x=>x[1]),last=L5.slice(-5),sc=last.reduce((a,x)=>a+x.ok,0),tot=last.reduce((a,x)=>a+x.n,0);
+     if(st<5&&L5.length>=10&&last.length>=5&&sc>=tot*0.8){g.stage=st+1;g.newSt=today()}else if(L5.length>=15&&g.hardSt!==st){g.hardSt=st;g.hardDay=today()}}const old=addDays(today(),-60);for(const d in g.log)if(d<old)delete g.log[d];save();
+    m.innerHTML=`<div class="card" style="max-width:480px;margin:40px auto;text-align:center"><div style="font-size:48px">${ok>=4?'🏆':'👍'}</div><b style="font-size:20px">규칙 연습 ${ok} / ${Q.length} 맞혔어요!</b><div style="margin:8px 0;color:var(--sub)">이제 ${cName(S.course)[0]} 시작해요</div><button class="btn green" id="grGo" style="width:100%">▶ 시작</button></div>`;
+    $('grGo').onclick=()=>{m.remove();done()}};
+  const intro=()=>{const st=g.stage;m.innerHTML=`<div class="card" style="max-width:480px;margin:30px auto"><div style="text-align:center;font-size:44px">🎉</div><b style="font-size:20px;display:block;text-align:center">새 규칙이 열렸어요! · ${st}단계</b><div style="text-align:center;color:var(--sub);margin:4px 0 10px">${GR_SNAME[st]}</div>${GR_STG[st].map(r=>`<div style="padding:12px;margin-top:8px;border-radius:12px;background:#fff;border:2px solid #f0b37e;font-size:16px">📌 ${grTap(esc(GR_RULE[r]))}</div>`).join('')}<div id="grTip" style="display:none;margin-top:8px;padding:8px 10px;border-radius:10px;background:#e8f0fb;font-size:16px"></div><button class="btn green" id="grIn" style="width:100%;margin-top:12px">알겠어요 👍 문제 풀기</button></div>`;grBindTap(m);$('grIn').onclick=()=>{g.newShown=today();save();show()}};
+  const show=()=>{if(n>=Q.length){fin();return}const q=Q[n],it=GRAM[q.i];const [r,ko,a]=it;g.seen[q.i]=(g.seen[q.i]||0)+1;
+    const head=`<div style="display:flex;justify-content:space-between;align-items:center"><b style="color:#c0582b">📌 오늘의 규칙 연습</b><small>${n+1} / ${Q.length}</small></div><div style="font-size:21px;font-weight:800;margin:14px 0 4px">${['far','dm'].includes(r)?esc(ko).replace(/(^|\s)(저|이)(?=\s|것|분|사람)/g,'$1<u style="color:#c0582b">$2</u>'):esc(ko)}</div><button class="btn ghost" id="grKo" style="font-size:13px">🔁 한국어 다시 듣기</button>`;
+    const result=(right,ord)=>{if(right){ok++;g.wrong=g.wrong.filter(x=>x!==q.i)}else if(!g.wrong.includes(q.i))g.wrong.unshift(q.i);g.wrong=g.wrong.slice(0,10);save();
+      $('grRes').innerHTML=`<div style="margin-top:12px;padding:12px;border-radius:14px;background:${right?'#eaf7e8':'#fff1e6'}"><b style="font-size:18px">${right?'⭕ 딩동댕!':'❌ 아쉬워요'}</b><div style="font-size:19px;font-weight:700;margin:6px 0">${grTap(esc(a))}</div>${right?'':`<div style="font-size:16px;padding:10px;border-radius:10px;background:#fff;border:2px solid #f0b37e">${ord?'🔀 함정은 잘 뺐어요! 순서만 다시 봐요':'📌 '+grTap(esc(GR_RULE[r]))}</div>`}<div id="grTip" style="display:none;margin-top:8px;padding:8px 10px;border-radius:10px;background:#e8f0fb;font-size:16px"></div><div style="font-size:12px;color:var(--sub);margin-top:6px">👆 밑줄 친 영어 단어를 누르면 뜻과 소리가 나와요</div></div><button class="btn green" id="grNx" style="width:100%;margin-top:10px">다음 ▶</button>`;
+      say(a);grBindTap($('grRes'));$('grNx').onclick=()=>{n++;show()}};
+    if(!q.blk){const opts=shuffle([a,it[3],it[4]]);m.innerHTML=`<div class="card" style="max-width:480px;margin:10px auto">${head}<div style="font-size:14px;color:var(--sub);margin-top:10px">맞는 영어 문장을 골라요</div>${opts.map((o,k)=>`<button class="btn ghost" data-go="${k}" style="display:block;width:100%;text-align:left;margin-top:8px;font-size:18px;padding:14px">${esc(o)}</button>`).join('')}<div id="grRes"></div></div>`;
+      m.querySelectorAll('[data-go]').forEach(bt=>bt.onclick=()=>{if($('grNx'))return;const o=opts[+bt.dataset.go],right=o===a;m.querySelectorAll('[data-go]').forEach(x=>{const v=opts[+x.dataset.go];x.disabled=true;if(v===a)x.style.cssText+=';background:#eaf7e8;border-color:#4caf50';else if(x===bt)x.style.cssText+=';background:#fdecea;border-color:#e57373'});result(right)})}
+    else{const pu=(a.match(/[.?!]$/)||['.'])[0],toks=a.replace(/[.?!]$/,'').split(' '),tiles=shuffle(toks.concat([it[5]])),pick=[];
+      const draw=()=>{$('grAns').innerHTML=pick.length?pick.map(k=>`<span style="display:inline-block;padding:8px 10px;margin:3px;border-radius:10px;background:#e8f0fb;font-weight:700">${esc(tiles[k])}</span>`).join('')+pu:'<span style="color:var(--sub)">아래 블록을 순서대로 눌러요 · 필요 없는 블록이 1개 있어요</span>';
+        m.querySelectorAll('[data-gt]').forEach(x=>{x.disabled=pick.includes(+x.dataset.gt)||!!$('grNx');x.style.opacity=x.disabled?.35:1})};
+      m.innerHTML=`<div class="card" style="max-width:480px;margin:10px auto">${head}<div style="font-size:14px;color:var(--sub);margin-top:10px">🧩 블록으로 영어 문장 만들기 (함정 블록 1개!)</div><div id="grAns" style="min-height:52px;margin-top:8px;padding:8px;border:2px dashed var(--line,#ddd);border-radius:12px"></div><div style="margin-top:8px">${tiles.map((t,k)=>`<button class="btn ghost" data-gt="${k}" style="margin:4px;font-size:17px;padding:10px 14px">${esc(t)}</button>`).join('')}</div><div style="display:flex;gap:6px;margin-top:8px"><button class="btn ghost" id="grBk" style="flex:1">↩ 하나 빼기</button><button class="btn acc" id="grOk" style="flex:1">✅ 확인</button></div><div id="grRes"></div></div>`;
+      m.querySelectorAll('[data-gt]').forEach(x=>x.onclick=()=>{pick.push(+x.dataset.gt);draw()});$('grBk').onclick=()=>{if(!$('grNx')){pick.pop();draw()}};
+      $('grOk').onclick=()=>{if($('grNx'))return;if(pick.length<toks.length){toast('블록을 더 놓아요');return}const right=pick.map(k=>tiles[k]).join(' ')===toks.join(' '),ord=!right&&!pick.some(k=>tiles[k]===it[5]);$('grOk').disabled=true;$('grBk').disabled=true;result(right,ord)};draw()}
+    $('grKo').onclick=()=>say(ko,'ko-KR');say(ko,'ko-KR')};
+  if(g.newSt&&g.newShown!==g.newSt)intro();else show()}
 function kidPace(c){try{return withCourse(c,()=>{if(!isIpy())return '';const l=L(),t=today(),left=leftLessons(),u=c==='wd'?'묶음':IPYV()>=2?'단':'과';if(left<=0)return '🎉 다 배웠어요! 이제 복습만 해요';
   const ds=Object.values(l.lessons).filter(x=>!x.old).map(x=>x.d).sort();if(ds.length<5||ds[0]>addDays(t,-7))return `🏁 남은 ${left}${u} · 1~2주 하면 끝나는 날이 보여요`;
   const w=Math.max(1,Math.min(4,(new Date(t+'T12:00')-new Date(ds[0]+'T12:00'))/864e5/7)),pw=Math.max(0.5,ds.filter(d=>d>=addDays(t,-27)).length/w);
@@ -1562,9 +3406,9 @@ async function buildReport(d){const b=LB(),nm=b.name,br=lsJ('eng5_bridge')[d]||{
     if(c==='pr'){const pg=piggy();const lg=pg.log.filter(x=>x.d===d);if(lg.filter(x=>!x.tv&&!x.k).length)info=lg.filter(x=>!x.tv&&!x.k).map(x=>`《${x.title}》 ${x.ch}챕터${x.fin?' 🎉완독':''}`).join(', ')+` · 🐷 ${(pg.sum-pg.out).toLocaleString()}원`;out.pr=lg}
     if(['ys','gbb','ss','kr'].includes(c)){const sec=((lsJ('eng5_ext_secs')[d]||{})[c])||0;if(sec>=60){info=(info?info+' · ':'')+Math.round(sec/60)+'분';out.mins+=sec/60}}
     out.rows.push({c,name:n[0],em:n[1],done,info})}
-  const sR=out.rows.filter(r=>!CHK.includes(r.c)),cR=out.rows.filter(r=>CHK.includes(r.c));out.allDone=sR.length>0&&sR.every(r=>r.done);out.allChecks=out.allDone&&cR.every(r=>r.done);out.hasChk=cR.length>0;out.nDone=nDone;out.pig=piggy().log.filter(x=>x.d===d);out.pigBal=pigBal();out.mins=Math.round(out.mins);return out}
+  const sR=out.rows.filter(r=>!CHK.includes(r.c)),cR=out.rows.filter(r=>CHK.includes(r.c));{const G=LB().gr||{},gl=(G.log||{})[d];if(gl)out.gr=gl;if(G.newSt===d)out.grNew=`${G.stage}단계 ${GR_SNAME[G.stage]}`;if(G.hardDay===d)out.grHard=GR_SNAME[G.hardSt]}out.allDone=sR.length>0&&sR.every(r=>r.done);out.allChecks=out.allDone&&cR.every(r=>r.done);out.hasChk=cR.length>0;out.nDone=nDone;out.pig=piggy().log.filter(x=>x.d===d);out.pigBal=pigBal();out.mins=Math.round(out.mins);return out}
 function reportText(R){const L1=[`${R.second?'✅':R.allDone?'🎉':'📋'} ${R.nm} ${R.d.slice(5).replace('-','/')} ${R.second?'오늘 할 일 모두 끝!':'공부 '+(R.allDone?'끝!':R.nDone+'/'+R.rows.length)}${R.mins?' · 약 '+R.mins+'분':''}`,''];
-  R.rows.forEach(r=>L1.push(`${r.done?'✅':'⬜'} ${r.em} ${r.name}${r.info?' · '+r.info:''}`));
+  R.rows.forEach(r=>L1.push(`${r.done?'✅':'⬜'} ${r.em} ${r.name}${r.info?' · '+r.info:''}`));if(R.gr)L1.push(`📌 규칙 연습 ${R.gr.ok}/${R.gr.n}${R.gr.st?` · ${R.gr.st}단계 ${GR_SNAME[R.gr.st]}`:''}`);if(R.grNew)L1.push(`🎉 새 규칙 열림: ${R.grNew}`);if(R.grHard)L1.push(`⚠️ 📌 ${R.grHard} 규칙을 어려워해요 · 옆에서 한 번 같이 봐 주세요`);
   if(R.wrong.length){L1.push('','❗ 다시 볼 문장');R.wrong.slice(0,12).forEach(w=>L1.push(`- ${w.en} (${w.ko})${w.heard?' → 들린 말: '+w.heard:''}`));if(R.wrong.length>12)L1.push(`… 외 ${R.wrong.length-12}개`)}
   if(R.ys.length){L1.push('','📝 예습에서 쓴 글');R.ys.forEach(y=>L1.push(`[${y.s}] ${y.q}`,`→ ${y.a.trim()}`,...fbTxt(y.fb)))}
   if(R.pig&&R.pig.some(x=>x.k==='out'))L1.push('',`💸 쓴 돈: ${R.pig.filter(x=>x.k==='out').map(x=>x.title+' '+(x.spent||0).toLocaleString()+'원').join(', ')}`);
@@ -1779,7 +3623,7 @@ function renderReward(){
 /* ---------- 학습 모드 ---------- */
 let SESS=null;const sAudio=new Audio();
 async function startSession(){
-  bikeStop();cheerStart();
+  bikeStop();if(grNeed(S.course)){grRun(()=>startSession());return}cheerStart();
   if(!FILES.size&&S.course!=='wd'){toast('먼저 음원 폴더를 연결해 주세요');return}
   if(S.voice){
     const ok=await micInit();
@@ -3076,6 +4920,8 @@ function renderSettings(){if($('placeTogB'))$('placeTogB').textContent=LB().noPl
   $('scopeRow').classList.toggle('hide',!(isIpy()&&S.course!=='ipy'));
   seg('wrNSeg',['1','2','3'],()=>String(LB().wrN||2),v=>{LB().wrN=+v},v=>v+'문제');
   seg('wrLenSeg',['s','m','l'],()=>LB().wrLen||'m',v=>{LB().wrLen=v},v=>({s:'짧게',m:'보통',l:'길게'})[v]);
+  seg('grLocSeg',['gw','rd','off'],()=>LB().grLoc||'gw',v=>{LB().grLoc=v},v=>({gw:'기적 쓰기 앞',rd:'리딩 앞',off:'끄기'})[v]);
+  seg('grStSeg',['1','2','3','4','5'],()=>String(grSt().stage||1),v=>{const g=grSt();if(+v>g.stage){g.newSt=today();g.newShown=''}g.stage=+v},v=>v+'단계');
   seg('spNSeg',['1','2','3'],()=>String(LB().spN||3),v=>{LB().spN=+v},v=>v+'번');
   seg('cheerSeg',['on','off'],()=>LB().cheerOff?'off':'on',v=>{LB().cheerOff=v==='off'},v=>v==='on'?'켜기':'끄기');
   seg('dkLvSeg',['e5','m1'],()=>LB().dkLv||'e5',v=>{const b=LB();const was=b.dkLv||'e5';b.dkLv=v;if(v==='m1'&&was!=='m1'&&confirm('오늘의 학습을 독해 하나만 남길까요?\n(취소를 누르면 지금 목록에 독해만 더해요)'))b.todayList=['dk'];else if(!(b.todayList||[]).includes('dk'))(b.todayList=b.todayList||[]).push('dk');b.dkAdd=1;setTimeout(renderAll,0)},v=>v==='e5'?'5학년':'중학교 준비');
