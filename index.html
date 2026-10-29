@@ -236,7 +236,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.22.5</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.22.6</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1184,6 +1184,7 @@ function wdChainPlan(add,cur,idx){let need=wdTarget()-wdToday()-idx.length,m=cur
 function wdMore(){if(S.course==='wd')return;if(!CHAIN())return;const P=L().plan;if(!P||P.date!==today())return;
   if(wdToday()>=wdTarget())return;let cu=L().cur;if(cu&&cu.k)return;
   if(!cu&&!LB().noPlace&&!(L().hardU&&!L().lessons[L().hardU])&&L().placeStarted&&!Object.keys(L().partial||{}).length&&!(L().ptDay===today()&&L().ptN>=PTCAP())){const tk=BUDC()?sizeTest(skipTask(nextUnit()),Math.min(TEST_MAX,BUDL()-planCnt(P))):skipTask(nextUnit());if(tk){tk.id='t'+P.tasks.length;P.tasks.push(tk);save();return}} // 다음 단원 전에 또 실력 확인
+  if(!cu&&!isKidN()&&!LB().noPlace)return; /* 엄마: 새 단원은 실력 확인부터 (테스트 못 하면 오늘은 여기까지) */
   if(!cu){const m=nextUnit();if(m>TOTAL())return;cu=L().cur={n:m,k:0,tries:[],s3:{sum:0,cnt:0},hist:[],g:0};const pa=(L().partial||{})[m];if(pa){cu.hist=[pa];cu.g=1;cu.fromTest=1;delete L().partial[m]}}
   migCur(cu);cu.cg=null;const idx=curGroup(cu);if(!idx.length)return;if(BUDC()&&BUDL()-planCnt(P)<idx.length)return; // 25문장이 차면 더 안 붙여요
   const m=cu.n,w=S.course==='wd'?'단어':'문장';
@@ -1345,6 +1346,7 @@ function getPlan(){const l=L();if(!l.cum8){const w=S.course==='wd';for(const x o
   if(l.placeDay===today()&&l.ptDay!==today()){l.ptDay=today();l.ptN=2;save()} // 새 버전 전에 오늘 이미 테스트를 했으면 오늘은 더 안 함
   if(BUDC())l.plan.tasks.forEach(x=>{if(x.kind==='skiptest'&&!x.done&&!(x.qs&&x.qs.q)&&x.items.length>TEST_MAX){let u=[],it=[];for(const [m,k] of (x.units||[...new Set(x.items.map(z=>z[0]))].map(m=>[m,x.items.filter(z=>z[0]===m).length]))){if(u.length&&it.length+k>TEST_MAX)break;u.push([m,k]);it=it.concat(x.items.filter(z=>z[0]===m))}if(it.length>TEST_MAX){it=shuffle(it.slice()).slice(0,TEST_MAX).sort((a,b)=>a[1]-b[1]);u=[[u[0][0],it.length]]}x.items=it;x.units=u;const a=u[0][0],b=u[u.length-1][0];x.title=`📝 실력 확인 · ${lab(a)}${b!==a?' ~ '+lab(b):''}`;x.sub=`${it.length}문장 · 다 맞히면 건너뛰기 · 1~2개 틀리면 그것만 · 30% 넘게 틀리면 바로 이 단원 공부`;save()}}); // 예전에 만든 큰 테스트는 25문장 안으로
   if(l.ptDay===today()&&l.ptN>=PTCAP()&&!l.plan.ptEnd&&!l.plan.fill20&&l.plan.tasks.some(x=>!x.done)){l.plan.ptEnd=1;l.plan.tasks=l.plan.tasks.filter(x=>x.done);if(!l.plan.tasks.length)l.plan.tasks=[{id:'t0',type:'quiz',kind:'skiptest',title:'📝 실력 확인 (오늘 끝)',items:[],done:true}];l.plan.tasks.forEach((x,k)=>x.id='t'+k);save();bridgeDone()}
+  if(!isKidN()&&!LB().noPlace&&isIpy()&&!['wd','rd'].includes(S.course)&&l.ptDay===today()&&l.ptN>=PTCAP()&&l.cur&&!l.cur.fromTest&&!l.lessons[l.cur.n]&&!(l.cur.hist||[]).length&&(l.cur.k||0)<=1&&!(l.partial||{})[l.cur.n]&&!(l.fix||{})[l.cur.n]){const n0=l.cur.n,bef=l.plan.tasks.length;l.plan.tasks=l.plan.tasks.filter(x=>x.done||!(x.g==='new'&&x.n===n0));if(l.plan.tasks.length!==bef){l.cur=null;l.plan.tasks.forEach((x,k)=>x.id='t'+k);save();bridgeDone()}} /* 엄마: 테스트 안 한 새 단원 공부는 빼고 내일 실력 확인부터 */
   const cu=l.cur,kd=kidMode();if(l.hardU&&l.lessons[l.hardU])delete l.hardU;if(!LB().noPlace&&!(l.ptDay===today()&&l.ptN>=PTCAP())&&!l.hardU&&isIpy()&&!['wd','rd'].includes(S.course)&&!l.plan.tasks.some(x=>x.kind==='skiptest'&&!x.done)&&!(cu&&cu.fromTest)&&!Object.keys(l.partial||{}).length&&!Object.keys(l.fix||{}).length){
     let tk=skipTask(cu?cu.n:kd?nextUnit():l.next);if(BUDC())tk=dow(today())===1?null:sizeTest(tk,BUDL()-planCnt({tasks:l.plan.tasks.filter(x=>x.done||x.g!=='new')}));if(tk&&!(l.ptDay===today()&&(l.ptN||0)>=1&&tk.items.length>TEST_MAX)){tk.id='t'+l.plan.tasks.length;l.plan.tasks=l.plan.tasks.filter(x=>x.done||!(x.g==='new'));const ps=l.plan.tasks.findIndex(x=>!x.done&&x.g!=='wrong');l.plan.tasks.splice(ps<0?l.plan.tasks.length:ps,0,tk);l.plan.tasks.forEach((x,k)=>x.id='t'+k);l.plan.place=true;save()}}
   return l.plan}
