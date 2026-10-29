@@ -236,7 +236,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.22.2</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.22.4</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1009,6 +1009,9 @@ function addNewLesson(P,add,n){
 /* 공부가 잘되는 날: 엄마가 골라서 새 진도를 하나 더 (아이 모드는 한 묶음, 책 모드는 남은 STEP) */
 function addMoreIpy(){
   const l=L(),P=getPlan();let cur=l.cur;
+  if(!isKidN()&&!LB().noPlace&&!['wd','rd'].includes(S.course)&&!P.tasks.some(x=>x.kind==='skiptest'&&!x.done)){ /* 엄마: 더 하기는 다음 단원 실력 확인부터 (통과하면 또 더 하기) */
+    const fresh=cur&&!cur.k&&!(cur.hist||[]).length&&!cur.fromTest&&!(l.partial||{})[cur.n],m=!cur?(kidMode()?nextUnit():l.next):fresh?cur.n:0;
+    const tk=m&&m<=TOTAL()?skipTask(m):null;if(tk){tk.moreT=1;tk.id='t'+P.tasks.length+'x';P.tasks.push(tk);P.capped=false;P.extra=(P.extra||0)+1;save();return true}}
   if(S.course==='wd'&&kidMode()){const items=wdPick(10);if(!items.length)return false;addWdDay(t2=>{t2.id='t'+P.tasks.length+'x';P.tasks.push(t2)},items);P.capped=false;P.extra=(P.extra||0)+1;save();return true}
   if(!cur){const m=kidMode()?nextUnit():l.next;if(m>TOTAL())return false;cur=l.cur={n:m,k:0,tries:[],s3:{sum:0,cnt:0}}}
   const add=t2=>{t2.id='t'+P.tasks.length+'x';P.tasks.push(t2)};
@@ -1180,7 +1183,7 @@ function wdChainPlan(add,cur,idx){let need=wdTarget()-wdToday()-idx.length,m=cur
     kidParts(m,0).forEach(([type])=>add({type,n:m,idx:g,kid:true,chain:true,g:'new',title:KIDNAME[type][0],sub:`${lab(m)} · ${ttl(m)} · ${g.length}단어 · ${KIDNAME[type][1]}`}));need-=g.length;m++}}
 function wdMore(){if(S.course==='wd')return;if(!CHAIN())return;const P=L().plan;if(!P||P.date!==today())return;
   if(wdToday()>=wdTarget())return;let cu=L().cur;if(cu&&cu.k)return;
-  if(!cu&&!LB().noPlace&&!(L().hardU&&!L().lessons[L().hardU])&&L().placeStarted&&!Object.keys(L().partial||{}).length&&!(L().ptDay===today()&&L().ptN>=2)){const tk=BUDC()?sizeTest(skipTask(nextUnit()),Math.min(TEST_MAX,BUDL()-planCnt(P))):skipTask(nextUnit());if(tk){tk.id='t'+P.tasks.length;P.tasks.push(tk);save();return}} // 다음 단원 전에 또 실력 확인
+  if(!cu&&!LB().noPlace&&!(L().hardU&&!L().lessons[L().hardU])&&L().placeStarted&&!Object.keys(L().partial||{}).length&&!(L().ptDay===today()&&L().ptN>=PTCAP())){const tk=BUDC()?sizeTest(skipTask(nextUnit()),Math.min(TEST_MAX,BUDL()-planCnt(P))):skipTask(nextUnit());if(tk){tk.id='t'+P.tasks.length;P.tasks.push(tk);save();return}} // 다음 단원 전에 또 실력 확인
   if(!cu){const m=nextUnit();if(m>TOTAL())return;cu=L().cur={n:m,k:0,tries:[],s3:{sum:0,cnt:0},hist:[],g:0};const pa=(L().partial||{})[m];if(pa){cu.hist=[pa];cu.g=1;cu.fromTest=1;delete L().partial[m]}}
   migCur(cu);cu.cg=null;const idx=curGroup(cu);if(!idx.length)return;if(BUDC()&&BUDL()-planCnt(P)<idx.length)return; // 25문장이 차면 더 안 붙여요
   const m=cu.n,w=S.course==='wd'?'단어':'문장';
@@ -1249,7 +1252,7 @@ function buildPlanIpy(force){
   else if(cur){P.newN=cur.n;
     partsFor(cur.n).slice(cur.k).forEach(([type,h])=>{const [,title,sub]=STEPNAME[type];add({type,n:cur.n,h,g:'new',title:title+halfLabel(cur.n,h),sub:`${lab(cur.n)} · ${ttl(cur.n)} · ${sub}`})})}
   else if(l.next<=N&&(wkOK||wd>=1&&wd<=6))P.kind='reviewday';
-  if(bud&&wd!==1&&cur&&cur.fromTest&&!LB().noPlace&&!(l.ptDay===t&&l.ptN>=2)){const tk=sizeTest(skipTask(cur.n),BUDL()-planCnt(P));if(tk){P.place=true;add(tk)}} // 틀린 문장 공부 뒤 바로 다음 단원 실력 확인
+  if(bud&&wd!==1&&cur&&cur.fromTest&&!LB().noPlace&&!(l.ptDay===t&&l.ptN>=PTCAP())){const tk=sizeTest(skipTask(cur.n),BUDL()-planCnt(P));if(tk){P.place=true;add(tk)}} // 틀린 문장 공부 뒤 바로 다음 단원 실력 확인
   if(S.course==='rd'&&kidMode()&&rdCnt(P)<RD_MAX){const inP=new Set(P.tasks.filter(x=>x.g==='review').map(x=>x.n));for(const x of due){const room=RD_MAX-rdCnt(P);if(room<=0)break;if(inP.has(x.n)||!RDX[x.n])continue; // 새 문장이 모자라면 복습으로 12문장 채우기
       const L0=l.lessons[x.n],all=RDX[x.n].sents.map((_,k)=>k);let list=L0.rxrem&&L0.rxrem.length?L0.rxrem:(x.st>=5?all:shuffle(all.slice()).slice(0,10).sort((a,b)=>a-b));let rem=null;if(list.length>room){rem=list.slice(room);list=list.slice(0,room)}
       add({type:'rxchunk',mode:x.st>=5?'nat':x.st===4?'both':'chunk',n:x.n,sk:list,rdAdv:rem?null:x.n,rxRemN:rem?x.n:null,rxRem:rem,g:'review',title:`${STAGE_NAME[x.st]} 복습 · ${x.st>=5?'자연스럽게 해석하기':x.st===4?'끊어 해석 → 자연스럽게':'끊어 해석하기'}${rem?' (나눠서 · 나머지는 내일)':''}`,sub:`${lab(x.n)} · ${ttl(x.n)} · ${list.length}문장`})}}
@@ -1341,8 +1344,8 @@ function getPlan(){const l=L();if(!l.cum8){const w=S.course==='wd';for(const x o
   // 실력 확인: 리딩·단어 빼고, 테스트가 끝날 때까지 늘 오늘 공부 맨 위에
   if(l.placeDay===today()&&l.ptDay!==today()){l.ptDay=today();l.ptN=2;save()} // 새 버전 전에 오늘 이미 테스트를 했으면 오늘은 더 안 함
   if(BUDC())l.plan.tasks.forEach(x=>{if(x.kind==='skiptest'&&!x.done&&!(x.qs&&x.qs.q)&&x.items.length>TEST_MAX){let u=[],it=[];for(const [m,k] of (x.units||[...new Set(x.items.map(z=>z[0]))].map(m=>[m,x.items.filter(z=>z[0]===m).length]))){if(u.length&&it.length+k>TEST_MAX)break;u.push([m,k]);it=it.concat(x.items.filter(z=>z[0]===m))}if(it.length>TEST_MAX){it=shuffle(it.slice()).slice(0,TEST_MAX).sort((a,b)=>a[1]-b[1]);u=[[u[0][0],it.length]]}x.items=it;x.units=u;const a=u[0][0],b=u[u.length-1][0];x.title=`📝 실력 확인 · ${lab(a)}${b!==a?' ~ '+lab(b):''}`;x.sub=`${it.length}문장 · 다 맞히면 건너뛰기 · 1~2개 틀리면 그것만 · 30% 넘게 틀리면 바로 이 단원 공부`;save()}}); // 예전에 만든 큰 테스트는 25문장 안으로
-  if(l.ptDay===today()&&l.ptN>=2&&!l.plan.ptEnd&&!l.plan.fill20&&l.plan.tasks.some(x=>!x.done)){l.plan.ptEnd=1;l.plan.tasks=l.plan.tasks.filter(x=>x.done);if(!l.plan.tasks.length)l.plan.tasks=[{id:'t0',type:'quiz',kind:'skiptest',title:'📝 실력 확인 (오늘 끝)',items:[],done:true}];l.plan.tasks.forEach((x,k)=>x.id='t'+k);save();bridgeDone()}
-  const cu=l.cur,kd=kidMode();if(l.hardU&&l.lessons[l.hardU])delete l.hardU;if(!LB().noPlace&&!(l.ptDay===today()&&l.ptN>=2)&&!l.hardU&&isIpy()&&!['wd','rd'].includes(S.course)&&!l.plan.tasks.some(x=>x.kind==='skiptest'&&!x.done)&&!(cu&&cu.fromTest)&&!Object.keys(l.partial||{}).length&&!Object.keys(l.fix||{}).length){
+  if(l.ptDay===today()&&l.ptN>=PTCAP()&&!l.plan.ptEnd&&!l.plan.fill20&&l.plan.tasks.some(x=>!x.done)){l.plan.ptEnd=1;l.plan.tasks=l.plan.tasks.filter(x=>x.done);if(!l.plan.tasks.length)l.plan.tasks=[{id:'t0',type:'quiz',kind:'skiptest',title:'📝 실력 확인 (오늘 끝)',items:[],done:true}];l.plan.tasks.forEach((x,k)=>x.id='t'+k);save();bridgeDone()}
+  const cu=l.cur,kd=kidMode();if(l.hardU&&l.lessons[l.hardU])delete l.hardU;if(!LB().noPlace&&!(l.ptDay===today()&&l.ptN>=PTCAP())&&!l.hardU&&isIpy()&&!['wd','rd'].includes(S.course)&&!l.plan.tasks.some(x=>x.kind==='skiptest'&&!x.done)&&!(cu&&cu.fromTest)&&!Object.keys(l.partial||{}).length&&!Object.keys(l.fix||{}).length){
     let tk=skipTask(cu?cu.n:kd?nextUnit():l.next);if(BUDC())tk=dow(today())===1?null:sizeTest(tk,BUDL()-planCnt({tasks:l.plan.tasks.filter(x=>x.done||x.g!=='new')}));if(tk&&!(l.ptDay===today()&&(l.ptN||0)>=1&&tk.items.length>TEST_MAX)){tk.id='t'+l.plan.tasks.length;l.plan.tasks=l.plan.tasks.filter(x=>x.done||!(x.g==='new'));const ps=l.plan.tasks.findIndex(x=>!x.done&&x.g!=='wrong');l.plan.tasks.splice(ps<0?l.plan.tasks.length:ps,0,tk);l.plan.tasks.forEach((x,k)=>x.id='t'+k);l.plan.place=true;save()}}
   return l.plan}
 function markLearned(n){
@@ -1404,7 +1407,7 @@ function renderToday(){
       if(nx.length)chainNote=(`<div class="hint" style="margin:8px 4px 0;font-size:14px">📌 오늘 새 ${w} <b>${wdTarget()}개</b> (오늘 한 것 ${wdToday()}개) · 지금 묶음이 끝나면 이어서 나와요: ${nx.join(' → ')}</div>`)}
     $('startHint').textContent=S.course!=='wd'&&!FILES.size&&!allDone&&P.tasks.length?'먼저 위에서 음원 폴더를 연결해 주세요':'';
     const canMore=isIpy()&&IPYV()>=2&&allDone&&(L().cur||L().next<=TOTAL());
-    $('moreBtn').classList.toggle('hide',!canMore);$('skipTestBtn').classList.toggle('hide',!(!LB().noPlace&&!(L().ptDay===today()&&L().ptN>=2)&&!['wd','rd'].includes(S.course)&&!getPlan().tasks.some(x=>x.kind==='skiptest'&&!x.done)&&!!skipTask(L().next||1)));$('skipTestBtn').textContent='📝 실력 확인 테스트 하기 · 아는 단원은 건너뛰어요';$('moreBtn').textContent=kidMode()?'➕ 한 묶음 더 하기':'➕ 한 단계 더 하기';
+    $('moreBtn').classList.toggle('hide',!canMore);$('skipTestBtn').classList.toggle('hide',!(!LB().noPlace&&!(L().ptDay===today()&&L().ptN>=PTCAP())&&!['wd','rd'].includes(S.course)&&!getPlan().tasks.some(x=>x.kind==='skiptest'&&!x.done)&&!!skipTask(L().next||1)));$('skipTestBtn').textContent='📝 실력 확인 테스트 하기 · 아는 단원은 건너뛰어요';$('moreBtn').textContent=kidMode()?'➕ 한 묶음 더 하기':'➕ 한 단계 더 하기';
   }
   let lastG='';
   P.tasks.forEach((x,i)=>{
@@ -1480,6 +1483,10 @@ const isKidL=()=>{const b=LB();return b&&(b.ipyMode?b.ipyMode==='kid':!b.ipyAdul
 const YSDATES=["2026-10-28", "2026-10-29", "2026-10-30"];
 const YSQ={"2026-10-28#0#w0": {"s": "국어", "t": "동시 「가을 운동장」", "q": "이 시에서 가장 마음에 드는 표현을 하나 골라 쓰고, 그 까닭을 써 보세요."}, "2026-10-28#0#w1": {"s": "국어", "t": "동시 「가을 운동장」", "q": "이 시를 읽고 떠오른 나의 경험을 써 보세요. (언제, 어디서, 어떤 느낌이었는지)"}, "2026-10-28#1#w0": {"s": "사회", "t": "햇살마을 놀이터 앞 주차 문제", "q": "주민들이 고른 해결 방안 ①과 ③이 좋은 까닭을 기준과 연결해서 써 보세요."}, "2026-10-28#1#w1": {"s": "사회", "t": "햇살마을 놀이터 앞 주차 문제", "q": "우리 동네나 학교 주변의 문제 한 가지를 쓰고, 합리적인 해결 방안과 그 까닭을 써 보세요."}, "2026-10-29#2#w0": {"s": "국어", "t": "이야기 「빨간 우산」", "q": "하은이의 마음은 이야기 처음과 끝에서 어떻게 바뀌었나요? 까닭과 함께 써 보세요."}, "2026-10-29#2#w1": {"s": "국어", "t": "이야기 「빨간 우산」", "q": "내가 하은이였다면 어떻게 했을지 쓰고, 그렇게 생각한 까닭을 써 보세요."}, "2026-10-29#3#w0": {"s": "사회", "t": "우리 지역을 알리는 방법", "q": "지역을 홍보하면 좋은 점을 두 가지 써 보세요."}, "2026-10-29#3#w1": {"s": "사회", "t": "우리 지역을 알리는 방법", "q": "우리 지역에서 알리고 싶은 것 한 가지와, 어떤 방법으로 홍보하면 좋을지 까닭과 함께 써 보세요."}, "2026-10-30#4#w0": {"s": "과학+도덕", "t": "늑대가 돌아온 공원", "q": "늑대가 사라진 뒤 생태계에 어떤 변화가 생겼는지 순서대로 써 보세요."}, "2026-10-30#4#w1": {"s": "과학+도덕", "t": "늑대가 돌아온 공원", "q": "생태계를 지키기 위해 내가 실천할 수 있는 일 한 가지와 그 까닭을 써 보세요."}}; // 예습 서술형 질문 (엄마 기록용)
 function ysFree(){const t=today(),dw=new Date().getDay();return !YSDATES.some(d=>d>t)&&!(dw===0||dw===6)}
+function kidPace(c){try{return withCourse(c,()=>{if(!isIpy())return '';const l=L(),t=today(),left=leftLessons(),u=c==='wd'?'묶음':IPYV()>=2?'단':'과';if(left<=0)return '🎉 다 배웠어요! 이제 복습만 해요';
+  const ds=Object.values(l.lessons).filter(x=>!x.old).map(x=>x.d).sort();if(ds.length<5||ds[0]>addDays(t,-7))return `🏁 남은 ${left}${u} · 1~2주 하면 끝나는 날이 보여요`;
+  const w=Math.max(1,Math.min(4,(new Date(t+'T12:00')-new Date(ds[0]+'T12:00'))/864e5/7)),pw=Math.max(0.5,ds.filter(d=>d>=addDays(t,-27)).length/w);
+  return `🏁 남은 ${left}${u} · 지금처럼 하면 <b>${ym(addDays(t,Math.ceil(left/pw*7)))}</b>에 끝나요`})}catch(e){return ''}} /* 아이 화면: 남은 양 + 끝나는 달 */
 function kidLeft(c,done){if(c==='sl')return done?'잘 자요 🌙':slLate()?'오늘은 10시 20분이 지났어요 · 내일은 일찍 자요 🌙':'오늘 할 일을 다 끝내고 10시 20분 전에 누우면 체크해요';if(c==='pr')return piggyLine();if(c==='mh'||c==='eh')return done?'':'다 하면 눌러서 체크해요';if(c==='tv')return tvLine();if(done)return '';if(c==='ys'&&ysFree())return '다음 주 예습 준비 중이에요';
   try{if(c==='bk'){let st={};try{st=JSON.parse(localStorage.getItem('books_v1_'+LB().name)||'{}')}catch(e){}const sec=(st.secs||{})[today()]||0;return `📖 오늘 ${Math.floor(sec/60)}분 / 15분 읽음`}
     if(EXT[c])return '';
@@ -1496,9 +1503,9 @@ function renderKidToday(){const box=$('kidToday');if(!box)return;if(SESS){box.in
   if(kid&&!b.ysMerge&&b.dkLv!=='m1'&&b.todayList.includes('kr')){b.ysMerge=1;b.todayList=b.todayList.filter(c=>c!=='ys');save()} // 예습도 오늘의 국어 안으로
   if(new Set(b.todayList).size!==b.todayList.length){b.todayList=[...new Set(b.todayList)];save()}
   const LST=curList(b).map(c=>ALL.find(x=>x[0]===c)).filter(Boolean);setTimeout(ntfyCheck2,800);
-  let nDone=0,nChk=0,dChk=0;const doneSet=new Set();const rows=LST.map(([c,sub])=>{const nmC=cName(c);const d=(o[c]&&o[c].done&&(!o[c].who||o[c].who===nm))||(c==='ys'&&ysFree());const ck=CHK.includes(c);if(ck){nChk++;if(d)dChk++}else if(d)nDone++;if(d)doneSet.add(c);const lf=kidLeft(c,d);
+  let nDone=0,nChk=0,dChk=0;const doneSet=new Set();const rows=LST.map(([c,sub])=>{const nmC=cName(c);const d=(o[c]&&o[c].done&&(!o[c].who||o[c].who===nm))||(c==='ys'&&ysFree());const ck=CHK.includes(c);if(ck){nChk++;if(d)dChk++}else if(d)nDone++;if(d)doneSet.add(c);const lf=kidLeft(c,d),pc=!CHK.includes(c)&&(c==='wd'||DS[c])?kidPace(c):'';
     if(ck)return `<div data-kgo="${c}" style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:14px;background:${d?'#f1faf0':'#fffdf6'};border:1px dashed ${d?'#9bd39a':'#e6d9b8'};margin-top:6px;cursor:pointer"><span style="font-size:26px;line-height:1">${d?'☑️':'⬜'}</span><div style="flex:1;min-width:0"><b style="font-size:16px">${nmC[1]} ${nmC[0]}</b> <small style="color:#b07a00;font-weight:700">🐷 +${CHK_AMT(c)}</small><div style="font-size:12px;color:var(--sub)">${sub}</div>${lf?`<div style="font-size:12px;color:var(--accent,#3b6fb6);margin-top:2px">${lf}</div>`:''}</div></div>`;
-    return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;background:${d?'#f1faf0':'#fff'};border:1px solid var(--line,#eee);margin-top:8px"><div style="flex:1;min-width:0"><b style="font-size:17px">${nmC[1]} ${nmC[0]}</b><div style="font-size:13px;color:var(--sub)">${sub}</div>${lf?`<div style="font-size:13px;color:var(--accent,#3b6fb6);margin-top:2px">${lf}</div>`:''}</div>
+    return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;background:${d?'#f1faf0':'#fff'};border:1px solid var(--line,#eee);margin-top:8px"><div style="flex:1;min-width:0"><b style="font-size:17px">${nmC[1]} ${nmC[0]}</b><div style="font-size:13px;color:var(--sub)">${sub}</div>${lf?`<div style="font-size:13px;color:var(--accent,#3b6fb6);margin-top:2px">${lf}</div>`:''}${pc?`<div style="font-size:12px;color:var(--sub);margin-top:2px">${pc}</div>`:''}</div>
       <button class="btn ${d?'ghost':'green'}" data-kgo="${c}" style="min-width:92px">${d?'✅ 완료':'▶ 시작'}</button></div>`}).join('');
   box.innerHTML=`<div class="card" style="background:linear-gradient(135deg,#e3f7df,#fff)"><b style="font-size:19px">📅 오늘의 학습</b> <small style="color:var(--sub)">${esc(nm)}</small>${(()=>{const nS=LST.length-nChk;return nS?`<div style="margin-top:6px;font-size:15px;font-weight:700">${nDone>=nS?'🎉 오늘 공부 다 했어요! 최고예요!':`✅ 공부 ${nDone} / ${nS}개 끝 · ${nS-nDone}개 남았어요`}${nChk?` <small style="font-weight:400;color:var(--sub)">· 체크 ${dChk}/${nChk}</small>`:''}</div><div style="height:8px;border-radius:4px;background:#e6efe3;overflow:hidden;margin-top:6px"><i style="display:block;height:100%;width:${Math.round(nDone/nS*100)}%;background:#4caf50"></i></div>`:''})()}<div id="pigBtn" style="margin-top:8px;padding:10px 12px;border-radius:14px;background:#fff4e0;display:flex;align-items:center;gap:8px;cursor:pointer"><span style="font-size:24px">🐷</span><div style="flex:1">내 저금통 <b style="font-size:18px">${pigBal().toLocaleString()}원</b><div style="font-size:12px;color:var(--sub)">오늘 +${pigSum(today(),today()).toLocaleString()}원 · 눌러서 모은 기록 보기</div></div><span>›</span></div>${rows||'<div style="margin-top:8px;color:var(--sub)">아래 ⚙️ 학습 구성 편집에서 과정을 골라요</div>'}
     <button class="btn ghost" id="kEdit" style="width:100%;margin-top:10px">⚙️ 학습 구성 편집</button><div id="kEditBox"></div></div>`;
@@ -1790,6 +1797,8 @@ $('jumpB').onclick=()=>{const v=+$('jumpN').value;if(!isIpy()||!v||v<1||v>TOTAL(
 /* 실력 확인 테스트: 한 번에 20문장(설정 10~30) · 단원마다 4문장씩 여러 단원을 이어서 */
 const placeN=()=>LB().placeN||20;
 /* 기적 쓰기·만들기(아이): 하루 최대 30문장 (복습 → 틀린 것 공부 → 실력 확인), 월요일은 복습만 */
+const isKidN=()=>['민채','민지'].includes(LB().name); /* 엄마('나')는 ➕ 더 하기가 실력 확인부터 */
+const PTCAP=()=>2; /* 오늘 공부 속 실력 확인은 하루 2번 (완료 기준 그대로) · 엄마는 ➕ 더 하기로 계속 */
 const TEST_MAX=25,BUD=25,BUDC=()=>kidMode()&&['gw','gj'].includes(S.course);
 const bud0=()=>{const l=L();return l.bc&&l.bc.d===today()?l.bc.n:0},BUDL=()=>Math.max(0,(L().cap20===today()?20:BUD)-bud0()); // 오늘 이미 끝낸 계획(테스트 등)도 25문장에 포함
 function planCnt(P){let n=0;const seenNew=new Set();for(const x of P.tasks){if(x.carried)continue;if(x.type==='quiz')n+=(x.items||[]).length;else if(x.g==='new'&&x.kid&&!seenNew.has(x.n)){seenNew.add(x.n);n+=(x.grp||x.idx||[]).length}}return n}
@@ -1858,8 +1867,9 @@ async function runNext(){
       else if(isIpy()){l.fix=l.fix||{};l.fix[m]=bad;if(l.cur&&l.cur.n===m)l.cur=null;part++}
       else{l.lessons[m]={d:today(),st:1,due:addDays(today(),1)};if(l.cur&&l.cur.n===m)l.cur=null;bad.forEach(i=>l.wrong[m+'-'+i]={n:2,d:today()});part++}}
     if(!kidMode())while(l.lessons[l.next])l.next++;l.next=nextAfter(l.next);
-    if(l.ptN>=2&&BUDC())l.cap20=today(); // 테스트 2번 한 날은 합계 20문장까지 공부로 채워요
-    l.plan=buildPlan(false);if(l.ptN>=2){const rest=(BUDC()||(l.ptIt||0)<20)?l.plan.tasks.filter(x=>x.kind!=='skiptest'&&!x.done):[];/* 테스트 2번 합계가 20문장이 안 되면 모든 과정에서 공부로 채워요 */l.plan.tasks=[{...t,id:'t0',done:true,carried:true}].concat(rest.map((x,k)=>({...x,id:'t'+(k+1)})));if(rest.length){l.plan.fill20=1;save();toast('실력 확인 2번 끝! 조금만 더 공부하면 오늘 끝이에요 💪')}else{l.plan.ptEnd=1;save();toast(hard||part?'실력 확인 2번 끝! 틀린 건 내일 공부해요. 오늘은 여기까지 🎉':'실력 확인 2번 끝! 오늘 이 과정은 다 했어요 🎉')}}else{save();getPlan();if(l.ptN>=2){toast(hard?`${lab(hardM)}은 처음부터 배워 볼게요 📘`:'틀린 문장만 공부하면 오늘 끝이에요')}else toast(hard?`${lab(hardM)}은 처음부터 배워 볼게요 📘`:skipped?`${lab(t.units[0][0])} 다 맞혔어요! 건너뛰고 다음 단원 테스트 🎉`:'틀린 문장만 공부하고 다음 단원 테스트해요')}}
+    if(l.ptN>=PTCAP()&&BUDC())l.cap20=today(); // 테스트 2번 한 날은 합계 20문장까지 공부로 채워요
+    if(t.moreT){save();getPlan();toast(hard?`${lab(hardM)}은 처음부터 배워 볼게요 📘`:skipped?`${lab(t.units[0][0])} 다 맞혔어요! ➕ 더 하기로 다음 단원도 확인해요 🎉`:'틀린 문장만 공부해요')}else{
+    l.plan=buildPlan(false);if(l.ptN>=PTCAP()){const rest=(BUDC()||(l.ptIt||0)<20)?l.plan.tasks.filter(x=>x.kind!=='skiptest'&&!x.done):[];/* 테스트 2번 합계가 20문장이 안 되면 모든 과정에서 공부로 채워요 */l.plan.tasks=[{...t,id:'t0',done:true,carried:true}].concat(rest.map((x,k)=>({...x,id:'t'+(k+1)})));if(rest.length){l.plan.fill20=1;save();toast('실력 확인 2번 끝! 조금만 더 공부하면 오늘 끝이에요 💪')}else{l.plan.ptEnd=1;save();toast(hard||part?'실력 확인 2번 끝! 틀린 건 내일 공부해요. 오늘은 여기까지 🎉':'실력 확인 2번 끝! 오늘 이 과정은 다 했어요 🎉')}}else{save();getPlan();if(l.ptN>=PTCAP()){toast(hard?`${lab(hardM)}은 처음부터 배워 볼게요 📘`:'틀린 문장만 공부하면 오늘 끝이에요')}else toast(hard?`${lab(hardM)}은 처음부터 배워 볼게요 📘`:skipped?`${lab(t.units[0][0])} 다 맞혔어요! 건너뛰고 다음 단원 테스트 🎉`:'틀린 문장만 공부하고 다음 단원 테스트해요')}}}
   if(t.type==='quiz'&&t.partN){const x=L().lessons[t.partN];if(x){x.rem=t.partRem;save()}}
   if(t.type==='quiz'&&t.adv){const x=L().lessons[t.adv];if(x&&x.rem)delete x.rem;const ok=advance(t.adv,t.sScore);if(x){if(ok===false&&t.wr&&t.wr.length)x.rq=pickRetry(t.adv,t.wr.filter(i=>typeof i==='number'),t.items.map(z=>z[1]).filter(i=>typeof i==='number'));else if(ok)delete x.rq;save()}}
   if(t.type==='quiz'&&t.learn)markLearned(t.learn);
