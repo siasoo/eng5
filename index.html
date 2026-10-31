@@ -236,7 +236,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.9</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.10</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -425,6 +425,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
   <section id="tab-set" class="hide">
     <div class="card set">
       <div class="r"><b>재생 속도</b><div class="seg" id="rateSeg"></div></div>
+      <div class="r"><b>원어민 소리 키우기</b><div class="seg" id="loudSeg"></div></div><p class="hint" style="margin:0">규칙 읽어 주는 소리가 작으면 '보통'으로 하고 태블릿 볼륨을 올려요.</p>
       <div class="r"><b>마이크 확인</b><button class="btn ghost sm" id="micTestBtn">🎤 마이크 테스트</button></div>
       <div id="micTestBox" class="hide" style="text-align:center">
         <div class="mstat" id="micTestMsg">말해 보세요</div>
@@ -860,7 +861,7 @@ function idxStatus(){if(isIpy()){$('idxMsg').textContent=`${TOTAL()}${IPYV()>=2?
 const segA=new Audio();let segDay=0,segUrl=null,segTok=0,segPlaying=false;
 /* 영어 원어민 소리 키우기 (한국어 읽어 주는 소리와 크기 맞추기) */
 async function segBoost(){try{if(!window.__bctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=new C(),s=c.createMediaElementSource(segA),g=c.createGain(),k=c.createDynamicsCompressor();
-  g.gain.value=1.8;k.threshold.value=-14;k.knee.value=8;k.ratio.value=6;k.attack.value=0.003;k.release.value=0.2;s.connect(g);g.connect(k);k.connect(c.destination);window.__segG=g;
+  g.gain.value=SEGG();k.threshold.value=-14;k.knee.value=8;k.ratio.value=6;k.attack.value=0.003;k.release.value=0.2;s.connect(g);g.connect(k);k.connect(c.destination);window.__segG=g;
   const o=c.createOscillator(),og=c.createGain();o.frequency.value=40;og.gain.value=0.0004;o.connect(og);og.connect(c.destination);o.start(); // 안 들리는 작은 소리로 스피커를 깨어 있게
   window.__bctx=c}
   if(window.__bctx.state!=='running'){await Promise.race([window.__bctx.resume(),sleep(400)]);await sleep(120)}}catch(e){}}
@@ -880,7 +881,7 @@ async function playRange(d,s,e,mul=1){
   if(!audio.paused)audio.pause();if(sAudio&&!sAudio.paused)sAudio.pause();
   if(!(await ensureSeg(d)))return false;if(tok!==segTok)return true;
   {const w=1000-(performance.now()-(window.lastRecEnd||0));if(w>0){await sleep(w);if(tok!==segTok)return true}} // 마이크가 막 꺼진 직후엔 폰이 소리 앞부분을 먹어요
-  await segBoost();if(tok!==segTok)return true;segA.playbackRate=Math.min(2,S.rate*mul);const st=Math.max(0,s-0.25),pre=Math.min(st,0.8);const G=v=>{segA.volume=v;if(window.__segG)window.__segG.gain.value=v?1.8:0};G(pre>0?0:1);const seekTo=async x=>{segA.currentTime=x;await new Promise(r=>{if(!segA.seeking){r();return}segA.addEventListener('seeked',r,{once:true});setTimeout(r,1500)})};await seekTo(st-pre);if(Math.abs(segA.currentTime-(st-pre))>0.4)await seekTo(st-pre);if(tok!==segTok){G(1);return true}const end=Math.max(e+0.15,Math.min(e+0.45,nextStartAfter(d,s)-0.1)); /* 폰 소리 지연으로 끝이 잘리지 않게 · 다음 문장 직전까지만 */ // 폰이 소리 시작 부분을 먹지 않게: 0.5초 먼저 소리 없이 틀고 문장에서 켜요
+  await segBoost();if(tok!==segTok)return true;segA.playbackRate=Math.min(2,S.rate*mul);const st=Math.max(0,s-0.25),pre=Math.min(st,0.8);const G=v=>{segA.volume=v;if(window.__segG)window.__segG.gain.value=v?SEGG():0};G(pre>0?0:1);const seekTo=async x=>{segA.currentTime=x;await new Promise(r=>{if(!segA.seeking){r();return}segA.addEventListener('seeked',r,{once:true});setTimeout(r,1500)})};await seekTo(st-pre);if(Math.abs(segA.currentTime-(st-pre))>0.4)await seekTo(st-pre);if(tok!==segTok){G(1);return true}const end=Math.max(e+0.15,Math.min(e+0.45,nextStartAfter(d,s)-0.1)); /* 폰 소리 지연으로 끝이 잘리지 않게 · 다음 문장 직전까지만 */ // 폰이 소리 시작 부분을 먹지 않게: 0.5초 먼저 소리 없이 틀고 문장에서 켜요
   segPlaying=true;let wrongPos=false;
   try{const ok=await Promise.race([segA.play().then(()=>true),sleep(4000).then(()=>false)]);if(!ok){segA.pause();segPlaying=false;return false}}catch(err){segPlaying=false;return false}
   let lastT=-1,lastMove=performance.now();
@@ -889,7 +890,8 @@ async function playRange(d,s,e,mul=1){
     if(tok!==segTok||segA.currentTime>=end||segA.paused||segA.ended){if(tok===segTok)segA.pause();G(1);res();return}requestAnimationFrame(tick)};tick()});
   segPlaying=false;lastPlayEnd=performance.now();return wrongPos?false:true;
 }
-function stopSeg(){segTok++;segA.pause();segA.volume=1;if(window.__segG)window.__segG.gain.value=1.8;segPlaying=false;if('speechSynthesis' in window)speechSynthesis.cancel()}
+const SEGG=()=>S.segLoud==='mid'?1.0:1.8; /* 원어민 소리 키우기: 크게 1.8 / 보통 1.0 */
+function stopSeg(){segTok++;segA.pause();segA.volume=1;if(window.__segG)window.__segG.gain.value=SEGG();segPlaying=false;if('speechSynthesis' in window)speechSynthesis.cancel()}
 /* 폰 음성: 영어는 en-US 목소리를 직접 골라야 삼성폰에서도 영어로 읽어요 */
 let _vs=[];function loadV(){try{_vs=speechSynthesis.getVoices()||[]}catch(e){}}if(window.speechSynthesis){loadV();speechSynthesis.onvoiceschanged=loadV}
 function pickV(lang){if(!_vs.length)loadV();const p=lang.slice(0,2);return _vs.find(v=>v.lang.replace('_','-')===lang)||_vs.find(v=>v.lang.toLowerCase().startsWith(p))||null}
@@ -5052,6 +5054,7 @@ function seg(id,vals,get,set,label){
 function renderSettings(){if($('placeTogB'))$('placeTogB').textContent=LB().noPlace?'꺼짐 → 켜기':'켜짐 → 끄기';
   seg('rateSeg',RATES,()=>S.rate,v=>{S.rate=v;audio.playbackRate=v;sAudio.playbackRate=v},v=>v+'x');
   seg('pRate',RATES,()=>S.rate,v=>{S.rate=v;audio.playbackRate=v;sAudio.playbackRate=v},v=>v+'x');
+  seg('loudSeg',['big','mid'],()=>S.segLoud||'big',v=>{S.segLoud=v;if(window.__segG)window.__segG.gain.value=SEGG()},v=>v==='big'?'크게 (지금)':'보통 · 태블릿 볼륨 올리기');
   seg('voiceSeg',[true,false],()=>S.voice,v=>S.voice=v,v=>v?'켜기 (권장)':'끄기');
   seg('sensSeg',['low','mid','high'],()=>S.sens,v=>S.sens=v,v=>({low:'둔하게',mid:'보통',high:'예민하게'})[v]);
   seg('ipyModeSeg',['kid','book'],()=>(LB().ipyMode||(LB().ipyAdult?'book':'kid')),v=>{LB().ipyMode=v;setTimeout(renderAll,0)},v=>v==='kid'?'아이 모드 (쉬운 순서·블록)':'책 그대로');
