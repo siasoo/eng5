@@ -236,7 +236,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.10</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.12</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -3335,7 +3335,7 @@ function grPick(){const g=grSt(),ids=GRAM.map((_,i)=>i),used=new Set(),out=[];co
   while(out.length<5&&k<40){const r=plan[k%plan.length];const c=ids.filter(i=>GRAM[i][0]===r&&!used.has(i)).sort((a,b)=>(g.seen[a]||0)-(g.seen[b]||0)||Math.random()-.5);take(c[0]);k++}
   return shuffle(out).map((i,j)=>({i,blk:j>=3}))}
 function grNeed(c){return isKidN()&&kidMode()&&grLoc()===c&&grSt().day!==today()&&(LB().todayList||[]).includes(c)}
-function grRun(done){const g=grSt(),Q=grPick(),t0=Date.now();let n=0,ok=0;const m=document.createElement('div');m.id='grBox';m.style.cssText='position:fixed;inset:0;z-index:235;background:var(--bg,#faf6ef);overflow:auto;padding:16px';document.body.appendChild(m);
+function grRun(done){micRelease();const g=grSt(),Q=grPick(),t0=Date.now();let n=0,ok=0;const m=document.createElement('div');m.id='grBox';m.style.cssText='position:fixed;inset:0;z-index:235;background:var(--bg,#faf6ef);overflow:auto;padding:16px';document.body.appendChild(m);
   const fin=()=>{g.day=today();g.log[today()]={ok,n:Q.length,st:g.stage,secs:Math.round((Date.now()-t0)/1000)};
     {const st=g.stage,L5=Object.entries(g.log).filter(([d,x])=>x.st===st).sort().map(x=>x[1]),last=L5.slice(-10),sc=last.reduce((a,x)=>a+x.ok,0),tot=last.reduce((a,x)=>a+x.n,0);
      if(st<2&&L5.length>=30&&last.length>=10&&sc>=tot*0.8){g.stage=st+1;g.newSt=today()}else if(L5.length>=(st===1?40:15)&&g.hardSt!==st){g.hardSt=st;g.hardDay=today()}}const old=addDays(today(),-60);for(const d in g.log)if(d<old)delete g.log[d];save();
@@ -3798,7 +3798,7 @@ async function runNext(){
   const t=P.tasks[i];const tok=++SESS.tok;
   if(t.chain&&t.g==='new'){const cu=L().cur;if(!cu||cu.n!==t.n){L().cur={n:t.n,k:Math.max(0,kidParts(t.n,0).findIndex(p=>p[0]===t.type)),tries:[],s3:{sum:0,cnt:0},hist:[],g:0,cg:t.idx.slice()};save()}}
   $('sMain').scrollTop=0;window.scrollTo(0,0);$('sess').scrollTop=0;
-  let ok=false;
+  let ok=false;micRelease(); /* 단계마다 마이크를 꺼요: 켜져 있으면 태블릿이 한글 읽어 주기 소리를 줄여요. 말할 때 다시 켜요 */
   if(t.type==='listen')ok=await runListen(t,tok);
   else if(t.type==='repeat')ok=await runRepeat(t,tok);
   else if(t.type==='words')ok=await runWords(t,tok);
@@ -3952,6 +3952,7 @@ async function speak(ui,need,recKey,tok){
   if(!S.voice){ // 부모가 말하기 확인을 끈 경우
     ui.state('listen');return new Promise(r=>{const b=document.createElement('button');b.className='btn green';b.textContent='말했어요 ▶';b.style.marginTop='10px';ui.el.appendChild(b);b.onclick=()=>{b.remove();r(SESS&&SESS.tok===tok)}});
   }
+  if(!MIC.ok)await micInit(); /* 말할 때만 마이크 켜기 */
   return waitVoice(need,ui,recKey);
 }
 /* ---------- 음성 인식 자동 채점 ---------- */
@@ -4170,7 +4171,7 @@ async function runRule(t,tok){
     if(kw.length){const [li,ans]=kw.sort((a,b)=>(/[A-Za-z]/.test(b[1])-/[A-Za-z]/.test(a[1]))||a[1].length-b[1].length)[0],lat=/[A-Za-z]/.test(ans);
       const pool=[...new Set(Object.values(RULES).flatMap(x=>(x.lines||[]).flatMap(l=>(String(l).match(/\*\*(.+?)\*\*/g)||[]).map(m=>m.slice(2,-2).trim()))))].filter(w=>w&&w!==ans&&w.length<=24&&!/[~?!.]/.test(w)&&w.split(' ').length===ans.split(' ').length&&/[A-Za-z]/.test(w)===lat&&!r.lines.join(' ').includes('**'+w+'**'));
       const dis=shuffle(pool.sort((a,b)=>Math.abs(a.length-ans.length)-Math.abs(b.length-ans.length)).slice(0,8)).slice(0,2);
-      if(dis.length===2){const reE=ans.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),qline=mdk(String(r.lines[li]).replace('**'+ans+'**','@@BLANK@@').replace(lat?new RegExp('\\b'+reE+'\\b','g'):'@@NO@@','＿＿')).replace('@@BLANK@@','<b style="display:inline-block;min-width:60px;border-bottom:3px solid var(--accent);color:var(--accent)">&nbsp;?&nbsp;</b>');
+      if(dis.length===2){const reE=ans.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),qline=mdk((()=>{let w=String(r.lines[li]);const re=new RegExp('\\b'+reE+'\\b','g');if(lat&&(w.match(re)||[]).length>1){w=w.replace(new RegExp('\\*\\*'+reE+'\\*\\*\\s*[:：]?\\s*'),'');return w.replace(new RegExp('\\b'+reE+'\\b'),'@@BLANK@@').replace(re,'＿＿')}return w.replace('**'+ans+'**','@@BLANK@@')})()) /* 같은 말이 또 나오면 빈칸은 한 군데만 */.replace('@@BLANK@@','<b style="display:inline-block;min-width:60px;border-bottom:3px solid var(--accent);color:var(--accent)">&nbsp;?&nbsp;</b>');
         $('rlSt').textContent='✏️ 빈칸에 들어갈 말을 골라요';
         const hideL=v=>{const el=document.querySelector(`[data-rl="${li}"]`);if(el)el.style.visibility=v?'hidden':'visible'};
         for(;;){if(!live())return false;hideL(1);const opts=shuffle([ans,...dis]);
@@ -4748,7 +4749,7 @@ async function autoQuizItem(n,i,it,ui,tok){
   }
   return false;
 }
-function showEnd(capped){
+function showEnd(capped){micRelease();
   sessTick();
   const l=L(),P=l.plan,t=today();
   l.days[t]={done:1,secs:Math.round(P.secs||0)};save();bridgeDone();repSnap();
