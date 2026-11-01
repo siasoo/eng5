@@ -236,7 +236,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.25</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.28</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -485,10 +485,16 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
             <button class="btn ghost sm" id="delLearner">현재 학습자 삭제</button>
           </div>
         </div>
-        <div class="r"><b>진도 백업</b>
+        <div class="r"><b>진도 백업<br><small style="font-weight:400;color:var(--sub)">태블릿↔폰: 한 사람 것만 옮겨요 (다른 사람 진도는 그대로)</small></b>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="btn ghost sm" id="exportBtn">전체 백업 저장</button>
             <button class="btn ghost sm" id="importBtn">백업 불러오기</button>
+            <button class="btn ghost sm" id="exportOneBtn">📤 지금 사람 진도만 보내기</button>
+            <button class="btn ghost sm" id="importOneBtn">📥 사람 진도 받기</button>
+          </div>
+          <div style="margin-top:8px;padding:8px;border-radius:10px;background:#eef6ff"><b>☁️ 자동 저장 (태블릿↔폰)</b> <span id="syncSt" style="font-size:13px;color:var(--sub)"></span>
+            <div style="display:flex;gap:6px;margin-top:6px"><input id="syncTok" type="password" placeholder="깃허브 열쇠(ghp_…) 붙여 넣기" style="flex:1;padding:8px;border:1px solid var(--line);border-radius:8px"><button class="btn ghost sm" id="syncGo">연결</button></div>
+            <div style="font-size:12px;color:var(--sub);margin-top:4px">사람마다 따로 저장해요 · 같은 사람이 두 기기에서 동시에 하지 않기</div>
             <input type="file" id="importInput" class="hide">
           </div>
         </div>
@@ -587,7 +593,7 @@ let S;
 try{S=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){S=null}
 if(!S||!S.learners||!S.learners.length)S={learners:[newLearner('나')],cur:0,rate:1,pin:'',voice:true,sens:'mid',reward:'',browse:1,mask:'none',hidePr:false};
 if(S.cur>=S.learners.length)S.cur=0;
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}try{if(window.__syncReady&&S.learners&&S.learners[S.cur])syncDirty(S.learners[S.cur].name)}catch(e){}}
 /* ---------- 과정: 1일 5분 영어 / 입영작 ---------- */
 let IPYD=null,IPYMAP=new Map(),IPYSIZE=new Map(),IPYNAME=new Map();   // 입영작·여행영어 데이터 (부모님이 불러온 파일, 이 기기에만 저장)
 const DS={};   // 과정별 데이터 {ipy, trv}
@@ -3430,7 +3436,7 @@ function kidPace(c){try{return withCourse(c,()=>{if(!isIpy())return '';const l=L
   const ds=Object.values(l.lessons).filter(x=>!x.old).map(x=>x.d).sort();if(ds.length<5||ds[0]>addDays(t,-7))return `🏁 남은 ${left}${u} · 1~2주 하면 끝나는 날이 보여요`;
   const w=Math.max(1,Math.min(4,(new Date(t+'T12:00')-new Date(ds[0]+'T12:00'))/864e5/7)),pw=Math.max(0.5,ds.filter(d=>d>=addDays(t,-27)).length/w);
   return `🏁 남은 ${left}${u} · 지금처럼 하면 <b>${ym(addDays(t,Math.ceil(left/pw*7)))}</b>에 끝나요`})}catch(e){return ''}} /* 아이 화면: 남은 양 + 끝나는 달 */
-function kidLeft(c,done){if(c==='dl'){try{const st=dlSt(),t=dnumT(today()),due=Object.values(st.it).filter(r=>r.st<5&&r.due<=t).length;return done?'':`새 장면 ${Math.min(dlN(),DL.length-st.ptr)}개${due?` · 소리 테스트 ${due}개`:''} · ${st.ptr}/${DL.length}`}catch(e){return ''}}try{if(c==='dk'&&!done&&mjYs())return '오늘은 📝 예습: 내일 배울 내용 읽고 쓰기'}catch(e){}if(c==='sl')return done?'잘 자요 🌙':slLate()?'오늘은 10시 20분이 지났어요 · 내일은 일찍 자요 🌙':'오늘 할 일을 다 끝내고 10시 20분 전에 누우면 체크해요';if(c==='pr')return piggyLine();if(c==='mh'||c==='eh')return done?'':'다 하면 눌러서 체크해요';if(c==='tv')return tvLine();if(done)return '';if(c==='ys'&&ysFree())return '다음 주 예습 준비 중이에요';
+function kidLeft(c,done){if(c==='dl'){try{const st=dlSt(),t=dnumT(today()),due=Object.values(st.it).filter(r=>r.st<5&&r.due<=t).length;return done?'':`새 장면 ${Math.min(dlN(),DL.length-st.ptr)}개${due?` · 소리 테스트 ${due}개`:''} · ${st.ptr}/${DL.length}`}catch(e){return ''}}try{if(c==='dk'&&!done&&mjYs())return '오늘은 📝 예습: 내일 배울 내용 읽고 쓰기'}catch(e){}if(c==='sl')return done?'잘 자요 🌙':slLate()?'오늘은 10시 20분이 지났어요 · 내일은 일찍 자요 🌙':'씻고 양치·렌즈까지 하고 10시 20분 전에 누우러 갈 때 체크해요';if(c==='pr')return piggyLine();if(c==='mh'||c==='eh')return done?'':'다 하면 눌러서 체크해요';if(c==='tv')return tvLine();if(done)return '';if(c==='ys'&&ysFree())return '다음 주 예습 준비 중이에요';
   try{if(c==='bk'){let st={};try{st=JSON.parse(localStorage.getItem('books_v1_'+LB().name)||'{}')}catch(e){}const sec=(st.secs||{})[today()]||0;return `📖 오늘 ${Math.floor(sec/60)}분 / 15분 읽음`}
     if(EXT[c])return '';
     if(!(c==='wd'||DS[c]))return '';
@@ -3439,7 +3445,7 @@ function kidLeft(c,done){if(c==='dl'){try{const st=dlSt(),t=dnumT(today()),due=O
     return `오늘 ${n}단계 중 <b>${n-k}단계 남음</b>`}catch(e){return ''}}
 function renderKidToday(){const box=$('kidToday');if(!box)return;if(SESS){box.innerHTML='';return}const kid=isKidL();
   let o={};try{o=JSON.parse(localStorage.getItem('eng5_bridge')||'{}')[today()]||{}}catch(e){}const nm=LB().name;
-  const ALL=[...KIDLIST,['eng','하루 5분 · 듣고 따라 말하기'],['pr','종이책 한 챕터 읽고 기록 · 🐷 저금통'],['mh','수학 숙제 (학원 숙제·문제집 2~3장)'],['eh','영어 학원 숙제'],['tv','영어 만화 이야기 1편 · 한글 자막 → 다음 날 영어 자막'],['sl','할 일 다 끝내고 밤 10시 20분 전에 잠자리에 들기'],['dl','영화 장면 보기 → 다음 날 소리만 듣고 맞히기'],...Object.entries(EXT).map(([c,x])=>[c,x[3]])],b=LB();if(!Array.isArray(b.todayList))b.todayList=kid?['gw','gj','wd','rd','bk']:['ipy','gw','gj','wd','rd','trv','home','eng'];if(kid&&!b.bkAdd){b.bkAdd=1;if(!b.todayList.includes('bk'))b.todayList.push('bk');save()}if(kid&&!b.ysAdd){b.ysAdd=1;if(!b.todayList.includes('ys'))b.todayList.push('ys');save()}if(kid&&!b.dkAdd){b.dkAdd=1;if(b.dkLv==='m1')b.todayList=['dk'];else if(!b.todayList.includes('dk'))b.todayList.push('dk');save()}if(kid&&!b.krMig&&b.dkLv!=='m1'){b.krMig=1;const L0=b.todayList,i=L0.findIndex(c=>c==='gbb'||c==='dk');b.todayList=L0.filter(c=>c!=='gbb'&&c!=='dk');if(!b.todayList.includes('kr'))b.todayList.splice(i<0?b.todayList.length:Math.min(i,b.todayList.length),0,'kr');save()} // 공부방+독해 → 오늘의 국어 하나로
+  const ALL=[...KIDLIST,['eng','하루 5분 · 듣고 따라 말하기'],['pr','종이책 한 챕터 읽고 기록 · 🐷 저금통'],['mh','수학 숙제 (학원 숙제·문제집 2~3장)'],['eh','영어 학원 숙제'],['tv','영어 만화 이야기 1편 · 한글 자막 → 다음 날 영어 자막'],['sl','씻고 양치·렌즈 끼고 밤 10시 20분 전에 잠자리에 들기'],['dl','영화 장면 보기 → 다음 날 소리만 듣고 맞히기'],...Object.entries(EXT).map(([c,x])=>[c,x[3]])],b=LB();if(!Array.isArray(b.todayList))b.todayList=kid?['gw','gj','wd','rd','bk']:['ipy','gw','gj','wd','rd','trv','home','eng'];if(kid&&!b.bkAdd){b.bkAdd=1;if(!b.todayList.includes('bk'))b.todayList.push('bk');save()}if(kid&&!b.ysAdd){b.ysAdd=1;if(!b.todayList.includes('ys'))b.todayList.push('ys');save()}if(kid&&!b.dkAdd){b.dkAdd=1;if(b.dkLv==='m1')b.todayList=['dk'];else if(!b.todayList.includes('dk'))b.todayList.push('dk');save()}if(kid&&!b.krMig&&b.dkLv!=='m1'){b.krMig=1;const L0=b.todayList,i=L0.findIndex(c=>c==='gbb'||c==='dk');b.todayList=L0.filter(c=>c!=='gbb'&&c!=='dk');if(!b.todayList.includes('kr'))b.todayList.splice(i<0?b.todayList.length:Math.min(i,b.todayList.length),0,'kr');save()} // 공부방+독해 → 오늘의 국어 하나로
   if(kid&&!b.prMig){b.prMig=1;const i=b.todayList.indexOf('bk');if(i>=0)b.todayList.splice(i,1,'pr');else if(!b.todayList.includes('pr'))b.todayList.push('pr');save()} // 앱 책 읽기 → 종이책 한 챕터
   if(kid&&isKidN()&&!b.mhAdd){b.mhAdd=1;const add=b.dkLv==='m1'?['pr','tv','mh','eh']:['mh','tv'];add.forEach(c=>{if(!b.todayList.includes(c))b.todayList.push(c)});save()} // 민채: 수학 숙제·영어 만화 / 민지: 책·만화·수학·영어 학원 숙제
   if(kid&&!isKidN()&&!b.dlAdd){b.dlAdd=1;if(!b.todayList.includes('dl'))b.todayList.push('dl');save()} /* 엄마: 다 들리는 영어 */
@@ -3463,7 +3469,7 @@ function renderKidToday(){const box=$('kidToday');if(!box)return;if(SESS){box.in
     const cur=()=>[...eb.querySelectorAll('[data-kc]')].filter(e=>e.checked).map(e=>e.dataset.kc);
     eb.querySelectorAll('[data-kc]').forEach(x=>x.onchange=()=>apply(cur()));
     eb.querySelectorAll('[data-up],[data-dn]').forEach(x=>x.onclick=()=>{const L0=cur(),c=x.dataset.up||x.dataset.dn,i=L0.indexOf(c),j=x.dataset.up?i-1:i+1;if(i<0||j<0||j>=L0.length)return;[L0[i],L0[j]]=[L0[j],L0[i]];apply(L0)})};
-  box.querySelectorAll('[data-kgo]').forEach(b=>b.onclick=()=>{const c=b.dataset.kgo;if(c==='pr'){prModal();return}if(c==='dl'){dlRun(()=>{markDone('dl');renderAll()});return}if(c==='sl'){if(doneSet.has(c)){toast('잘 자요 🌙');return}if(slLate()){toast('10시 20분이 지났어요 · 내일은 일찍 자요 🌙');return}const left=LST.filter(x=>x[0]!=='sl'&&!doneSet.has(x[0])).map(x=>cName(x[0])[1]+' '+cName(x[0])[0]);if(left.length){alert('먼저 다 끝내고 자러 가요 😊\n\n남은 것: '+left.join(', '));return}if(confirm('오늘 할 일 다 했어요! 이제 자러 가요? 😴\n(10시 20분 전에 누우면 🐷 +200원)')){markDone(c);pigAdd(c,'😴 10시 20분 전에 잠자기',200);renderAll();setTimeout(nightSched,2500);toast('잘 자요 🌙 🐷 +200원')}return}if(c==='mh'||c==='eh'){const nm2=cName(c);if(doneSet.has(c)){toast('오늘은 이미 체크했어요 ✅');return}if(confirm(`${nm2[1]} ${nm2[0]} 다 했어요?`)){markDone(c);pigAdd(c,`${nm2[1]} ${nm2[0]}`,CHK_AMT(c));{const dw=new Date().getDay(),hw=curList(LB()).filter(x=>x==='mh'||x==='eh');if((dw===0||dw===6)&&new Date().getHours()<12&&hw.every(x=>x===c||doneSet.has(x))&&!piggy().log.some(x=>x.d===today()&&x.k==='hwam')){pigAdd('hwam','📚 주말 오전에 학원 숙제 다 끝',500);setTimeout(()=>toast('📚 주말 오전 학원 숙제 끝! 🐷 +500원'),1200)}} /* 주말 오전 학원 숙제 보너스 */renderAll();toast(`${nm2[1]} ${nm2[0]} 체크! 🐷 +${CHK_AMT(c)}원`)}return}if(c==='tv'){tvModal();return}if(c==='dk'&&prNeed('dk')){prRun(()=>openExt('dk'));return} /* 민지: 독해 앞에 발음 1개 */
+  box.querySelectorAll('[data-kgo]').forEach(b=>b.onclick=()=>{const c=b.dataset.kgo;if(c==='pr'){prModal();return}if(c==='dl'){dlRun(()=>{markDone('dl');renderAll()});return}if(c==='sl'){if(doneSet.has(c)){toast('잘 자요 🌙');return}if(slLate()){toast('10시 20분이 지났어요 · 내일은 일찍 자요 🌙');return}if(confirm('씻고 양치하고 렌즈까지 했어요? 이제 자러 가요? 😴\n(10시 20분 전에 누우면 🐷 +200원)')){markDone(c);pigAdd(c,'😴 10시 20분 전에 잠자기',200);renderAll();setTimeout(nightSched,2500);toast('잘 자요 🌙 🐷 +200원')}return}if(c==='mh'||c==='eh'){const nm2=cName(c);if(doneSet.has(c)){toast('오늘은 이미 체크했어요 ✅');return}if(confirm(`${nm2[1]} ${nm2[0]} 다 했어요?`)){markDone(c);pigAdd(c,`${nm2[1]} ${nm2[0]}`,CHK_AMT(c));{const dw=new Date().getDay(),hw=curList(LB()).filter(x=>x==='mh'||x==='eh');if((dw===0||dw===6)&&new Date().getHours()<12&&hw.every(x=>x===c||doneSet.has(x))&&!piggy().log.some(x=>x.d===today()&&x.k==='hwam')){pigAdd('hwam','📚 주말 오전에 학원 숙제 다 끝',500);setTimeout(()=>toast('📚 주말 오전 학원 숙제 끝! 🐷 +500원'),1200)}} /* 주말 오전 학원 숙제 보너스 */renderAll();toast(`${nm2[1]} ${nm2[0]} 체크! 🐷 +${CHK_AMT(c)}원`)}return}if(c==='tv'){tvModal();return}if(c==='dk'&&prNeed('dk')){prRun(()=>openExt('dk'));return} /* 민지: 독해 앞에 발음 1개 */
     const dn=b.textContent.includes('완료');if(dn&&(c==='kr'||c==='wd'||DS[c])){doneChooser(c);return}if(EXT[c]){openExt(c);return}setCourse(c);if(S.course!==c)return;const P=getPlan();
     if(P.capped){P.capped=false;save()}if(!P.tasks.some(x=>!x.done)){toast('오늘 이 과정은 다 했어요 ✅');return}startSession()});
   const wb=$('weekBox');if(wb&&wb.previousElementSibling!==box)box.after(wb);const $pb=$('pigBtn');if($pb)$pb.onclick=pigModal;
@@ -3642,7 +3648,7 @@ function pigModal(){const p=piggy(),t=today(),d0=new Date(t+'T12:00:00'),mon=add
   const days={};p.log.slice().reverse().forEach(x=>{(days[x.d]=days[x.d]||[]).push(x)});
   m.innerHTML=`<div class="card" style="max-width:480px;width:100%;margin:auto"><div style="text-align:center"><div style="font-size:54px;line-height:1.1">🐷</div><div style="font-size:15px;color:var(--sub)">${esc(LB().name)}의 저금통</div><div style="font-size:34px;font-weight:800;color:#b07a00">${pigBal().toLocaleString()}원</div></div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:10px 0;text-align:center">${[['오늘',t,t],['이번 주',mon,t],['이번 달',m1,t]].map(([n,a,b])=>`<div style="padding:8px;border-radius:12px;background:#fff4e0"><small>${n}</small><br><b>+${pigSum(a,b).toLocaleString()}</b></div>`).join('')}</div>
-    <div style="font-size:13px;color:var(--sub);padding:8px 10px;border-radius:10px;background:var(--soft,#f6f6f6)">📖 1챕터 300원 · 완독+독후감 1,000원 · 5권마다 5,000원<br>✏️ 수학 숙제 200원 · 📒 영어 숙제 200원 · 📺 영어 자막 만화 200원 · 😴 할 일 다 하고 10시 20분 전에 잠자기 200원<br>🗓️ 토·일 공부 끝 → 오전 1,500원 · 오후 1,000원 · ⏰ 평일 오후 6시 전에 끝 300원 · 📚 주말 오전 학원 숙제 끝 500원<br>🎯 이번 주 미션 5일 → 용돈 5,000원 (4주차는 💳 엄마 카드 찬스) · 📚 완독 ${p.books}권 (다음 보너스까지 ${5-p.books%5}권)${p.out?`<br>💸 꺼내 쓴 돈 ${p.out.toLocaleString()}원`:''}</div>
+    <div style="font-size:13px;color:var(--sub);padding:8px 10px;border-radius:10px;background:var(--soft,#f6f6f6)">📖 1챕터 300원 · 완독+독후감 1,000원 · 5권마다 5,000원<br>✏️ 수학 숙제 200원 · 📒 영어 숙제 200원 · 📺 영어 자막 만화 200원 · 😴 씻고 양치·렌즈 하고 10시 20분 전에 잠자리에 들기 200원<br>🗓️ 토·일 공부 끝 → 오전 1,500원 · 오후 1,000원 · ⏰ 평일 오후 6시 전에 끝 300원 · 📚 주말 오전 학원 숙제 끝 500원<br>🎯 이번 주 미션 5일 → 용돈 5,000원 (4주차는 💳 엄마 카드 찬스) · 📚 완독 ${p.books}권 (다음 보너스까지 ${5-p.books%5}권)${p.out?`<br>💸 꺼내 쓴 돈 ${p.out.toLocaleString()}원`:''}</div>
     <div style="margin-top:10px;font-weight:700">📒 모은 기록</div><div style="max-height:40vh;overflow:auto">${Object.keys(days).length?Object.entries(days).slice(0,30).map(([d,xs])=>`<div style="margin-top:8px"><b style="font-size:13px">${d.slice(5).replace('-','/')} (${'일월화수목금토'[new Date(d+'T12:00').getDay()]}) · +${xs.reduce((a,x)=>a+(x.amt||0),0).toLocaleString()}원</b>${xs.map(x=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed var(--line);font-size:14px"><span>${ic(x)} ${esc(x.k==='book'?'《'+x.title+'》 다 읽음 🎉':x.k==='out'?x.title:x.k||x.tv?x.title.replace(/^[^ ]+ /,''):'《'+x.title+'》 '+x.ch+'챕터'+(x.fin?' 🎉완독':''))}</span><b style="${x.k==='out'?'color:#c0392b':''}">${x.k==='out'?'−'+(x.spent||0).toLocaleString():x.amt?'+'+x.amt.toLocaleString():'기록'}</b></div>`).join('')}</div>`).join(''):'<div style="color:var(--sub);margin-top:6px">아직 없어요. 오늘 첫 저금을 해 봐요!</div>'}</div>
     <details style="margin-top:12px;padding:10px;border-radius:12px;background:#fdeeee"><summary style="cursor:pointer;font-weight:700">💸 쓴 돈 빼기 (💳 엄마 카드 등)</summary>
       <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">${[1000,3000,5000,10000].map(v=>`<button class="btn ghost" data-pgv="${v}" style="flex:1">${v.toLocaleString()}</button>`).join('')}</div>
@@ -6203,7 +6209,7 @@ async function autoQuizItem(n,i,it,ui,tok){
   }
   return false;
 }
-function showEnd(capped){micRelease();
+function showEnd(capped){micRelease();setTimeout(()=>syRun(false),1500);
   sessTick();
   const l=L(),P=l.plan,t=today();
   l.days[t]={done:1,secs:Math.round(P.secs||0)};save();bridgeDone();repSnap();
@@ -6596,8 +6602,56 @@ async function exportAll(){S.lastBackup=today();save();
   try{const f=new File([blob],name,{type:'application/json'});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});toast('백업 파일을 보냈어요 · 구글 드라이브나 카톡 나에게 보내기에 저장하세요');renderAll();return}}catch(e){if(e&&e.name==='AbortError')return}
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('백업 파일을 저장했어요');renderAll()}
 $('exportBtn').onclick=exportAll;
+/* ===== 한 사람 진도만 옮기기 (태블릿 ↔ 휴대폰) ===== */
+const ROMAN={'민채':'minchae','민지':'minji'};
+function lrKeys(nm){const r=ROMAN[nm],out=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(k.includes(nm)||(r&&k.includes(r))))out.push(k)}return out}
+function lrLast(b){let m='';const sc=o=>{if(o&&typeof o==='object'&&o.days)for(const d in o.days)if(d>m)m=d};sc(b);for(const k in b)sc(b[k]);if(b.onT&&b.onT.d>m)m=b.onT.d;const pg=(b.piggy&&b.piggy.log)||[];if(pg.length&&pg[pg.length-1].d>m)m=pg[pg.length-1].d;return m}
+async function exportOne(){const b=LB(),nm=b.name;const ls={};for(const k of lrKeys(nm))ls[k]=localStorage.getItem(k);
+  const br={};try{const o=JSON.parse(localStorage.getItem('eng5_bridge')||'{}');for(const d in o)for(const c in o[d]){const x=o[d][c];if(x&&x.who===nm)(br[d]=br[d]||{})[c]=x}}catch(e){}
+  const name=`영어방_${nm}_진도_${today()}.json`,blob=new Blob([JSON.stringify({kind:'eng5one',v:1,at:Date.now(),last:lrLast(b),L:b,ls,br})],{type:'application/json'});
+  try{const f=new File([blob],name,{type:'application/json'});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});toast(`📤 ${nm} 진도를 보냈어요 · 다른 기기에서 '사람 진도 받기'`);return}}catch(e){if(e&&e.name==='AbortError')return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast(`📤 ${nm} 진도 파일을 저장했어요`)}
+async function importOne(d){const nm=d.L&&d.L.name;if(!nm)throw 0;const i=S.learners.findIndex(x=>x.name===nm),cur=i>=0?S.learners[i]:null,ll=cur?lrLast(cur):'';
+  if(cur&&ll>(d.last||'')&&!confirm(`⚠️ 이 기기의 ${nm} 진도(${ll}까지)가 파일(${d.last||'?'}까지)보다 더 최근이에요.\n그래도 파일로 바꿀까요?`))return;
+  if(!confirm(`📥 ${nm} 진도를 이 파일(${d.last||'?'}까지 공부)로 바꿀까요?\n다른 사람 진도는 그대로예요.`))return;
+  if(i>=0)S.learners[i]=d.L;else S.learners.push(d.L);
+  for(const [k,v] of Object.entries(d.ls||{}))localStorage.setItem(k,v);
+  try{const o=JSON.parse(localStorage.getItem('eng5_bridge')||'{}');for(const dd in d.br||{})for(const c in d.br[dd])(o[dd]=o[dd]||{})[c]=d.br[dd][c];localStorage.setItem('eng5_bridge',JSON.stringify(o))}catch(e){}
+  S.cur=S.learners.findIndex(x=>x.name===nm);save();toast(`📥 ${nm} 진도를 받았어요`);setTimeout(()=>location.reload(),1000)}
+$('exportOneBtn').onclick=exportOne;
+/* ===== ☁️ 깃허브 Gist 자동 저장: 사람별 파일 · 열면 받고, 공부하면 올려요 ===== */
+const SYK='eng5_sync';const syG=()=>{try{return JSON.parse(localStorage.getItem(SYK)||'{}')}catch(e){return {}}},syS=o=>{try{localStorage.setItem(SYK,JSON.stringify(o))}catch(e){}};
+const devId=(()=>{let d=localStorage.getItem('eng5_dev');if(!d){d='d'+Math.random().toString(36).slice(2,9);localStorage.setItem('eng5_dev',d)}return d})();
+const syFile=nm=>'eng5_'+(ROMAN[nm]||encodeURIComponent(nm).replace(/%/g,''))+'.json';
+async function ghApi(path,opt={}){const o=syG();const r=await fetch('https://api.github.com'+path,{...opt,keepalive:!!opt.keepalive,headers:{'Authorization':'token '+o.tok,'Accept':'application/vnd.github+json',...(opt.body?{'Content-Type':'application/json'}:{})}});if(!r.ok)throw new Error('gh '+r.status);return r.status===204?null:r.json()}
+async function syGist(){const o=syG();if(o.gid)return o.gid;for(let pg=1;pg<=5;pg++){const L0=await ghApi('/gists?per_page=100&page='+pg);const g=L0.find(x=>x.description==='eng5-sync');if(g){o.gid=g.id;syS(o);return g.id}if(L0.length<100)break}
+  const g=await ghApi('/gists',{method:'POST',body:JSON.stringify({description:'eng5-sync',public:false,files:{'README.md':{content:'말하는 영어방 자동 저장 (지우지 마세요)'}}})});o.gid=g.id;syS(o);return g.id}
+function syPack(b){const nm=b.name,ls={};for(const k of lrKeys(nm))ls[k]=localStorage.getItem(k);const br={};try{const o=JSON.parse(localStorage.getItem('eng5_bridge')||'{}');for(const d in o)for(const c in o[d]){const x=o[d][c];if(x&&x.who===nm)(br[d]=br[d]||{})[c]=x}}catch(e){}
+  return {kind:'eng5one',v:1,at:Date.now(),dev:devId,last:lrLast(b),L:b,ls,br}}
+function syApply(d){const nm=d.L.name,i=S.learners.findIndex(x=>x.name===nm);if(i>=0)S.learners[i]=d.L;else S.learners.push(d.L);for(const [k,v] of Object.entries(d.ls||{}))localStorage.setItem(k,v);
+  try{const o=JSON.parse(localStorage.getItem('eng5_bridge')||'{}');for(const dd in d.br||{})for(const c in d.br[dd])(o[dd]=o[dd]||{})[c]=d.br[dd][c];localStorage.setItem('eng5_bridge',JSON.stringify(o))}catch(e){}}
+function syncDirty(nm){const o=syG();if(!o.tok)return;o.dirty=o.dirty||{};if(!o.dirty[nm]){o.dirty[nm]=Date.now();syS(o)}}
+let syBusy=false;
+async function syPull(){const o=syG();if(!o.tok)return 0;const gid=await syGist();const g=await ghApi('/gists/'+gid);let n=0;o.seen=o.seen||{};
+  for(const [fn,f] of Object.entries(g.files||{})){if(!/^eng5_.*\.json$/.test(fn))continue;let txt=f.content;if(f.truncated)txt=await (await fetch(f.raw_url)).text();let d;try{d=JSON.parse(txt)}catch(e){continue}
+    if(!d||d.kind!=='eng5one'||!d.L)continue;const nm=d.L.name;if(d.dev===devId){o.seen[nm]=Math.max(o.seen[nm]||0,d.at);continue}
+    if(d.at>(o.seen[nm]||0)){const loc=S.learners.find(x=>x.name===nm);const dirty=(o.dirty||{})[nm];
+      if(loc&&dirty&&dirty>(o.seen[nm]||0)&&lrLast(loc)>(d.last||'')){o.seen[nm]=d.at;continue} /* 이 기기에서 더 최근에 공부했으면 내 것을 올려요 */
+      syApply(d);o.seen[nm]=d.at;if(o.dirty)delete o.dirty[nm];n++}}
+  syS(o);return n}
+async function syPush(keep){const o=syG();if(!o.tok||!o.dirty||!Object.keys(o.dirty).length)return;const gid=await syGist();const files={};
+  for(const nm of Object.keys(o.dirty)){const b=S.learners.find(x=>x.name===nm);if(b)files[syFile(nm)]={content:JSON.stringify(syPack(b))}}
+  if(!Object.keys(files).length){o.dirty={};syS(o);return}
+  await ghApi('/gists/'+gid,{method:'PATCH',keepalive:keep,body:JSON.stringify({files})});const o2=syG();for(const nm of Object.keys(o.dirty)){o2.seen=o2.seen||{};o2.seen[nm]=Date.now();if(o2.dirty)delete o2.dirty[nm]}o2.last=Date.now();syS(o2);sySt()}
+function sySt(t){const e=$('syncSt');if(!e)return;const o=syG();e.textContent=t||(o.tok?`연결됨${o.last?' · 마지막 올림 '+new Date(o.last).toTimeString().slice(0,5):''}`:'꺼짐')}
+async function syRun(first){if(syBusy)return;if(first&&SESS)first=false; /* 공부 중엔 받지 않아요 */const o=syG();if(!o.tok)return;syBusy=true;try{if(first){const n=await syPull();if(n){toast('☁️ 다른 기기에서 공부한 진도를 받았어요');save();setTimeout(()=>location.reload(),900);return}}await syPush(false)}catch(e){sySt('⚠️ 연결 안 됨 ('+(e.message||e)+')')}finally{syBusy=false;window.__syncReady=true}}
+$('syncGo').onclick=async()=>{const t=$('syncTok').value.trim();if(!/^(ghp_|github_pat_)/.test(t)){toast('깃허브 열쇠(ghp_…)를 붙여 넣어요');return}const o=syG();o.tok=t;delete o.gid;syS(o);sySt('연결 중…');
+  try{await syGist();$('syncTok').value='';const n=await syPull();if(n){window.__syncReady=false;save()}window.__syncReady=true;syncDirty(LB().name);await syPush(false);sySt();toast(n?'☁️ 연결됐어요 · 진도를 받았어요':'☁️ 연결됐어요');if(n)setTimeout(()=>location.reload(),900)}catch(e){sySt('⚠️ 열쇠를 다시 확인해요 ('+(e.message||e)+')')}};
+sySt();setTimeout(()=>syRun(true),1500);setInterval(()=>{if(!document.hidden&&!SESS)syRun(false)},180000);
+document.addEventListener('visibilitychange',()=>{if(document.hidden){syPush(true).catch(()=>{})}else syRun(true)});$('importOneBtn').onclick=()=>$('importInput').click();
 $('importBtn').onclick=()=>$('importInput').click();
 $('importInput').onchange=async e=>{try{const d=JSON.parse(await e.target.files[0].text());
+  if(d.kind==='eng5one'){await importOne(d);e.target.value='';return}
   if(d.kind==='eng5backup'){if(!confirm('진도·데이터·민채 앱 진도를 백업 파일 내용으로 바꿀까요?'))return;
     for(const [k,v] of Object.entries(d.data||{}))await idbPut('h',k,v);for(const [k,v] of Object.entries(d.ls||{}))localStorage.setItem(k,v);
     S=d.S;save();toast('백업을 불러왔어요 · 음원만 zip으로 다시 넣어 주세요');setTimeout(()=>location.reload(),1200);return}
