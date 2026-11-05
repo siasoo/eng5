@@ -236,7 +236,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.37</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.38</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -3855,10 +3855,11 @@ async function runNext(){
   if(t.rxRemN){const x=L().lessons[t.rxRemN];if(x){x.rxrem=t.rxRem;save()}}
   if(t.rdAdv&&t.type==='rxchunk'){const x=L().lessons[t.rdAdv];if(x&&x.rxrem)delete x.rxrem}
   if(t.type==='listen'&&t.last&&t.g==='new')markLearned(t.n);
-  if(t.kind==='skiptest'){const l=L();const wr=new Set(t.wrK||[]);let skipped=0,part=0,hard=false,hardM=0;l.placeDay=today();l.placeStarted=true;l.partial=l.partial||{};if(l.ptDay!==today()){l.ptDay=today();l.ptN=0;l.ptIt=0}l.ptIt=(l.ptIt||0)+(t.items||[]).length;l.ptN=(l.ptN||0)+((t.items||[]).length>TEST_MAX?2:1); // 20문장 넘는 큰 테스트는 하루 1번
+  if(t.kind==='skiptest'){const l=L();const wr=new Set(t.wrK||[]);let skipped=0,part=0,hard=false,hardM=0;const ptRes=[];l.placeDay=today();l.placeStarted=true;l.partial=l.partial||{};if(l.ptDay!==today()){l.ptDay=today();l.ptN=0;l.ptIt=0}l.ptIt=(l.ptIt||0)+(t.items||[]).length;l.ptN=(l.ptN||0)+((t.items||[]).length>TEST_MAX?2:1); // 20문장 넘는 큰 테스트는 하루 1번
     const lastPos=t.early?Math.max(-1,...(t.wrK||[]).map(k=>t.items.findIndex(([n,i])=>n+'-'+i===k))):1e9; // 중간에 멈춘 테스트: 못 푼 단원은 그대로 둬요
     for(const [m,k] of (t.units||[[t.skipN,t.items.length]])){const all=t.items.filter(([n])=>n===m).map(([,i])=>i);const bad=all.filter(i=>wr.has(m+'-'+i));
       const firstPos=t.items.findIndex(([n])=>n===m),endPos=firstPos+all.length-1;if(endPos>lastPos){if(firstPos<=lastPos){hard=true;hardM=m;l.hardU=m;if(l.cur&&l.cur.n===m&&!l.cur.k)l.cur=null}continue}
+      ptRes.push({m,all:all.length,bad:bad.length,k:bad.length>=Math.ceil(all.length*0.3)?'hard':bad.length?'part':'skip'});
       if(bad.length>=Math.ceil(all.length*0.3)){hard=true;hardM=m;l.hardU=m;if(l.cur&&l.cur.n===m&&!l.cur.k)l.cur=null;continue} // 이 단원은 처음부터 공부
       if(!bad.length){l.lessons[m]={d:today(),st:4,due:addDays(today(),14+(m%14)),skip:1};if(l.cur&&l.cur.n===m)l.cur=null;skipped++}
       else if(isIpy()&&kidMode()){l.partial[m]=all.filter(i=>!bad.includes(i));if(l.cur&&l.cur.n===m)l.cur=null;part++}
@@ -3866,6 +3867,7 @@ async function runNext(){
       else{l.lessons[m]={d:today(),st:1,due:addDays(today(),1)};if(l.cur&&l.cur.n===m)l.cur=null;bad.forEach(i=>l.wrong[m+'-'+i]={n:2,d:today()});part++}}
     if(!kidMode())while(l.lessons[l.next])l.next++;l.next=nextAfter(l.next);
     if(l.ptN>=PTCAP()&&BUDC())l.cap20=today(); // 테스트 2번 한 날은 합계 20문장까지 공부로 채워요
+    save();await ptShow(ptRes);
     if(t.moreT){save();getPlan();toast(hard?`${lab(hardM)}은 처음부터 배워 볼게요 📘`:skipped?`${lab(t.units[0][0])} 다 맞혔어요! ➕ 더 하기로 다음 단원도 확인해요 🎉`:'틀린 문장만 공부해요')}else{
     l.plan=buildPlan(false);if(l.ptN>=PTCAP()){const rest=(BUDC()||(l.ptIt||0)<20)?l.plan.tasks.filter(x=>x.kind!=='skiptest'&&!x.done):[];/* 테스트 2번 합계가 20문장이 안 되면 모든 과정에서 공부로 채워요 */l.plan.tasks=[{...t,id:'t0',done:true,carried:true}].concat(rest.map((x,k)=>({...x,id:'t'+(k+1)})));if(rest.length){l.plan.fill20=1;save();toast('실력 확인 2번 끝! 조금만 더 공부하면 오늘 끝이에요 💪')}else{l.plan.ptEnd=1;save();toast(hard||part?'실력 확인 2번 끝! 틀린 건 내일 공부해요. 오늘은 여기까지 🎉':'실력 확인 2번 끝! 오늘 이 과정은 다 했어요 🎉')}}else{save();getPlan();if(l.ptN>=PTCAP()){toast(hard?`${lab(hardM)}은 처음부터 배워 볼게요 📘`:'틀린 문장만 공부하면 오늘 끝이에요')}else toast(hard?`${lab(hardM)}은 처음부터 배워 볼게요 📘`:skipped?`${lab(t.units[0][0])} 다 맞혔어요! 건너뛰고 다음 단원 테스트 🎉`:'틀린 문장만 공부하고 다음 단원 테스트해요')}}}
   if(t.type==='quiz'&&t.partN){const x=L().lessons[t.partN];if(x){x.rem=t.partRem;save()}}
@@ -4169,10 +4171,14 @@ const chunkHTML=(s,roles)=>{const c=String(s).split(' / ');if(roles&&roles.lengt
 const hintHTML=h=>h&&h.length?`<div class="pr" style="margin-top:8px">${h.map(x=>'▶ '+esc(x[0])+' <b>'+esc(x[1])+'</b>').join(' &nbsp; ')}</div>`:'';
 const LEARN_T=['rule','ipyex','listen','step2','repeat','rxchunk','rxword','rxpoint','wdl'];
 const ttlQ=(t)=>{const x=ttl(t.n)||'';return LEARN_T.includes(t.type)?x:x.split(' · ').filter(z=>!/^[A-Za-z][A-Za-z0-9' ,!?.\-]*[.?!]$/.test(z.trim())).join(' · ')}; /* 문제 풀 때는 제목의 영어 정답 문장 숨기기 */
-function placeWhy(t){try{if(isKidN()||LB().noPlace||!isIpy()||['wd','rd'].includes(S.course)||t.g!=='new'||t.kind==='skiptest'||!t.n)return '';const l=L(),k=today()+'|'+S.course+'|'+t.n;if(l.whyK&&l.whyK!==k)return '';
-  const P=getPlan();if(P.tasks.some(x=>x.kind==='skiptest'&&x.done&&(x.skipN===t.n||(x.units||[]).some(u=>u[0]===t.n))))return '';
-  const w=l.hardU===t.n?'지난번 실력 확인에서 많이 틀린 단원이라 바로 공부해요':((l.partial||{})[t.n]||(l.fix||{})[t.n]||(l.cur&&l.cur.n===t.n&&l.cur.fromTest))?'실력 확인에서 틀린 문장만 골라 공부해요':(l.ptDay===today()&&l.ptN>=PTCAP())?'오늘 실력 확인 2번을 다 해서 공부로 이어가요':(l.cur&&l.cur.n===t.n)?'하던 단원을 이어서 해요 · 실력 확인은 다음 새 단원부터':'';
-  if(!w)return '';l.whyK=k;return `<div style="margin:6px 0;padding:8px 10px;border-radius:10px;background:#fff6d6;font-size:14px">📝 ${w}</div>`}catch(e){return ''}} /* 엄마: 실력 확인 없이 공부로 들어간 이유 */
+function placeWhy(t){try{if(LB().noPlace||!isIpy()||['wd','rd'].includes(S.course)||t.g!=='new'||t.kind==='skiptest'||!t.n)return '';const l=L(),cu=l.cur&&l.cur.n===t.n?l.cur:null;
+  const fx=(l.fix||{})[t.n],nb=fx?fx.length:(cu&&cu.fromTest&&cu.cg)?cu.cg.length:0;
+  const w=(fx||(l.partial||{})[t.n]||(cu&&cu.fromTest))?`실력 확인에서 틀린 ${nb?nb+'문장':'문장'}만 다시 공부해요`:l.hardU===t.n?'실력 확인에서 많이 틀린 단원이라 처음부터 차근차근 공부해요':(!isKidN()&&l.ptDay===today()&&l.ptN>=PTCAP())?'오늘 실력 확인 2번을 다 해서 공부로 이어가요':(!isKidN()&&cu)?'하던 단원을 이어서 해요 · 실력 확인은 다음 새 단원부터':'';
+  if(!w)return '';return `<div style="margin:6px 0;padding:8px 10px;border-radius:10px;background:#fff6d6;font-size:15px;font-weight:600">📝 ${w}</div>`}catch(e){return ''}} /* 실력 확인 없이(또는 뒤에) 공부로 들어간 이유 · 모든 단계에 계속 보여요 (엄마·아이 모두) */
+/* 실력 확인 끝 화면: 단원마다 결과와 다음에 할 일 */
+function ptShow(res){return new Promise(r=>{if(!res.length){r();return}const m=document.createElement('div');m.style.cssText='position:fixed;inset:0;z-index:240;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px';
+  m.innerHTML=`<div class="card" style="max-width:420px;width:100%;text-align:center"><div style="font-size:44px">📝</div><b style="font-size:20px">실력 확인 끝!</b><div style="margin:12px 0;text-align:left">${res.map(x=>`<div style="padding:10px;margin-top:8px;border-radius:12px;background:${x.k==='skip'?'#eaf7e8':x.k==='part'?'#fff6d6':'#fdecea'};font-size:16px"><b>${esc(lab(x.m))}</b> · ${x.all}문장 중 ${x.all-x.bad}개 맞힘<br>${x.k==='skip'?'✅ 다 맞혔어요! 이 단원은 건너뛰어요':x.k==='part'?`📝 틀린 <b>${x.bad}문장만</b> 다시 공부해요`:'📘 많이 틀려서 <b>처음부터</b> 차근차근 공부해요'}</div>`).join('')}</div><button class="btn green big" id="ptOk" style="width:100%">${res.some(x=>x.k!=='skip')?'공부하러 가요 ▶':'다음 ▶'}</button></div>`;
+  document.body.appendChild(m);m.querySelector('#ptOk').onclick=()=>{m.remove();r()}})}
 function stepHead(t,guide){return `<div class="stitle">${(IPYC[S.course]||IPYC.ipy)[1]} ${CNAME()} · ${lab(t.n)} · ${esc(ttlQ(t))}</div><div class="sh">${esc(t.title)}</div><p class="sguide">${guide}</p>${placeWhy(t)}`}
 /* 단어 → 그 단어가 들어간 책 예문 (블록 색깔, 단어 블록 강조) */
 /* 단어 그림: 예전 민채 앱의 '영어단어(이미지)' 구글드라이브 그림, 없으면 이모지 */
