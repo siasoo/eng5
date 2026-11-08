@@ -236,7 +236,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.62</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.63</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1063,6 +1063,7 @@ function pickRetry(n,wrong,pool){const stt=L().stats,items=(ipyL(n)||{}).items||
   return w.concat(rest.slice(0,w.length)).sort((a,b)=>a-b)}
 function sampleReview(n,st){{const x=L().lessons[n];if(x&&x.rem&&x.rem.length)return x.rem.map(i=>[n,i]);if(x&&x.rq&&x.rq.length)return x.rq.map(i=>[n,i])} // 다시 도전: 틀린 것 + 같은 수의 어려운 것
   const l=L(),stt=l.stats,k=nItems(n);let idx=IPYV()>=2&&!kidMode()?unitIdx(n,'st'):kidMode()?eligIdx(n):[...Array(k).keys()];if(!idx.length)idx=[...Array(k).keys()];
+  if(S.course==='wd'&&st>=2&&st<=4){const f=l.wf||{};idx=idx.filter(i=>f[n+'-'+i]!==2);if(!idx.length)return []} /* 두 번 연속 맞힌 단어는 40일 복습까지 쉬어요 */
   const bad=idx.filter(i=>(stt[n+'-'+i]||[0,0])[1]>0);
   // 30·60·90일(단어 40·70일) 복습: 그 단 문장 전부
   if(st>=5)return bad.concat(shuffle(idx.filter(i=>!bad.includes(i)))).map(i=>[n,i]);
@@ -1161,7 +1162,7 @@ async function runWdTest(t,tok){const A=t.items;const Z=t.wq||{q:0};
     // 3) 스펠링 · 틀리면 철자를 1번 천천히 듣고, 단어를 보면서 한 번 더 (2번까지)
     let ok=false,ok2=false;for(let tr=1;tr<=2&&!ok&&!ok2;tr++){if(tr>1){$('sMain').innerHTML=wdLearnHTML(t,it,`${cnt} · 철자 다시 듣기`,`틀렸어요. <b>철자를 ${SPN()}번</b> 듣고 다시 써 봐요.`);$('again').onclick=()=>playEn(n,i,it.en);await playEn(n,i,it.en);await spellAloud3(it,n,i,tok,SPN());if(!SESS||SESS.tok!==tok)return false}
       const s=await spellOne(t,tr>1?{...it,_show:true}:it,n,i,tok,cnt+` · 스펠링${tr>1?' (다시)':''}`);if(s===null)return false;if(tr===1)ok=s;else ok2=s} // 두 번째는 보면서 쓰니까 맞혀도 기록은 다시 볼 단어
-    recordResult(n,i,!!(m&&ok));
+    recordResult(n,i,!!(m&&ok));wdFast(n,i,m===true&&ok===true?1:0);
     if(!(m&&ok)){Z.bad=(Z.bad||0)+1;t.wq=Z}
     if(!ok&&!ok2){$('sMain').innerHTML=wdLearnHTML(t,it,cnt,'괜찮아요! 이 단어는 <b>내일 복습</b>에서 다시 만나요.');$('again').onclick=()=>playEn(n,i,it.en);await playEn(n,i,it.en);await sleep(1500)}
     if((Z.bad||0)>=5&&q<A.length-1){t.items=A.slice(0,q+1);t.short=A.length-q-1;delete t.wq;toast(`오늘 잘했어요! 남은 새 단어 ${A.length-q-1}개는 내일 해요 😊`);return true}} // 어려운 날: 5개 틀리면 여기까지
@@ -1202,17 +1203,19 @@ async function runWdSay(t,tok){const kn=new Set((L().plan&&L().plan.wdKnown)||[]
     if(x){const wr=(t.wrAll||[]).filter(p=>p[0]===u.n).map(p=>p[1]);if(ok===false&&wr.length)x.rq=pickRetry(u.n,wr,A.filter(p=>p[0]===u.n).map(p=>p[1]));else if(ok)delete x.rq}}
   save();return true}
 /* 영어단어 하루 분량 = 복습 + 새 단어 = 정한 개수 (새 단어는 최소 하루 개수의 1/5) */
-const WDMIN=()=>3;
+const WDMIN=()=>3,WDDAY=23;
+/* 11/8 엄마: 처음 배우는 날(고르기+스펠링 한 번에) + 다음 날 복습(스펠링 한 번에) · 힌트 없이 두 번 연속 맞히면 3·7·21일 복습 건너뛰고 40일 복습으로 */
+const wdFast=(n,i,v)=>{if(S.course!=='wd')return;const l=L(),f=(l.wf=l.wf||{}),k=n+'-'+i;if(v)f[k]=v;else delete f[k]};
 function buildPlanWd(P,l,t,wd,wkOK){const add=t2=>{t2.id='t'+P.tasks.length;P.tasks.push(t2)};l.cur=null;
   // 어제 못 끝낸 새 단어는 멈춘 단계부터 이어서 (오늘 분량에 포함)
-  const old=(l.plan&&l.plan.date<t?l.plan.tasks.filter(x=>x.g==='new'&&!x.done&&x.items&&x.type!=='spell'):[]).map(x=>({...x,items:x.items.slice(0,17)}));
+  const old=(l.plan&&l.plan.date<t?l.plan.tasks.filter(x=>x.g==='new'&&!x.done&&x.items&&x.type!=='spell'):[]).map(x=>({...x,items:x.items.slice(0,WDDAY)}));
   const carryN=old.length?old[0].items.length:0;
-  const N=Math.min(17,NEWN()),canNew=(wkOK||wd>=1&&wd<=6)&&l.next<=TOTAL();const cap=Math.max(0,(canNew||carryN?17-Math.max(WDMIN(),carryN):17)); // 복습 포함 하루 17개
+  const N=Math.min(WDDAY,NEWN()),canNew=(wkOK||wd>=1&&wd<=6)&&l.next<=TOTAL();const cap=Math.max(0,(canNew||carryN?WDDAY-Math.max(WDMIN(),carryN):WDDAY)); // 복습 포함 하루 23개 (11/8 엄마: 17→23)
   let rev=[];const units=[];
-  for(const x of dueLessons(t)){if(rev.length>=cap)break;const it=sampleReview(x.n,x.st);const room=cap-rev.length;
+  for(const x of dueLessons(t)){if(rev.length>=cap)break;const it=sampleReview(x.n,x.st);if(!it.length&&x.st>=2&&x.st<=4){advance(x.n,100);continue}const room=cap-rev.length;
     if(it.length<=room){rev=rev.concat(it);units.push({n:x.n,st:x.st})}else rev=rev.concat(it.slice(0,room))} // 다 못 들어간 묶음은 내일 다시
   if(carryN){P.newN=old[0].items[0][0];if(P.wdKnown==null&&l.plan&&l.plan.wdKnown)P.wdKnown=l.plan.wdKnown;old.forEach(x=>add({...x,title:x.title.startsWith('이어서')?x.title:'이어서 · '+x.title}))}
-  else if(canNew){const items=wdPick(Math.max(WDMIN(),17-rev.length));if(items.length){P.newN=items[0][0];addWdDay(add,items)}}
+  else if(canNew){const items=wdPick(Math.max(WDMIN(),WDDAY-rev.length));if(items.length){P.newN=items[0][0];addWdDay(add,items)}}
   if(rev.length)add({type:'spell',items:rev,units,g:'review',day:true,title:'복습 · 스펠링',sub:`복습 단어 ${rev.length}개 · 틀리면 철자 듣고 바로 다시 · 80% 넘으면 다음 복습으로`});
   return P}
 function wdChainPlan(add,cur,idx){let need=wdTarget()-wdToday()-idx.length,m=cur.n+1;
@@ -1468,7 +1471,7 @@ function weekClaim(nm,cnt,mon,done){const card=wkNo(mon)===4,r=WEEK_RW[card?0:1]
   const b=LB();b.weekReward=b.weekReward||{};if(b.weekReward[mon])return true;b.weekReward[mon]=today()+'|'+(card?'💳 엄마 카드 찬스'+(memo?' · '+memo:''):r);
   if(card)pigAdd('week','🎯 4주차 엄마 카드 찬스'+(memo?' · '+memo:''),0);else pigAdd('week','🎯 이번 주 미션 용돈',5000);save();if(done)done();return true}
 const CHK=['pr','mh','eh','tv','sl']; /* 체크 칸 (미션 계산에서 빼요) */
-const CHK_AMT=c=>({pr:300,mh:200,eh:200,tv:200,sl:200})[c]||0;
+const CHK_AMT=c=>({pr:500,mh:200,eh:200,tv:200,sl:200})[c]||0;
 window.addEventListener('message',e=>{const w=e.data&&e.data.weekPig;if(!w)return;const b=LB(),t=today(),d0=new Date(t+'T12:00:00'),mon=addDays(t,-((d0.getDay()+6)%7));b.weekReward=b.weekReward||{};if(b.weekReward[mon])return;const card=String(w).includes('카드');b.weekReward[mon]=t+'|'+w;if(card)pigAdd('week','🎯 4주차 엄마 카드 찬스'+(e.data.memo?' · '+e.data.memo:''),0);else pigAdd('week','🎯 이번 주 미션 용돈',5000);save()});
 window.__wkNo=wkNo;
 /* 이번 주 미션: 하루 공부량을 다 한 날이 주 5일이면 엄마에게 진짜 코인 2개 (민채 앱에서 받기) */
@@ -6443,7 +6446,7 @@ async function runSpell(t,tok){
       if(!SESS||SESS.tok!==tok)return false;Z.q=q;t.sq=Z;keep();
       const [n,i]=Z.queue[q];const it=(await getItems(n))[i];if(!it)continue;
       let r=await spellOne(t,it,n,i,tok,`${Z.round>1?'다시 도전 · ':''}${q+1} / ${Z.queue.length}`);
-      if(r===null)return false;if(t.units&&Z.round===1){Z.res=Z.res||{};const z=(Z.res[n]=Z.res[n]||[0,0]);z[1]++;if(r)z[0]++;recordResult(n,i,!!r)}
+      if(r===null)return false;if(t.units&&Z.round===1){Z.res=Z.res||{};const z=(Z.res[n]=Z.res[n]||[0,0]);z[1]++;if(r)z[0]++;recordResult(n,i,!!r);if(S.course==='wd'){const f=(L().wf||{})[n+'-'+i],ls=(L().lessons[n]||{}).st;if(!r)wdFast(n,i,0);else if(f===1&&ls===1)wdFast(n,i,2);else if(f===1)wdFast(n,i,0)}}
       if(!r&&!/\s/.test(String(it.en).trim())){$('sMain').innerHTML=wdLearnHTML(t,it,`${q+1} / ${Z.queue.length} · 철자 다시 듣기`,'틀린 단어는 <b>철자를 3번</b> 듣고 바로 다시 해요.');$('again').onclick=()=>playEn(n,i,it.en);
         await playEn(n,i,it.en);await spellAloud3(it,n,i,tok,SPN());if(!SESS||SESS.tok!==tok)return false;r=await spellOne(t,it,n,i,tok,`${q+1} / ${Z.queue.length} · 바로 다시`);if(r===null)return false}
       if(!r)Z.retry.push([n,i]);
