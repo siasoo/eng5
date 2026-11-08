@@ -236,7 +236,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.67</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.68</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -453,6 +453,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
         <div class="r"><b>📌 규칙 연습 (하루 5문제)<br><small style="font-weight:400;color:var(--sub)">이 학습자만 · He goes / I am 같은 규칙을 어디 앞에서 풀지</small></b><div class="seg" id="grLocSeg"></div></div>
         <div class="r"><b>📌 규칙 단계<br><small style="font-weight:400;color:var(--sub)">1단계: 배운 것 전부 · 2단계: ~ing · 30일 이상 + 최근 10일 80%면 자동으로 올라가요 · 직접 바꿔도 돼요</small></b><div class="seg" id="grStSeg"></div></div>
         <div class="r"><b>🔊 헷갈리는 발음 (하루)<br><small style="font-weight:400;color:var(--sub)">이 학습자만 · want/won't 같은 소리 구별 · 그날 첫 공부 앞에서</small></b><div class="seg" id="pronSeg"></div></div>
+        <div class="r"><b>🗣️ 스누피 따라 말하기 마이크 확인<br><small style="font-weight:400;color:var(--sub)">이 학습자만 · 블루투스 이어폰 쓰면 끄기 (마이크를 켜면 이어폰이 통화 모드로 바뀌어 끊겨요)</small></b><div class="seg" id="dlMicSeg"></div></div>
         <div class="r"><b>🔗 이어지는 소리 (하루 새 문제)<br><small style="font-weight:400;color:var(--sub)">발음 2단계 · 원어민 영상 장면 · 기본: 엄마·민지 5개, 민채는 2달 뒤 2개</small></b><div class="seg" id="lnSeg"></div></div>
         <div class="r"><b>🔤 스펠링 불러주기<br><small style="font-weight:400;color:var(--sub)">이 학습자만 · 틀렸을 때 철자를 몇 번</small></b><div class="seg" id="spNSeg"></div></div>
         <div class="r"><b>🎉 칭찬 화면<br><small style="font-weight:400;color:var(--sub)">이 학습자만 · 과정을 끝낼 때 캐리커처 축하</small></b><div class="seg" id="cheerSeg"></div></div>
@@ -3526,14 +3527,19 @@ async function dlBlkShow(o,v,x,rate,msg){const E=x.ck[0],K=x.ck[1],n=E.length,P=
 function dlWaitNx(sec,el){const b=el||$('dlNx');if(!b)return Promise.resolve();let n=sec;const lab=()=>{b.textContent=`다음 ▶ (${n}초 뒤 자동)`};lab();
   return new Promise(res=>{let g=false;const go=()=>{if(g)return;g=true;clearInterval(tm);res()};b.onclick=go;const tm=setInterval(()=>{if(!document.body.contains(b))return go();n--;if(n<=0)go();else lab()},1000)})}
 /* 11/8 엄마: 따라 말하기 — 발음은 안 보고 목소리가 났는지만 (마이크 안 되면 그냥 통과) */
-async function dlHeard(ms){try{if(!(await micInit()))return null}catch(e){return null}const t0=Date.now();let on=0,last=Date.now();while(Date.now()-t0<ms){await sleep(50);const now=Date.now();if(micLevel()>micThr()){on+=now-last;if(on>=250)return true}last=now}return false}
+/* 11/8 엄마: 단어 뜻 보기는 같은 종류 뜻끼리(~하다 · ~한/~은 · 이름) + 오늘·최근 배운 뜻 먼저 · 3개 */
+function wKind(m){m=String(m).split(',')[0].replace(/\([^)]*\)/g,'').trim();return /다$/.test(m)?'v':/(한|은|는|운|인|된|난|진|던|할|적인|같은|없는|있는|많은)$/.test(m)?'a':'n'}
+function wDist(ans,pref,all,n){const a0=String(ans).split(',')[0].trim(),k=wKind(ans),ok=m=>{const m0=String(m).split(',')[0].trim();return m0&&m0!==a0&&!a0.includes(m0)&&!m0.includes(a0)};const out=[];
+  const take=L=>{for(const m of shuffle([...new Set(L)].filter(ok)))if(out.length<n&&!out.some(z=>z.split(',')[0].trim()===m.split(',')[0].trim()))out.push(m)};
+  take(pref.filter(m=>wKind(m)===k));take(all.filter(m=>wKind(m)===k));take(pref);take(all);return out}
+async function dlHeard(ms){if(LB().dlMic===false)return null;try{if(!(await micInit()))return null}catch(e){return null}const t0=Date.now();let on=0,last=Date.now();while(Date.now()-t0<ms){await sleep(50);const now=Date.now();if(micLevel()>micThr()){on+=now-last;if(on>=250)return true}last=now}return false}
 function dlMissAdd(){try{const st=dlSt(),t=today();st.log[t]=st.log[t]||{};st.log[t].rpMiss=(st.log[t].rpMiss||0)+1;save()}catch(e){}}
 async function dlRpt(o,x,v){const b=document.createElement('div');b.style.cssText='text-align:center;margin-top:14px';o.appendChild(b);const wait=Math.min(8000,Math.max(3000,((x.e-x.s)||2)*1300+1500));let skip=false;
-  const draw=(msg,col)=>{b.innerHTML=`<div style="font-size:24px;font-weight:800;color:${col||'#7fd6a8'}">${msg}</div><div style="font-size:14px;color:#aab;margin-top:4px">🎤 목소리가 들리면 넘어가요</div><button class="btn ghost sm" id="dlRpS" style="color:#fff;margin-top:8px">다음 ▶</button>`;document.getElementById('dlRpS').onclick=()=>{skip=true}};
+  const draw=(msg,col)=>{b.innerHTML=`<div style="font-size:24px;font-weight:800;color:${col||'#7fd6a8'}">${msg}</div><div style="font-size:14px;color:#aab;margin-top:4px">${LB().dlMic===false?'소리 내서 따라 말해요':'🎤 목소리가 들리면 넘어가요'}</div><button class="btn ghost sm" id="dlRpS" style="color:#fff;margin-top:8px">다음 ▶</button>`;document.getElementById('dlRpS').onclick=()=>{skip=true}};
   const listen=async()=>{const t0=Date.now();while(Date.now()-t0<wait&&!skip){const h=await dlHeard(300);if(h===null){await sleep(wait-(Date.now()-t0));return null}if(h)return true}return skip?null:false};
   draw('🗣️ 따라 말해요!');let h=await listen();
   if(h===false&&v){draw('🗣️ 소리 내서 말해요!','#f6c344');await dlPlay(v,x);h=await listen();if(h===false)dlMissAdd()}
-  b.innerHTML=`<div style="font-size:26px">${h?'⭕ 잘했어요!':'👉'}</div>`;await sleep(h?700:300)}
+  micRelease(); /* 11/8: 끝나면 바로 마이크 끄기 (이어폰 통화 모드 방지) */b.innerHTML=`<div style="font-size:26px">${h?'⭕ 잘했어요!':'👉'}</div>`;await sleep(h?700:300)}
 function dlCkPr(x){const E=x.ck[0],pw=String(x.pr||'').split(/\s+/).filter(Boolean),ew=x.en.split(/\s+/).filter(Boolean);if(!pw.length||pw.length!==ew.length)return null;let k=0;return E.map(e=>{const c=e.split(/\s+/).filter(Boolean).length,r=pw.slice(k,k+c).join(' ');k+=c;return r})} /* 블록별 한글 발음 (단어 수가 같을 때만) */
 async function dlBlk(box,v,x,head){const E=x.ck[0],K=x.ck[1],n=E.length,P=dlCkPr(x);let pool=E.map((_,i)=>[Math.random(),i]).sort((a,b)=>a[0]-b[0]).map(a=>a[1]);if(pool.every((k,i)=>k===i))pool.reverse();let got=0,playing=false;const o=dlOv();
   const pl=async()=>{if(playing)return;playing=true;const bt=document.getElementById('dlBkL');if(bt)bt.textContent='🔊 듣는 중…';try{await dlPlay(v,x,0,.75)}catch(e){}playing=false;const b2=document.getElementById('dlBkL');if(b2)b2.textContent='🔊 문장 듣기 (천천히)'};
@@ -3574,7 +3580,7 @@ async function dlRun(done,onSkip){const st=dlSt(),m=document.createElement('div'
     const WQ=Object.entries(st.wv).filter(([w,o])=>o.st<5&&o.due<=t0).sort((a,b)=>a[1].due-b[1].due).slice(0,6);
     if(WQ.length){const allM=[...new Set(Object.values(st.wv).map(o=>o.m).concat(DL.flatMap(z=>(z.w||[]).map(q=>q[1]))))];
       const sh=a=>a.map(z=>[Math.random(),z]).sort((p,q)=>p[0]-q[0]).map(z=>z[1]);let wi=0,wok=0;cover(true);
-      for(const [w,o] of WQ){wi++;const ds=sh(allM.filter(m=>m!==o.m&&m.split(',')[0]!==o.m.split(',')[0])).slice(0,3);const opts=sh([o.m,...ds]);
+      for(const [w,o] of WQ){wi++;const ds=wDist(o.m,Object.values(st.wv).map(z=>z.m),allM,3);const opts=sh([o.m,...ds]);
         await wPic(w,o.n);$('dlB').innerHTML=`<div style="font-size:14px;color:#aab">📒 내 단어장 ${wi}/${WQ.length} · 무슨 뜻일까요?</div><div style="margin-top:10px;font-size:30px;font-weight:800;text-align:center">${esc(w)} <button class="btn ghost sm" id="dlWs" style="color:#fff">🔊</button></div>${(WX[w]||{}).p?`<div style="text-align:center;color:#f6c344;font-size:17px">${esc(WX[w].p)}</div>`:''}`+opts.map((m,k)=>`<button class="btn ghost" data-wm="${k}" style="display:block;width:100%;margin-top:8px;font-size:17px;padding:12px;color:#fff;text-align:left">${esc(m)}</button>`).join('')+'<div id="dlR"></div>';
         const sp=()=>{try{say(w)}catch(e){}};$('dlWs').onclick=sp;sp();
         const pk=await new Promise(res=>$('dlB').querySelectorAll('[data-wm]').forEach(b=>b.onclick=()=>res(opts[+b.dataset.wm])));const rt=pk===o.m;
@@ -3602,7 +3608,7 @@ async function dlRun(done,onSkip){const st=dlSt(),m=document.createElement('div'
       wDone();cover(true); /* 11/8 엄마: 뜻 맞추기에서는 그림 안 보이게 (🎧만) */
       while(Q.length&&round<2){round++;const wrong=[];
         for(const [qi,w] of Q.entries()){const o=WX[w]||{},ans=String(o.m||'').split(',')[0].trim();if(!ans)continue;
-          const opts=shuffle([ans,...shuffle(allM.filter(m=>m!==ans&&!ans.includes(m)&&!m.includes(ans))).slice(0,2)]);
+          const opts=shuffle([ans,...wDist(ans,[...NW.map(a=>String((WX[a[0]]||{}).m||'').split(',')[0].trim()),...Object.values(st.wv).map(z=>String(z.m).split(',')[0].trim())],allM,3)]);
           $('dlB').innerHTML=`<div style="font-size:14px;color:#aab">📝 새 단어 뜻 맞추기 ${round>1?'· 🔁 한 번 더 · ':''}${qi+1}/${Q.length}</div><div style="margin-top:10px;font-size:32px;font-weight:800;text-align:center">${esc(w)} <button class="btn ghost sm" id="dlWs" style="color:#fff">🔊</button></div>${(()=>{const z=DL.find(y=>y.n===(o.n||0));const nn=(NW.find(a=>a[0]===w)||[])[1];const z2=DL.find(y=>y.n===nn)||z;return z2?`<div style="text-align:center;font-size:14px;color:#aab;margin-top:4px">📝 ${esc(z2.en)}</div>`:''})()}`+opts.map((m,j)=>`<button class="btn ghost" data-wm="${j}" style="display:block;width:100%;margin-top:8px;font-size:18px;padding:12px;color:#fff">${esc(m)}</button>`).join('')+'<div id="dlWR"></div>';
           $('dlWs').onclick=()=>{try{say(w)}catch(e){}};try{say(w)}catch(e){}
           const pk=await new Promise(res=>$('dlB').querySelectorAll('[data-wm]').forEach(b=>b.onclick=()=>res(opts[+b.dataset.wm])));const ok=pk===ans;
@@ -3610,7 +3616,7 @@ async function dlRun(done,onSkip){const st=dlSt(),m=document.createElement('div'
           if(ok){$('dlWR').innerHTML='<div style="margin-top:10px;text-align:center;font-size:20px">⭕</div>';await sleep(900)}
           else{wrong.push(w);$('dlWR').innerHTML=`<div style="margin-top:10px;padding:10px;border-radius:12px;background:#3a1f1f;text-align:center"><b>❌ ${esc(w)} = ${esc(o.m||'')}</b>${o.p?`<div style="color:#f6c344;margin-top:4px">${esc(o.p)}</div>`:''}</div>`;await sleep(300);try{await Promise.race([Promise.resolve(say(w)),sleep(3000)])}catch(e){}await sleep(1800)}}
         Q=wrong}}
-    wDone();cover(false)}
+    micRelease();wDone();cover(false)}
   for(const q of T){const x=q.x,r=q.r;
     if(r.st>=6){nt++;cover(false); /* 🗣️ 마지막 단계(민지·엄마): 소리 3번 다 맞힌 장면을 듣고 바로 따라 말하기 (11/7) */
       $('dlB').innerHTML=`<div style="font-size:14px;color:#aab">🗣️ 따라 말하기 ${nt}/${T.length} · 소리 테스트 5번을 다 통과한 장면이에요. 듣고 바로 따라 말해요!</div><div style="margin-top:8px"><b style="font-size:19px">${esc(x.en)}</b><br><span style="color:#ccd">${esc(x.ko)}</span></div><button class="btn ghost" id="dlAg" style="margin-top:6px;color:#fff">🔁 다시 듣기</button><div id="dlMic" style="margin-top:6px"></div><div id="dlR"></div>`;
@@ -3729,23 +3735,24 @@ async function dlRun(done,onSkip){const st=dlSt(),m=document.createElement('div'
         v.pause();band.style.display='none';bt.style.display='none';st.full[f]=today();st.log[today()].full=nm;save();fullDone=true;
         $('dlB').innerHTML=`<div style="padding:14px;border-radius:12px;background:#1f3a24;text-align:center"><div style="font-size:40px">🏆</div><b style="font-size:18px">${esc(nm)} 완주!</b><div style="color:#ccd;margin-top:4px">처음부터 끝까지 다 봤어요. 대단해요!</div></div><button class="btn green" id="dlNx" style="width:100%;margin-top:8px">다음 ▶</button>`;await new Promise(res=>$('dlNx').onclick=res)}}}
 
+  micRelease();
   /* 🎧 이어 듣기 5분 (엄마 11/7 방법 2): 본 장면을 자막과 함께 쭉 이어서 · 문제 없이 듣기만 */
   {const seen=new Set(),pool=[];const add=x=>{if(x&&!seen.has(x.n)&&URLS[dlF(x)]&&dlOK(x)){seen.add(x.n);pool.push(x)}};
     [...N.map(q=>q.x),...T.map(q=>q.x)].forEach(add);Object.keys(st.it).map(n=>DL.find(z=>z.n===+n)).filter(Boolean).sort((a,b)=>b.n-a.n).forEach(x=>{if(pool.length<12)add(x)});pool.sort((a,b)=>a.n-b.n); /* 11/8 엄마: 오늘·최근 배운 장면 최대 12개를 이야기 순서대로 반복 */
     const LIM=Math.min(pool.length*60,dlBud()-(Date.now()-tRun)/1000),kid=isKidN(); /* 하루 시간표에서 남은 시간만큼 (평일 7분 · 주말 10/15분) */
     if(pool.length&&!fullDone&&LIM>=30){ /* 본 장면이 적은 처음 며칠은 짧게 (한 장면을 너무 여러 번 듣지 않게) */let used=0,stop=false,paused=false,i=0;cover(false);
-      $('dlB').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b>🎧 이어 듣기</b><span id="dlLT" style="color:#f6c344;font-weight:700"></span></div><div style="font-size:13px;color:#aab;margin-top:2px">오늘·최근 배운 장면 <b>${pool.length}개</b>를 이야기 순서대로 반복해서 들어요. 1바퀴 영어 · 2바퀴 뜻 · 3바퀴부터 귀로만!</div><div id="dlLC" style="margin-top:8px;font-size:15px;color:#f6c344"></div><div id="dlLN" style="margin-top:6px;min-height:56px"></div><div style="display:flex;gap:8px;margin-top:10px"><button class="btn ghost" id="dlLE" style="flex:1;color:#fff">👀 자막 보기</button><button class="btn ghost" id="dlLP" style="flex:1;color:#fff">⏸ 잠깐 멈춤</button>${kid?'':'<button class="btn ghost" id="dlLS" style="flex:1;color:#fff">그만 듣기</button>'}</div>`;
+      $('dlB').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b>🎧 이어 듣기</b><span id="dlLT" style="color:#f6c344;font-weight:700"></span></div><div style="font-size:13px;color:#aab;margin-top:2px">오늘·최근 배운 장면 <b>${pool.length}개</b>를 이야기 순서대로 반복해서 들어요. 1바퀴 영어 · 2바퀴 뜻 · 3·4바퀴 듣고 확인 · 5바퀴부터 귀로만!</div><div id="dlLC" style="margin-top:8px;font-size:15px;color:#f6c344"></div><div id="dlLN" style="margin-top:6px;min-height:56px"></div><div style="display:flex;gap:8px;margin-top:10px"><button class="btn ghost" id="dlLE" style="flex:1;color:#fff">👀 자막 보기</button><button class="btn ghost" id="dlLP" style="flex:1;color:#fff">⏸ 잠깐 멈춤</button>${kid?'':'<button class="btn ghost" id="dlLS" style="flex:1;color:#fff">그만 듣기</button>'}</div>`;
       const showT=()=>{const r=Math.max(0,LIM-used);if($('dlLT'))$('dlLT').textContent=`남은 ${Math.floor(r/60)}:${String(Math.floor(r%60)).padStart(2,'0')}`};showT();
       let showL=false,curX=null,rd=1;const band=$('dlBand'),bt=$('dlBandT');const lTxt=()=>{const x=curX;if(!x)return; /* 11/8 엄마: 글씨는 영상 자리에 크게 (1·2바퀴 · 👀 자막 보기) · 3바퀴부터는 영상 보며 귀로만 */
         if(showL){card(`${bigEn(x)}${x.pr?`<div style="font-size:18px;color:#f6c344">${esc(x.pr)}</div>`:''}<div style="font-size:18px;color:#dde">${esc(x.ko)}</div>`);$('dlLN').innerHTML='<div style="color:#778;padding:8px 0">👀 자막 보는 중</div>'}
         else if(rd===1){card(`<div style="font-size:13px;color:#aab">🔤 1바퀴 · 영어 보면서 들어요</div>${bigEn(x)}${x.pr?`<div style="font-size:19px;color:#f6c344">${esc(x.pr)}</div>`:''}`);$('dlLN').innerHTML='<div style="color:#778;padding:8px 0">🔤 1바퀴 · 영어 보면서 들어요</div>'}
         else if(rd===2){card(`<div style="font-size:13px;color:#aab">💡 2바퀴 · 뜻만 보면서 들어요</div><div style="font-size:${String(x.ko).length>40?21:25}px;font-weight:800;line-height:1.4">${esc(x.ko)}</div>`);$('dlLN').innerHTML='<div style="color:#778;padding:8px 0">💡 2바퀴 · 뜻만 보면서 들어요</div>'}
-        else{cover(false);bandOn(x);$('dlLN').innerHTML='<div style="color:#778;padding:8px 0">🎧 3바퀴부터 귀로만! 안 들리면 👀 자막 보기</div>'}}; /* 11/8 엄마: 1바퀴 영어+발음 · 2바퀴 뜻만 · 3바퀴부터 소리만 → 끝나면 영어 1~2초 */
+        else{cover(false);bandOn(x);$('dlLN').innerHTML=`<div style="color:#778;padding:8px 0">🎧 ${rd<=4?'3·4바퀴 귀로 듣고 → 끝나면 영어로 확인':'5바퀴부터 진짜 귀로만!'} 안 들리면 👀 자막 보기</div>`}}; /* 11/8 엄마: 3·4바퀴는 듣고 영어 확인 · 5바퀴부터 소리만 */ /* 11/8 엄마: 1바퀴 영어+발음 · 2바퀴 뜻만 · 3바퀴부터 소리만 → 끝나면 영어 1~2초 */
       $('dlLE').onclick=()=>{showL=!showL;$('dlLE').textContent=showL?'🙈 자막 가리기':'👀 자막 보기';lTxt()};
       $('dlLP').onclick=()=>{paused=!paused;$('dlLP').textContent=paused?'▶ 다시 듣기':'⏸ 잠깐 멈춤';if(paused)v.pause()};if($('dlLS'))$('dlLS').onclick=()=>{stop=true;v.pause()};
       while(!stop&&used<LIM&&document.body.contains(v)){while(paused&&!stop)await sleep(300);if(stop)break;const x=pool[i%pool.length];i++;
         curX=x;rd=Math.floor((i-1)/pool.length)+1;if($('dlLC'))$('dlLC').textContent=`${(i-1)%pool.length+1} / ${pool.length}번째 장면 · ${rd}바퀴째`;lTxt();const t0=Date.now();await dlPlay(v,x);
-        if(rd>=3&&!showL&&$('dlLN')){card(`<div style="font-size:15px;color:#7fd6a8">✅ 이렇게 말했어요</div>${bigEn(x)}`);await sleep(1800)}else await sleep(500);used+=(Date.now()-t0)/1000;showT()}
+        if(rd>=3&&rd<=4&&!showL&&$('dlLN')){card(`<div style="font-size:15px;color:#7fd6a8">✅ 이렇게 말했어요</div>${bigEn(x)}`);await sleep(1800)}else await sleep(500);used+=(Date.now()-t0)/1000;showT()}
       v.pause();cover(false);bandOff();st.log[today()].loop=Math.round(used);save()}}
   let pigMsg='';if(isKidN()){const lg=piggy().log;if(!lg.some(z=>z.d===today()&&z.k==='dl')){pigAdd('dl','🎧 스누피 듣기 끝',300);pigMsg+='🐷 +300원 '}if(fullDone&&st.log[today()].full){pigAdd('dlfull','🏆 '+st.log[today()].full+' 통째로 보기 완주',2000);pigMsg+='🐷 완주 +2,000원'}} /* 11/7 엄마: 매일 300원 · 한 편 완주 2,000원 자동 적립 */
   box.innerHTML=`<div style="padding:18px;text-align:center;max-height:80vh;overflow:auto"><div style="font-size:48px">🎬</div><b style="font-size:20px">오늘 장면 ${N.length}개${T.length?` · 소리 테스트 ${ok}/${T.length}`:''}${(st.log[today()]||{}).loop?` · 이어 듣기 ${Math.round(st.log[today()].loop/60)}분`:''}</b>${pigMsg?`<div style="margin-top:10px;padding:10px;border-radius:12px;background:#3a2f1f;color:#f6c344;font-weight:700;font-size:17px">${pigMsg}<div style="font-size:14px;color:#fff;margin-top:4px">🐷 저금통에 지금 <b>${piggy().sum.toLocaleString()}원</b> 모였어요!</div></div>`:''}${dlProgHTML(st)}<div style="color:#aab;margin-top:6px">내일은 오늘 본 장면을 소리만 듣고 맞혀요</div><button class="btn green" id="dlEnd" style="width:100%;margin-top:14px">끝 ✅</button></div>`;
@@ -6994,6 +7001,7 @@ function renderSettings(){if($('placeTogB'))$('placeTogB').textContent=LB().noPl
   seg('grLocSeg',['gw','rd','off'],()=>LB().grLoc||'gw',v=>{LB().grLoc=v},v=>({gw:'기적 쓰기 앞',rd:'리딩 앞',off:'끄기'})[v]);
   seg('grStSeg',['1','2'],()=>String(grSt().stage||1),v=>{const g=grSt();if(+v>g.stage){g.newSt=today();g.newShown=''}g.stage=+v},v=>v+'단계');
   seg('pronSeg',['0','1','2','3'],()=>String(prN()),v=>{LB().pronN=+v},v=>v==='0'?'끄기':v+'개');
+  seg('dlMicSeg',['1','0'],()=>LB().dlMic===false?'0':'1',v=>{LB().dlMic=v==='1'},v=>v==='1'?'켜기':'끄기 (이어폰)'); /* 11/8 엄마: 이어폰 끊김 */
   seg('lnSeg',['0','2','3','5','8'],()=>String(lnN()),v=>{LB().ln2N=+v},v=>v==='0'?'끄기':v+'개');
   seg('spNSeg',['1','2','3'],()=>String(LB().spN||3),v=>{LB().spN=+v},v=>v+'번');
   seg('cheerSeg',['on','off'],()=>LB().cheerOff?'off':'on',v=>{LB().cheerOff=v==='off'},v=>v==='on'?'켜기':'끄기');
