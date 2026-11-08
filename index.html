@@ -236,7 +236,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.60</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.61</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1541,13 +1541,20 @@ const DKWR={"e5_001": {"use": ["해명", "화해"], "m": "지호는 서윤이의
 /* 서술형 간단 평가: 잘한 점 · 다음엔 이렇게 · 모범 답안 (앱이 규칙으로 확인) */
 const JKW1=w=>{w=String(w);const h=(w.match(/[가-힣]/g)||[]);return /[ㄱ-ㅎㅏ-ㅣ]/.test(w)||/([가-힣]{1,3})\1{2,}/.test(w)||(h.length>=6&&new Set(h).size<=2)};
 /* 글쓰기 피드백 (엄마 11/7): 칭찬은 구체적으로 2개까지 · 아쉬운 점은 가장 중요한 1개만 "~하면 더 멋져요" 말투로 */
+/* 까닭이 '몰랐던 걸 알게 돼서'처럼 어디에나 쓸 수 있는 말뿐이면 칭찬 대신 구체적으로 쓰라고 (엄마 11/8) */
+function wrWhyWeak(a){const S=String(a).split(/[.!?。\n]+/).filter(x=>/왜냐|때문|므로|니까/.test(x));if(!S.length)return false;
+  return S.every(x=>{let r=/왜냐하면|왜냐면/.test(x)?x.split(/왜냐하면|왜냐면/).pop():x;
+    r=r.replace(/(이?기|았기|었기|했기|됐기|되었기)?\s*때문(이다|이에요|이야|에|이지)?|므로|니까/g,'').replace(/몰랐던\s*(걸|것을|것|거|게)|모르던\s*(걸|것을|것)|몰랐(었)?|새로|처음|알게\s*(됐|되었|돼|되|된)|그냥|원래|정말|너무|진짜|되게|엄청|신기해서|신기했|신기하|재미있어서|재밌어서|재미있|재밌|좋아서|좋았|궁금해서|궁금했|그래서|나는|내가/g,'');
+    return r.replace(/[^가-힣]/g,'').length<6})}
+const wrWhyMsg=q=>/신기/.test(q)?'‘몰랐던 걸 알게 돼서’ 말고, 어떤 점이 신기했는지 구체적으로 쓰면 더 멋져요':/재미|좋|기억/.test(q)?'어떤 점이 그랬는지 구체적으로 쓰면 더 멋져요':'왜 그렇게 생각했는지 구체적으로 쓰면 더 멋져요';
 function wrFb(q,a,o){o=o||{};a=String(a||'').trim();const good=[],next=[],jk=a.split(/\s+/).some(JKW1),hg=a.split(/\s+/).filter(w=>!JKW1(w)).join('').replace(/[^가-힣]/g,'').length,need=o.need||40;
   const G=(p,t)=>good.push([p,t]),N=(p,t)=>next.push([p,t]);
   if(jk)N(0,'장난 글자(하호하호·ㅋㅋ…) 대신 진짜 내 생각으로 채우면 더 멋져요');
   if(!a){return {good:[],next:['아직 안 썼어요'],m:o.m||''}}
   if(/하나 들어|예를 들|우리 주변|나의 경험|내 생각|나라면|찾고,|쓰고,/.test(q)){const two=a.split(/[.!?。]\s*/).filter(x=>x.trim().length>3).length>=2;if(two)G(1,'물은 것 두 가지에 다 답했어요');else N(1,'질문이 두 가지예요 · 둘 다 나눠 쓰면 완벽해요')}
-  if(/까닭|이유|왜/.test(q)&&!(o.k||[]).some(g=>/까닭|때문/.test(g))){if(/때문|왜냐|까닭|이유|므로|어서|아서|니까/.test(a))G(2,'까닭을 분명하게 밝혀 썼어요');else N(2,'‘왜냐하면 ~ 때문이다’로 까닭을 밝히면 더 좋아요')}
-  (o.k||[]).forEach(g=>{const alt=String(g).split('|');if(alt.some(x=>a.includes(x))){if(/까닭|때문|왜냐/.test(g))G(2,'까닭을 분명하게 밝혀 썼어요');else G(3,`‘${alt[0]}’ 내용을 잘 넣었어요`)}else N(/까닭|때문|왜냐/.test(g)?2:3,/까닭|때문|왜냐/.test(g)?'‘왜냐하면 ~ 때문이다’로 까닭을 밝히면 더 좋아요':/언제|지난|어제/.test(g)?'언제 있었던 일인지 쓰면 더 생생해요':/느낌|재미|좋/.test(g)?'그때 어떤 느낌이었는지 쓰면 더 멋져요':`‘${alt[0]}’ 이야기까지 쓰면 완벽해요`)});
+  const WHYW=wrWhyWeak(a),WHYG=()=>WHYW?N(2,wrWhyMsg(q)):G(2,'까닭을 분명하게 밝혀 썼어요');
+  if(/까닭|이유|왜/.test(q)&&!(o.k||[]).some(g=>/까닭|때문/.test(g))){if(/때문|왜냐|까닭|이유|므로|어서|아서|니까/.test(a))WHYG();else N(2,'‘왜냐하면 ~ 때문이다’로 까닭을 밝히면 더 좋아요')}
+  (o.k||[]).forEach(g=>{const alt=String(g).split('|');if(alt.some(x=>a.includes(x))){if(/까닭|때문|왜냐/.test(g))WHYG();else G(3,`‘${alt[0]}’ 내용을 잘 넣었어요`)}else N(/까닭|때문|왜냐/.test(g)?2:3,/까닭|때문|왜냐/.test(g)?'‘왜냐하면 ~ 때문이다’로 까닭을 밝히면 더 좋아요':/언제|지난|어제/.test(g)?'언제 있었던 일인지 쓰면 더 생생해요':/느낌|재미|좋/.test(g)?'그때 어떤 느낌이었는지 쓰면 더 멋져요':`‘${alt[0]}’ 이야기까지 쓰면 완벽해요`)});
   (o.use||[]).forEach(w=>{if(a.includes(w))G(4,`‘${w}’ 낱말을 넣어 썼어요`);else N(4,`‘${w}’ 낱말을 넣으면 더 멋져요`)});
   if(hg>=need)G(5,`${hg}자로 자세히 썼어요`);else N(5,`한 문장만 더 자세히 쓰면 더 멋져요 (지금 ${hg}자)`);
   if(!/[다요!?.。]\s*$/.test(a))N(6,'문장을 ‘~다.’로 끝까지 맺으면 더 좋아요');
