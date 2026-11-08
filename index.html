@@ -236,7 +236,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.61</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.62</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -3491,7 +3491,7 @@ function dlNew0(st,cnt){const src=dlSrc();if(src!=='ab')return dlNew1(st,cnt,src
 const dlWk=()=>{const d=dow(today());return d===0||d===6};
 const dlN=()=>{const v=LB().dlN;if(v!=null)return v;return ['민채','민지'].includes(LB().name)?(dlWk()?4:2):(dlWk()?6:3)}; /* 11/7 엄마: 평일 7분·주말 10분(민채)/15분(민지·엄마) 기준 새 장면 (설정에서 고르면 그 수로 고정) */
 const dlTc=()=>LB().dlN!=null?LB().dlN*3:(['민채','민지'].includes(LB().name)?(dlWk()?20:10):(dlWk()?30:13)); /* 소리 테스트 최대 (주말에 밀린 복습 따라잡기) */
-const dlBud=()=>['민채','민지'].includes(LB().name)?(dlWk()?600:420):(dlWk()?900:540); /* 하루 듣기 전체 시간(초): 민채·민지 평일 7분·주말 10분 (11/7 엄마: 민지 학원 숙제 많아서 민채와 같게) / 엄마 평일 9분·주말 15분 */
+const dlBud=()=>['민채','민지'].includes(LB().name)?(dlWk()?900:420):(dlWk()?900:540); /* 하루 듣기 전체 시간(초): 민채·민지 평일 7분·주말 15분(11/8 엄마: 10분→15분, 늘어난 시간은 이어 듣기) (11/7 엄마: 민지 학원 숙제 많아서 민채와 같게) / 엄마 평일 9분·주말 15분 */
 const DL_EP={'snoopy01.mp4':['스누피 쇼 S01E05 · 마당 세일',62,92],'snoopy02.mp4':['스누피 쇼 S01E06 · 리런이 다쳤어요',60,90],'snoopy03.mp4':['스누피 쇼 S02E13 · 크리스마스 선물',66,94],'snoopy04.mp4':['피너츠 무비 1편',62,100],'snoopy05.mp4':['피너츠 무비 2편',62,100],'snoopy06.mp4':["Lucy's School 1편",64,100],'snoopy07.mp4':["Lucy's School 2편",64,100],'snoopy08.mp4':['For Auld Lang Syne',62,100]}; /* 편 이름 · 영상 속 자막 위치(%) */
 async function dlMedia(box,DL_FILE='dl301.mp4'){const VER=/^snoopy/.test(DL_FILE)?'@3':'';const key=(DL_FILE==='dl301.mp4'?'DL:301':'DL:'+DL_FILE)+VER;if(VER){idbDel('audio','DL:'+DL_FILE);idbDel('audio','DL:'+DL_FILE+'@2')} /* 11/8: 음성인식으로 다시 자른 영상(@3) 받기 */ /* 11/7 스누피 다시 자름 → 새 영상 받기 */let b=await idbGet('audio',key);if(b)return URL.createObjectURL(b);
   box.innerHTML=`<div style="padding:20px;text-align:center">🎬 장면 영상(${esc(DL_FILE)})을 처음 한 번 내려받아요 (약 20MB)…<div id="dlPg" style="margin-top:8px;color:var(--sub)"></div></div>`;
@@ -3663,7 +3663,7 @@ async function dlRun(done,onSkip){const st=dlSt(),m=document.createElement('div'
   /* 🎧 이어 듣기 5분 (엄마 11/7 방법 2): 본 장면을 자막과 함께 쭉 이어서 · 문제 없이 듣기만 */
   {const seen=new Set(),pool=[];const add=x=>{if(x&&!seen.has(x.n)&&URLS[dlF(x)]&&dlOK(x)){seen.add(x.n);pool.push(x)}};
     [...N.map(q=>q.x),...T.map(q=>q.x)].forEach(add);Object.keys(st.it).map(n=>DL.find(z=>z.n===+n)).filter(Boolean).sort((a,b)=>b.n-a.n).forEach(x=>{if(pool.length<12)add(x)});pool.sort((a,b)=>a.n-b.n); /* 11/8 엄마: 오늘·최근 배운 장면 최대 12개를 이야기 순서대로 반복 */
-    const LIM=Math.min(pool.length*20,dlBud()-(Date.now()-tRun)/1000),kid=isKidN(); /* 하루 시간표에서 남은 시간만큼 (평일 7분 · 주말 10/15분) */
+    const LIM=Math.min(pool.length*60,dlBud()-(Date.now()-tRun)/1000),kid=isKidN(); /* 하루 시간표에서 남은 시간만큼 (평일 7분 · 주말 10/15분) */
     if(pool.length&&!fullDone&&LIM>=30){ /* 본 장면이 적은 처음 며칠은 짧게 (한 장면을 너무 여러 번 듣지 않게) */let used=0,stop=false,paused=false,i=0;cover(false);
       $('dlB').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><b>🎧 이어 듣기</b><span id="dlLT" style="color:#f6c344;font-weight:700"></span></div><div style="font-size:13px;color:#aab;margin-top:2px">오늘·최근 배운 장면 <b>${pool.length}개</b>를 이야기 순서대로 반복해서 들어요. 자막은 가렸어요 — 귀로만!</div><div id="dlLC" style="margin-top:8px;font-size:15px;color:#f6c344"></div><div id="dlLN" style="margin-top:6px;min-height:56px"></div><div style="display:flex;gap:8px;margin-top:10px"><button class="btn ghost" id="dlLE" style="flex:1;color:#fff">👀 자막 보기</button><button class="btn ghost" id="dlLP" style="flex:1;color:#fff">⏸ 잠깐 멈춤</button>${kid?'':'<button class="btn ghost" id="dlLS" style="flex:1;color:#fff">그만 듣기</button>'}</div>`;
       const showT=()=>{const r=Math.max(0,LIM-used);if($('dlLT'))$('dlLT').textContent=`남은 ${Math.floor(r/60)}:${String(Math.floor(r%60)).padStart(2,'0')}`};showT();
