@@ -236,7 +236,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.53</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.54</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -609,7 +609,7 @@ function setIpyData(d){
   if(d.units){d.lessons=d.units.map(u=>{const fk=u.files.map(f=>'I:'+u.b+f.f);if(d.audioBase!=null)u.files.forEach((f,j)=>AUTOURL.set(fk[j],d.audioBase+f.n));
     const all=u.ex.map((x,j)=>[...x,'ex',fk[u.exfi?u.exfi[j]:0]]).concat(u.st.map((x,j)=>[...x,'st',fk[u.fi?u.fi[j]:(fk[1]?1:0)]]));const kid=all.filter(x=>x[4]!=='adult');
     return {...u,fk,nEx:u.ex.filter(x=>x[4]!=='adult').length,itemsAll:all,itemsKid:kid,items:kid}})}
-  d._rules=d.rules||{};d._order=null;
+  d._rules=d.rules||{};d._order=null;mediaInit();
   if(d.pr&&d.lessons)d.lessons.forEach(x=>{if(!x.itemsAll||x.no==null)return;const k=x.b+x.no;
     // itemsAll 순서 = ex + st (어른 문장 포함) → 그 순번으로 발음을 붙여요
     x.itemsAll.forEach((it,q)=>{it[10]=d.pr[k+':'+q]||'';if(d.roles)it[11]=d.roles[k+':'+q]||null;if(d.wex)it[12]=d.wex[k+':'+q]||null;it[13]=d.img&&d.img[k+':'+q]?{g:d.img[k+':'+q]}:d.emoji&&d.emoji[k+':'+q]?{e:d.emoji[k+':'+q]}:null})});
@@ -687,6 +687,20 @@ function updateFolderMsg(){
 const hasFile=(d,k,fi=0)=>k==='o'?!!(ipyL(d)&&FILES.has(ipyKey(d,fi))):FILES.has(d+'-'+k);
 /* 앱 사이트에 같이 올린 음원(영어단어)은 필요할 때 자동으로 받아서 저장해요 */
 const AUTOURL=new Map();
+/* 11/8 엄마: 음원·영상은 앱과 다른 저장소(siasoo/mbox-q7k3)에 따로 — 신고가 와도 앱은 살아요. 목록은 깃허브에서 읽고, 필요할 때만 받아요 */
+const MEDIA_REPO='siasoo/mbox-q7k3',MEDIA_RAW='https://raw.githubusercontent.com/'+MEDIA_REPO+'/main/';
+let MEDIA_LIST=null;
+async function mediaList(){if(MEDIA_LIST)return MEDIA_LIST;
+  try{const c=JSON.parse(localStorage.getItem('eng5_media')||'null');if(c&&Date.now()-c.t<6*3600e3){MEDIA_LIST=c.l;return MEDIA_LIST}}catch(e){}
+  try{const r=await fetch('https://api.github.com/repos/'+MEDIA_REPO+'/git/trees/main?recursive=1');if(!r.ok)return [];const j=await r.json();
+    MEDIA_LIST=(j.tree||[]).filter(t=>t.type==='blob').map(t=>[t.path,t.size]);try{localStorage.setItem('eng5_media',JSON.stringify({t:Date.now(),l:MEDIA_LIST}))}catch(e){}return MEDIA_LIST}catch(e){return []}}
+const mediaUrl=path=>MEDIA_RAW+path.split('/').map(encodeURIComponent).join('/');
+let _mInit=null;
+function mediaInit(){clearTimeout(_mInit);_mInit=setTimeout(async()=>{const L=await mediaList();let n=0;
+  for(const [path,size] of L){if(!/\.mp3$/i.test(path))continue;const name=path.split('/').pop();let key=null;const pn=parseName(name);
+    if(pn){if(pn.k==='s')continue;key=pn.day+'-'+pn.k}else key=IPYMAP.get(name+'|'+size)||IPYSIZE.get(size)||IPYNAME.get(name)||guessKey(name);
+    if(key&&!FILES.has(key)&&!AUTOURL.has(key)){AUTOURL.set(key,mediaUrl(path));n++}}
+  if(n&&typeof renderAll==='function')try{renderAll()}catch(e){}},300)} /* 음원 이름·크기로 어느 공부 음원인지 알아내서, 공부할 때 자동으로 받아요 */
 async function autoFetch(key){const u=AUTOURL.get(key);if(!u)return null;try{const r=await fetch(u);if(!r.ok)return null;const b=new Blob([await r.arrayBuffer()],{type:'audio/mpeg'});await idbPut('audio',key,b);FILES.set(key,b);return b}catch(e){return null}}
 async function getFile(day,k,fi=0){const key=k==='o'?ipyKey(day,fi):k==='key'?day:day+'-'+k;let o=FILES.get(key);if(!o&&AUTOURL.has(key))o=await autoFetch(key);if(!o)return null;return o.getFile?await o.getFile():o}
 const idb=()=>new Promise((res,rej)=>{const r=indexedDB.open('eng5min',3);r.onupgradeneeded=()=>{const db=r.result;for(const s of ['h','rec','audio'])if(!db.objectStoreNames.contains(s))db.createObjectStore(s)};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
@@ -3473,7 +3487,7 @@ const dlBud=()=>['민채','민지'].includes(LB().name)?(dlWk()?600:420):(dlWk()
 const DL_EP={'snoopy01.mp4':['스누피 쇼 S01E05 · 마당 세일',62,92],'snoopy02.mp4':['스누피 쇼 S01E06 · 리런이 다쳤어요',60,90],'snoopy03.mp4':['스누피 쇼 S02E13 · 크리스마스 선물',66,94],'snoopy04.mp4':['피너츠 무비 1편',62,100],'snoopy05.mp4':['피너츠 무비 2편',62,100],'snoopy06.mp4':["Lucy's School 1편",64,100],'snoopy07.mp4':["Lucy's School 2편",64,100],'snoopy08.mp4':['For Auld Lang Syne',62,100]}; /* 편 이름 · 영상 속 자막 위치(%) */
 async function dlMedia(box,DL_FILE='dl301.mp4'){const VER=/^snoopy/.test(DL_FILE)?'@3':'';const key=(DL_FILE==='dl301.mp4'?'DL:301':'DL:'+DL_FILE)+VER;if(VER){idbDel('audio','DL:'+DL_FILE);idbDel('audio','DL:'+DL_FILE+'@2')} /* 11/8: 음성인식으로 다시 자른 영상(@3) 받기 */ /* 11/7 스누피 다시 자름 → 새 영상 받기 */let b=await idbGet('audio',key);if(b)return URL.createObjectURL(b);
   box.innerHTML=`<div style="padding:20px;text-align:center">🎬 장면 영상(${esc(DL_FILE)})을 처음 한 번 내려받아요 (약 20MB)…<div id="dlPg" style="margin-top:8px;color:var(--sub)"></div></div>`;
-  try{const r=await fetch(DL_FILE+(VER?'?v=3':''));if(!r.ok)throw 0;const tot=+r.headers.get('content-length')||0,rd=r.body.getReader(),ch=[];let got=0;for(;;){const {done,value}=await rd.read();if(done)break;ch.push(value);got+=value.length;if($('dlPg'))$('dlPg').textContent=tot?Math.round(got/tot*100)+'%':Math.round(got/1e6)+'MB'}
+  try{let r=null;try{const L=await mediaList();const hit=L.find(([p])=>p.split('/').pop()===DL_FILE);if(hit)r=await fetch(mediaUrl(hit[0]))}catch(e){}if(!r||!r.ok)r=await fetch(DL_FILE+(VER?'?v=3':'')); /* 미디어 저장소 먼저, 없으면 앱 저장소 */if(!r.ok)throw 0;const tot=+r.headers.get('content-length')||0,rd=r.body.getReader(),ch=[];let got=0;for(;;){const {done,value}=await rd.read();if(done)break;ch.push(value);got+=value.length;if($('dlPg'))$('dlPg').textContent=tot?Math.round(got/tot*100)+'%':Math.round(got/1e6)+'MB'}
     b=new Blob(ch,{type:'video/mp4'});await idbPut('audio',key,b);return URL.createObjectURL(b)}catch(e){}
   return await new Promise(res=>{box.innerHTML=`<div style="padding:16px;text-align:center">영상 파일(<b>${DL_FILE}</b>)을 못 받았어요.<br><small>영어방 폴더에 올려 두거나, 폰에 있으면 골라 주세요.</small><br><input type="file" accept="video/mp4" id="dlPick" style="margin-top:10px"><br><button class="btn ghost" id="dlCx" style="margin-top:10px">오늘은 건너뛰기</button></div>`;
     $('dlPick').onchange=async()=>{const f=$('dlPick').files[0];if(!f)return;await idbPut('audio',key,f);res(URL.createObjectURL(f))};$('dlCx').onclick=()=>res(null)})}
