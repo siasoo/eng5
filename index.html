@@ -236,7 +236,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.58</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.59</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -3505,6 +3505,18 @@ function dlProgHTML(st){const P=dlProg(st);if(!P.tot)return '';
     ${P.cur?`<div style="margin-top:8px;font-size:14px">📺 지금: <b>${esc(P.cur.nm)}</b> ${P.cur.n}/${P.cur.tot} → 다 배우면 🎉 통째로 보기</div>`:''}
     <div style="margin-top:4px;font-size:14px;color:#f6c344">${P.eta?`🏁 지금 속도면 <b>${P.ym}쯤</b> 다 끝나요`:'🏆 스누피 다 배웠어요!'}</div>
     <div style="margin-top:6px;font-size:12px;color:#99a">${P.eps.map(e=>`${e.full?'🏆':e.n>=e.tot?'✅':e.n?'▶':'·'} ${esc(e.nm)} ${e.n}/${e.tot}`).join('<br>')}</div></div>`}
+/* 🧩 스누피 블록 맞추기 (11/8 엄마: 기적 쓰기처럼 직접) — 한국어 블록 순서대로 영어 블록 누르기, 다 맞추면 0.75배로 블록 빛나며 듣기 */
+const BKC=['#e57373','#64b5f6','#81c784','#ffb74d','#ba68c8','#4db6ac','#f06292','#a1887f'];
+async function dlBlk(box,v,x,head){const E=x.ck[0],K=x.ck[1],n=E.length;let pool=E.map((_,i)=>i).map(i=>[Math.random(),i]).sort((a,b)=>a[0]-b[0]).map(a=>a[1]);if(pool.every((k,i)=>k===i))pool.reverse();let got=0;
+  const draw=()=>{box.innerHTML=`${head||''}<div style="font-size:15px;margin-top:6px">🧩 <b>블록 맞추기</b> · 한국어 순서대로 영어 블록을 눌러요</div>
+    <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">${K.map((k,i)=>`<div style="display:flex;align-items:center;gap:8px"><div style="flex:0 0 44%;font-size:14px;color:#ddd">${esc(k)}</div><div id="bkS${i}" style="flex:1;min-height:34px;border-radius:9px;padding:6px 9px;font-weight:700;${i<got?`background:${BKC[i%8]};color:#111`:`border:2px dashed ${i===got?'#f6c344':'#445'}`}">${i<got?esc(E[i]):''}</div></div>`).join('')}</div>
+    <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${pool.map(i=>`<button class="btn" data-bk="${i}" style="background:${BKC[i%8]};color:#111;font-weight:700;padding:8px 11px;font-size:16px">${esc(E[i])}</button>`).join('')}</div>`;
+    box.querySelectorAll('[data-bk]').forEach(b=>b.onclick=()=>{const i=+b.dataset.bk;if(E[i]===E[got]){pool=pool.filter(z=>z!==i);got++;if(got>=n)done();else draw()}else{b.style.animation='shk .35s';setTimeout(()=>b.style.animation='',400)}})};
+  let done;await new Promise(r=>{done=r;draw()});
+  box.innerHTML=`${head||''}<div style="font-size:15px;margin-top:6px">🧩 다 맞췄어요! 🐢 천천히 들으며 블록을 따라가요</div><div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">${E.map((e,i)=>`<div id="bkL${i}" style="padding:6px 9px;border-radius:9px;background:${BKC[i%8]};color:#111;font-weight:700;opacity:.45">${esc(e)}<div style="font-size:12px;font-weight:400">${esc(K[i]||'')}</div></div>`).join('')}</div>`;
+  const L=E.map(e=>Math.max(1,e.split(/\s+/).length)),T=L.reduce((a,b)=>a+b,0);const dur=Math.max(.5,(x.e-x.s))/0.75;const t0=Date.now();
+  const iv=setInterval(()=>{const f=(Date.now()-t0)/1000/dur;let c=0,acc=0;for(let i=0;i<n;i++){acc+=L[i]/T;if(f<acc){c=i;break}c=i}E.forEach((_,i)=>{const el=document.getElementById('bkL'+i);if(el)el.style.opacity=i===c?'1':i<c?'.8':'.45'})},120);
+  await dlPlay(v,x,0,.75);clearInterval(iv);E.forEach((_,i)=>{const el=document.getElementById('bkL'+i);if(el)el.style.opacity='1'})}
 function dlFullPick(st){if(!dlWk())return [];st.full=st.full||{};return Object.keys(DL_EP).filter(f=>!st.full[f]&&DL.some(z=>dlF(z)===f)&&DL.filter(z=>dlF(z)===f&&dlOK(z)).every(z=>st.it[z.n]))} /* 주말 · 다 배운 편 중 아직 통째로 안 본 것 */
 function dlGate(cb){if(!isKidN()||!curList(LB()).includes('dl'))return false;const st=dlSt();if(st.fin===today()||st.skip===today())return false;try{const o=JSON.parse(localStorage.getItem('eng5_bridge')||'{}')[today()]||{};if(o.dl&&o.dl.done)return false}catch(e){}if(document.querySelector('.dlRunBox'))return true;
   dlRun(()=>{markDone('dl');renderAll();cb()},()=>{const s2=dlSt();s2.skip=today();save();cb()});return true} /* 11/7 엄마: 아이들은 오늘 스누피 안 했으면 어떤 공부를 눌러도 스누피 먼저 → 끝나면 누른 공부로 */
@@ -3600,11 +3612,11 @@ async function dlRun(done,onSkip){const st=dlSt(),m=document.createElement('div'
     if(right){ok++;r.st++;r.due=dnumT(today())+(DL_IVL[r.st]||60)}else{r.st=Math.max(1,r.st-1);r.due=dnumT(today())+1}save();
     $('dlR').innerHTML=`<div style="margin-top:10px;padding:10px;border-radius:12px;background:${right?'#1f3a24':'#3a1f1f'}"><b>${right?'⭕ 소리도 뜻도 다 알아요!':meanOk===false?'🤔 소리는 들렸는데 뜻이 헷갈렸어요 — 장면 다시 봐요':'❌ 장면을 다시 봐요'}</b><br><b style="font-size:18px">${esc(x.en)}</b><br>${esc(x.ko)}${x.pr?` · <span style="color:#f6c344">${esc(x.pr)}</span>`:''}</div><button class="btn green" id="dlNx" style="width:100%;margin-top:8px">다음 ▶</button>`;
     cover(false);await dlPlay(v,x); /* 11/8 엄마: 맞혀도 틀려도 장면을 한 번 더 보고 넘어가요 */
-    if(!right){ /* 11/8 엄마: 틀리면 0.75배로 블록 보며 한 번 더 */
-      const ckB=x.ck?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${x.ck[0].map((e,i)=>`<div style="padding:6px 9px;border-radius:9px;background:#2a2f3d"><b style="font-size:16px">${esc(e)}</b><div style="color:#f6c344;font-size:12px;margin-top:2px">${esc(x.ck[1][i]||'')}</div></div>`).join('')}</div>`:'';
+    if(!right){ /* 11/8 엄마: 틀리면 — 긴 문장은 🧩 블록 맞추기, 짧은 문장은 0.75배로 한 번 더 */
       const nx=$('dlNx');if(nx)nx.style.display='none';
-      $('dlR').insertAdjacentHTML('beforeend',`<div id="dlSlow" style="margin-top:8px;padding:8px 10px;border-radius:12px;background:#2a2f3d"><div style="font-size:14px">🐢 천천히 한 번 더 들어요${x.ck?' — 블록마다 맞춰 봐요':''}</div>${ckB}</div>`);
-      await sleep(600);await dlPlay(v,x,0,.75);if(nx){nx.style.display='';$('dlR').appendChild(nx)}}
+      if(x.ck){const bx=document.createElement('div');bx.style.marginTop='8px';bx.style.padding='8px 10px';bx.style.borderRadius='12px';bx.style.background='#2a2f3d';$('dlR').appendChild(bx);await sleep(500);try{bx.scrollIntoView({behavior:'smooth',block:'start'})}catch(e){}await dlBlk(bx,v,x,'')}
+      else{$('dlR').insertAdjacentHTML('beforeend','<div style="margin-top:8px;padding:8px 10px;border-radius:12px;background:#2a2f3d;font-size:14px">🐢 천천히 한 번 더 들어요</div>');await sleep(500);await dlPlay(v,x,0,.75)}
+      if(nx){nx.style.display='';$('dlR').appendChild(nx)}}
     await new Promise(res=>$('dlNx').onclick=res)}
   /* 11/7 엄마: 새 장면은 한 문장 8번 · 느리게(0.75배) · 한글 발음 · 어려운 단어 카드/말풍선 · 멈춤 · 5초 뒤 자동 다음 */
   const PASS=[['👂','소리만 들어요',1,0,1],['🐢','천천히 · 영어 + 한글 발음',0,1,.75],['🐢','천천히 · 뜻이랑 같이 (블록마다 맞춰 들어요)',0,2,.75],['🐢','천천히 · 한 번 더 보며 소리랑 맞춰요',0,2,.75],['👂','천천히 · 소리만',1,0,.75],['🔤','원래 속도 · 영어 자막',0,3,1],['👂','원래 속도 · 소리만',1,0,1],['👂','마지막! 이제 들리죠?',1,0,1]];
@@ -3619,8 +3631,7 @@ async function dlRun(done,onSkip){const st=dlSt(),m=document.createElement('div'
     for(let p=0;p<PASS.length;p++){const [ic,msg,cv,lv,rt]=PASS[p];await pzWait();cover(!!cv);
       $('dlB').innerHTML=`<div style="font-size:14px;color:#aab">🎬 새 장면 ${k+1}/${N.length} · ${PASS.map((_,i)=>i<p?'●':i===p?'<b style="color:#f6c344">●</b>':'○').join('')}</div><div style="margin-top:6px;font-size:16px">${ic} <b>${p+1}번째</b> · ${msg}</div><div style="margin-top:8px;min-height:56px">${txt(lv)}</div>${pzBtn()}`;pzOn();
       await dlPlay(v,x,0,rt);await pzWait();
-      if(p===0&&x.ck){$('dlB').innerHTML=`<div style="font-size:14px;color:#aab">🎬 새 장면 ${k+1}/${N.length}</div><div style="margin-top:6px;font-size:16px">📒 <b>긴 문장이에요 — 블록으로 뜻 먼저 알고 가요</b></div><div style="margin-top:8px">${ckH(x)}</div><div style="color:#ccd;margin-top:8px">👉 ${esc(x.ko)}</div>${wL(x)}<button class="btn green" id="dlWk" style="width:100%;margin-top:10px">알겠어요 ▶</button>`;
-        await new Promise(res=>{let g=false;const go=()=>{if(g)return;g=true;clearTimeout(tm);res()};$('dlWk').onclick=go;const tm=setTimeout(go,4000+x.ck[0].length*3000+(x.w||[]).length*1500)})}
+      if(p===0&&x.ck){cover(false);await dlBlk($('dlB'),v,x,`<div style="font-size:14px;color:#aab">🎬 새 장면 ${k+1}/${N.length} · 긴 문장이에요 — 블록으로 먼저 맞춰 봐요</div>`);await sleep(800)}
       else await sleep(1500)}
     cover(false);
     $('dlB').innerHTML=`<div style="font-size:14px;color:#aab">🎬 새 장면 ${k+1}/${N.length} · ●●●●●●●● 8번 다 들었어요!</div><div style="margin-top:6px">${txt(2)}</div><div style="display:flex;gap:8px;margin-top:10px"><button class="btn ghost" id="dlAg" style="flex:1;color:#fff">🔁 한 번 더</button><button class="btn green" id="dlNx" style="flex:1">다음 ▶</button></div>`;
