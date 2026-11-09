@@ -236,7 +236,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.94</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.29.95</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -3982,7 +3982,7 @@ async function buildReport(d){const b=LB(),nm=b.name,br=lsJ('eng5_bridge')[d]||{
       const tg=YD.filter(x=>x>d).sort()[0]; // 예전에 쓴 글(날짜 기록 없음): 그날 예습했을 수업일의 글
       if(tg)for(const [aid,a] of Object.entries(st.ans||{}))if(!lg0[aid]&&aid.startsWith(tg+'#')&&YQ[aid]&&String(a).trim())out.ys.push({...YQ[aid],a,fb:wrFb(YQ[aid].q,a,{...YQ[aid],need:MJ?45:40})})}
     else if(c==='gbb'&&d===today()){const g=lsJ('gongbubang_v1_minchae'),se=g.settings||{};const td=Math.floor((Date.now()-new Date().getTimezoneOffset()*60000)/86400000);if(se.corrDay===td)info=`정답 ${se.corrCount||0}개`}
-    if(c==='dk'||c==='kr'){const st=lsJ('dokhae_v1_'+nm),r=(st.done||{})[d];if((c==='kr'||(c==='dk'&&nm==='민지'))&&d===today()){const g=lsJ(nm==='민지'?'gongbubang_v1_minji':'gongbubang_v1_minchae'),se=g.settings||{};const td=Math.floor((Date.now()-new Date().getTimezoneOffset()*60000)/86400000);if(se.corrDay===td)info=`낱말 정답 ${se.corrCount||0}개`}
+    if(c==='dk'||c==='kr'){const st=lsJ('dokhae_v1_'+nm),r=(st.done||{})[d];if((c==='kr'||(c==='dk'&&nm==='민지'))&&d===today()){const g=lsJ(nm==='민지'?'gongbubang_v1_minji':'gongbubang_v1_minchae'),se=g.settings||{};const td=Math.floor((Date.now()-new Date().getTimezoneOffset()*60000)/86400000);if(se.corrDay===td)info=`낱말 정답 ${se.corrCount||0}개`+(info?' · '+info:'')} /* 11/10 엄마: 오늘의 말이 낱말 정답에 덮여 안 보이던 것 고침 */
       if(st.qr&&st.qr[d])info=(info?info+' · ':'')+`낱말 ${st.qr[d].ok}/${st.qr[d].n}`;
       if(r){info=(info?info+' · ':'')+`《${r.title}》${r.rev?'':' · 문제 '+r.sc+'/'+r.of}`+(c==='dk'?` · ${Math.max(1,Math.round((r.secs||0)/60))}분`:'');if(c==='dk')out.mins+=Math.min(40,(r.secs||0)/60);out.dk={title:r.title,q:r.q,a:r.ans,fb:wrFb(r.q,r.ans,r.rev?{need:40}:{...(DKWR[r.id]||{}),need:(nm==='민지'||b.dkLv==='m1')?70:45})}}}
     if(c==='tv'){const tt=(LB().tv||{});if(tt.d===d)info=`${tt.show} ${tt.ep} · ${tt.last==='en'?'영어 자막':'한글 자막'}`}
