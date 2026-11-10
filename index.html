@@ -236,7 +236,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.30.11</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.30.12</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1970,13 +1970,13 @@ function dlGate(cb){if(window.__dOff||!isKidN()||!curList(LB()).includes('dl'))r
 async function dlSeek(v,t){for(let k=0;k<3;k++){await new Promise(r=>{let ok=false;const f=()=>{if(ok)return;ok=true;v.removeEventListener('seeked',f);r()};v.addEventListener('seeked',f);try{v.currentTime=t}catch(e){}setTimeout(f,2500)});if(Math.abs(v.currentTime-t)<0.8)return true;await sleep(300)}return false} /* 폰에서 위치 이동이 안 먹으면 다시 */
 async function dlPlay(v,x,trim,rate){if(v.__use&&(await v.__use(dlF(x)))===false)return;try{v.playbackRate=rate||1;v.preservesPitch=true}catch(e){}const tr=(dlG(x)==='c'||dlG(x)==='d')?0:0.3,s=x.s+tr,e=x.e-tr; /* 스누피는 이미 앞뒤 여유 있게 잘라 둠 → 그대로 재생 */v.pause();await dlSeek(v,s);return new Promise(res=>{let fin=false;const end=()=>{if(fin)return;fin=true;v.pause();v.__act=false;v.ontimeupdate=null;clearInterval(tm);res()};v.ontimeupdate=()=>{if(v.currentTime>=e||v.currentTime<s-1.5)end()};const rf=()=>{if(fin)return;if(!v.paused&&v.currentTime>=e)end();else requestAnimationFrame(rf)};requestAnimationFrame(rf);v.__act=true;let last=-1,stall=0;const tm=setInterval(()=>{if(v.__hold)return;if(Math.abs(v.currentTime-last)<0.01)stall+=0.5;else stall=0;last=v.currentTime;if(stall>=4)end()},500);v.play().catch(end)})} /* 멈춤 중엔 기다리고, 멈춰 버리면 4초 뒤 넘어가요 */
 /* 11/10 엄마: 하루 4분 안 — 어제 배운 문장은 꼭 다음 날 복습(2번) · 남는 시간만큼 새 문장(민채 최대 2 · 민지·엄마 최대 3) · 시간 남으면 예전 복습 */
-const dlDur=x=>Math.max(1.2,((x.e-x.s)||2)),dlEstN=x=>{const d=dlDur(x);return 25+10*(d/0.85+d*0.8+1.5)},dlEstR=x=>{const d=dlDur(x);return 2*(d+d*0.8+2)+4},DL_BUD=270; /* 11/10 엄마: 4분 30초 */
+const dlDur=x=>Math.max(1.2,((x.e-x.s)||2)),dlEstN=x=>{const d=dlDur(x);return 25+10*(d/0.85+d*0.8+1.5)},dlEstR=x=>{const d=dlDur(x);return 4.6*d+10},DL_BUD=270; /* 11/10 엄마: 4분 30초 */
 const DL_EZW=new Set('yes yeah yep no nope please thank thanks you okay ok hi hello hey bye goodbye sorry me too sure good great wow oh uh um ah right fine i it is this that what where who the a an my your and so see welcome cool nice here there yay hooray ha haha well why not how me? night morning'.split(' '));
 const dlEasy=x=>{const w=String(x.en).toLowerCase().replace(/[^a-z' ]/g,' ').split(/\s+/).filter(Boolean);return w.length>0&&w.length<=3&&w.every(z=>DL_EZW.has(z))}; /* Yes, please · Thank you 같은 아주 쉬운 문장 → 한 번 듣고 넘어가요 */
 function dlPickSH(){const st=dlSt(),t=dnumT(today()),Q=[];for(const [n,r] of Object.entries(st.it))if(r.st<dlMax()&&r.due<=t){const x=DL.find(z=>z.n===+n);if(x&&dlOK(x))Q.push({x,test:1,r})}
-  Q.sort((a,b)=>(a.r.st===1?0:1)-(b.r.st===1?0:1)||a.r.due-b.r.due);const must=Q.filter(q=>q.r.st===1),opt=Q.filter(q=>q.r.st!==1);
+  Q.sort((a,b)=>(a.r.st===1?0:1)-(b.r.st===1?0:1)||a.r.due-b.r.due);const must=(()=>{let u=0;return Q.filter(q=>q.r.st===1).filter((q,k)=>{if(k>=5)return false;const e=dlEstR(q.x);if(k&&u+e>200)return false;u+=e;return true})})(),opt=Q.filter(q=>q.r.st!==1); /* 11/11 엄마: 꼭 할 복습도 하루 최대 5문장 (오래된 것부터, 나머지는 다음 날) — 예전 방식 문장이 33개 밀려 있었음 */
   const td=(st.td&&st.td.d===today())?st.td:null;let T=must.slice(),used=T.reduce((a,q)=>a+dlEstR(q.x),0);
-  const mx=LB().name==='민채'?3:4,cand=dlNew(st,mx+4),N=[];const rest=cand.slice();while(rest.length&&N.length<mx){let j=rest.findIndex(x=>!N.length||used+dlEstN(x)<=DL_BUD);if(j<0){if(N.length>=2)break;j=rest.reduce((b,x,i)=>dlEstN(x)<dlEstN(rest[b])?i:b,0)}const x=rest.splice(j,1)[0];N.push({x,test:0});used+=dlEstN(x)} /* 11/10 엄마: 하루 최소 2문장 (시간 빠듯하면 짧은 문장으로) */
+  const mx=LB().name==='민채'?3:4,cand=dlNew(st,mx+4),N=[];const rest=cand.slice();while(rest.length&&N.length<mx){let j=rest.findIndex(x=>!N.length||used+dlEstN(x)<=DL_BUD);if(j<0){if(N.length>=(must.length>=4?1:2)||(N.length&&used>=DL_BUD))break;const sh=rest.reduce((b,x,i)=>dlEstN(x)<dlEstN(rest[b])?i:b,0);if(T.length&&used+dlEstN(rest[sh])>300)break; /* 11/11 엄마: 복습까지 5분 안 */ /* 복습이 많은 날은 새 문장 최소 1개 → 5분 안 */j=rest.reduce((b,x,i)=>dlEstN(x)<dlEstN(rest[b])?i:b,0)}const x=rest.splice(j,1)[0];N.push({x,test:0});used+=dlEstN(x)} /* 11/10 엄마: 하루 최소 2문장 (시간 빠듯하면 짧은 문장으로) */
   for(const q of opt){const e=dlEstR(q.x);if(used+e>DL_BUD)break;T.push(q);used+=e}
   if(td)return {T:T.slice(0,Math.max(0,(td.tp||0)-(td.tn||0))),N:N.slice(0,Math.max(0,td.p-td.n))};return {T,N}}
 function dlPick(){if(dlSH())return dlPickSH();const st=dlSt(),t=dnumT(today()),Q=[];for(const [n,r] of Object.entries(st.it))if(r.st<dlMax()&&r.due<=t)Q.push({x:DL.find(z=>z.n===+n),test:1,r});
@@ -2019,7 +2019,12 @@ async function dlRun(done,onSkip){const st=dlSt(),m=document.createElement('div'
     $('dlB').innerHTML=`<div style="font-size:14px;color:#aab">${hd} · ③ 들렸나요?</div><div style="margin-top:8px">${kEn(x)}</div><div style="display:flex;gap:8px;margin-top:10px"><button class="btn green" id="kH1" style="flex:1">🎉 들렸어요!</button><button class="btn ghost" id="kH0" style="flex:1;color:#fff">😅 아직 조금</button></div>`;
     const hr=await new Promise(r=>{$('kH1').onclick=()=>r(1);$('kH0').onclick=()=>r(0)});kLog(hr?'hear':'hear0')};
   const kRev=async(q,i,tot)=>{const x=q.x,r=q.r;const hd=`🔁 ${q.r.st===1?'어제 배운':'예전에 배운'} 문장 ${i+1}/${tot} · 따라 말하기 2번`;
-    await kSh(x,1,`${kEn(x)}<div style="font-size:17px;color:#dde">${esc(x.ko)}</div>`,hd,'🔤 영어 보며',1,2);await kSh(x,1,null,hd,'🙈 소리만',2,2);
+    /* 11/11 엄마: 복습은 한글 발음 없이 — ① 💡 뜻만 보고 영어로 떠올려 말하기 → 원어민 소리로 확인 ② 🔤 영어 자막 보며 따라 말하기 */
+    card(`<div style="font-size:15px;color:#f6c344;font-weight:700">💡 이 뜻을 영어로 말해 봐요</div>${kKo(x)}`);
+    $('dlB').innerHTML=`<div style="font-size:14px;color:#aab">${hd}</div><div style="margin-top:6px;font-size:17px">💡 뜻 보고 떠올리기</div>${kBar(0,2)}<div id="kRp" style="text-align:center;font-size:26px;font-weight:800;margin-top:12px;color:#7fd6a8">🗣️ 영어로 말해요!</div>`;
+    {const wait=Math.min(9000,Math.max(3500,dlDur(x)*1600+2000));let h=null;for(let t=0;t<3;t++){h=await dlHeard(wait);if(h!==false)break;const e=$('kRp');if(e)e.textContent='🗣️ 생각나는 만큼 소리 내서 말해요!'}if(h===null)await sleep(wait);
+      const e=$('kRp');if(e){e.style.color='#aab';e.textContent='🎧 정답 들어요…'}card(`${bigEn(x)}<div style="font-size:16px;color:#ccd">${esc(x.ko)}</div>`);await dlPlay(v,x,0,1);kLog('sh');await sleep(600)}
+    await kSh(x,1,bigEn(x),hd,'🔤 영어 자막 보며',2,2);
     ok++;r.st=Math.min(r.st+1,dlMax());r.due=dnumT(today())+(DL_IVL[r.st]||60);st.td.tn++;save()};
   /* 11/8 엄마: 글씨 볼 때는 영상 자리에 큰 글씨 카드 (영상은 안 보이고 소리는 나와요) */
   const card=html=>{const V=$('dlVid'),C=$('dlCover');if(!V||!C)return;bandOff();const h=Math.max(190,C.dataset.card?C.offsetHeight:V.offsetHeight||190);C.dataset.card=1;V.style.cssText='width:100%;position:absolute;left:0;top:0;height:8px;opacity:0;pointer-events:none';C.style.cssText=`display:flex;position:relative;min-height:${h}px;background:#1d2330;border-radius:12px;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:16px 14px;font-size:16px;color:#fff;gap:8px`;C.innerHTML=html};
