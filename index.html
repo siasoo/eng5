@@ -176,6 +176,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 .qcard .ans{min-height:84px;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .qcard .ans.hidden .en *{color:transparent!important}
 .ans.hidden .pr,.ans.hidden .wex,.ans.hidden .prl{visibility:hidden}.ans.hidden .enTip{display:none} /* 11/14 엄마: 💡 팁은 말한 뒤에 */
+.ans.hidden>.en,.ans.hidden>.en *{color:transparent!important;background:var(--c0);border-radius:10px;user-select:none} /* 11/14 엄마: 집중 연습처럼 카드 밖에서도 가리기 */
 .qcard .ans.hidden .en{color:transparent;background:var(--c0);border-radius:10px;padding:0 20px;user-select:none}
 .mic{width:120px;height:120px;border-radius:50%;margin:18px auto 8px;display:grid;place-items:center;font-size:44px;background:var(--c0);position:relative;transition:background .2s}
 .mic .ring{position:absolute;inset:-8px;border-radius:50%;border:6px solid var(--accent);opacity:0;transition:transform .08s,opacity .08s}
@@ -236,7 +237,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.35.0</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.35.2</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -974,6 +975,7 @@ function waitVoice(need,ui,recKey,sil){sil=sil||0.45;
       resolve(ok)};
     const iv=setInterval(()=>{
       if(!SESS||SESS.tok!==tok){finish(false);return}
+      if(quietOn()){finish(true);return}
       const now=performance.now();
       if(segPlaying||now-lastPlayEnd<300){ui.state('play');return}
       ui.state('listen');
@@ -1903,7 +1905,7 @@ const dlN=()=>{const v=LB().dlN;if(v!=null)return v;return LB().name==='민채'?
 const dlSH=()=>LB().dlOld!==true; /* 11/10 엄마: 엄마도 멍때려져서 다 같이 따라 말하기 방식 */ /* 11/10 엄마: 아이는 하루 새 문장 민채 2 · 민지 3 (10번씩 따라 말하기) */; /* 11/7 엄마: 평일 7분·주말 10분(민채)/15분(민지·엄마) 기준 새 장면 (설정에서 고르면 그 수로 고정) */
 const dlTc=()=>10; /* 11/9 엄마: 복습은 하루 10개까지 (모두) */ /* 소리 테스트 최대 (주말에 밀린 복습 따라잡기) */
 const dlBud=()=>['민채','민지'].includes(LB().name)?(dlWk()?900:600) /* 11/8 밤 엄마: 스누피·여행 평일 10분으로 */:(dlWk()?900:540); /* 하루 듣기 전체 시간(초): 민채·민지 평일 10분(11/8 엄마: 7→10분)·주말 15분(11/8 엄마: 10분→15분, 늘어난 시간은 이어 듣기) (11/7 엄마: 민지 학원 숙제 많아서 민채와 같게) / 엄마 평일 9분·주말 15분 */
-const DL_EP={'travel01.mp4':['✈️ 여행 영어 · 공항',78,99],'travel02.mp4':['✈️ 여행 영어 · 푸꾸옥 리조트',75,94],'travel03.mp4':['✈️ 여행 영어 · 식당',80,100],'travel06.mp4':['✈️ 여행 영어 · 미국 편의점',44,62],'travel04.mp4':['✈️ 여행 영어 · 하노이 흥정',72,93],'travel05.mp4':['✈️ 여행 영어 · 쇼핑몰',80,100],'snoopy01.mp4':['스누피 쇼 S01E05 · 마당 세일',62,92],'snoopy02.mp4':['스누피 쇼 S01E06 · 리런이 다쳤어요',60,90],'snoopy03.mp4':['스누피 쇼 S02E13 · 크리스마스 선물',66,94],'snoopy04.mp4':['피너츠 무비 1편',62,100],'snoopy05.mp4':['피너츠 무비 2편',62,100],'snoopy06.mp4':["Lucy's School 1편",64,100],'snoopy07.mp4':["Lucy's School 2편",64,100],'snoopy08.mp4':['For Auld Lang Syne',62,100]}; /* 편 이름 · 영상 속 자막 위치(%) */
+const DL_EP={'travel01.mp4':['✈️ 여행 영어 · 공항',62,100] /* 11/14 엄마: 단어 표시·자막이 위로 삐져나옴 → 위로 넓힘 */,'travel02.mp4':['✈️ 여행 영어 · 푸꾸옥 리조트',75,94],'travel03.mp4':['✈️ 여행 영어 · 식당',80,100],'travel06.mp4':['✈️ 여행 영어 · 미국 편의점',44,62],'travel04.mp4':['✈️ 여행 영어 · 하노이 흥정',72,93],'travel05.mp4':['✈️ 여행 영어 · 쇼핑몰',80,100],'snoopy01.mp4':['스누피 쇼 S01E05 · 마당 세일',62,92],'snoopy02.mp4':['스누피 쇼 S01E06 · 리런이 다쳤어요',60,90],'snoopy03.mp4':['스누피 쇼 S02E13 · 크리스마스 선물',66,94],'snoopy04.mp4':['피너츠 무비 1편',62,100],'snoopy05.mp4':['피너츠 무비 2편',62,100],'snoopy06.mp4':["Lucy's School 1편",64,100],'snoopy07.mp4':["Lucy's School 2편",64,100],'snoopy08.mp4':['For Auld Lang Syne',62,100]}; /* 편 이름 · 영상 속 자막 위치(%) */
 async function dlMedia(box,DL_FILE='dl301.mp4'){const VER=/^snoopy/.test(DL_FILE)?'@3':'';const key=(DL_FILE==='dl301.mp4'?'DL:301':'DL:'+DL_FILE)+VER;if(VER){idbDel('audio','DL:'+DL_FILE);idbDel('audio','DL:'+DL_FILE+'@2')} /* 11/8: 음성인식으로 다시 자른 영상(@3) 받기 */ /* 11/7 스누피 다시 자름 → 새 영상 받기 */let b=await idbGet('audio',key);if(b)return URL.createObjectURL(b);
   box.innerHTML=`<div style="padding:20px;text-align:center">🎬 장면 영상(${esc(DL_FILE)})을 처음 한 번 내려받아요 (약 20MB)…<div id="dlPg" style="margin-top:8px;color:var(--sub)"></div></div>`;
   try{let r=null;try{const L=await mediaList();const hit=L.find(([p])=>p.split('/').pop()===DL_FILE);if(hit)r=await fetch(mediaUrl(hit[0]))}catch(e){}if(!r||!r.ok)r=await fetch(DL_FILE+(VER?'?v=3':'')); /* 미디어 저장소 먼저, 없으면 앱 저장소 */if(!r.ok)throw 0;const tot=+r.headers.get('content-length')||0,rd=r.body.getReader(),ch=[];let got=0;for(;;){const {done,value}=await rd.read();if(done)break;ch.push(value);got+=value.length;if($('dlPg'))$('dlPg').textContent=tot?Math.round(got/tot*100)+'%':Math.round(got/1e6)+'MB'}
@@ -1947,7 +1949,7 @@ function wKind(m){m=String(m).split(',')[0].replace(/\([^)]*\)/g,'').trim();retu
 function wDist(ans,pref,all,n){const a0=String(ans).split(',')[0].trim(),k=wKind(ans),ok=m=>{const m0=String(m).split(',')[0].trim();return m0&&m0!==a0&&!a0.includes(m0)&&!m0.includes(a0)};const out=[];
   const take=L=>{for(const m of shuffle([...new Set(L)].filter(ok)))if(out.length<n&&!out.some(z=>z.split(',')[0].trim()===m.split(',')[0].trim()))out.push(m)};
   take(pref.filter(m=>wKind(m)===k));take(all.filter(m=>wKind(m)===k));take(pref);take(all);return out}
-async function dlHeard(ms){if(LB().dlMic===false)return null;try{if(!(await micInit()))return null}catch(e){return null}const t0=Date.now();let on=0,last=Date.now();while(Date.now()-t0<ms){await sleep(50);const now=Date.now();if(micLevel()>micThr()){on+=now-last;if(on>=250)return true}last=now}return false}
+async function dlHeard(ms){if(LB().dlMic===false||quietOn())return null;try{if(!(await micInit()))return null}catch(e){return null}const t0=Date.now();let on=0,last=Date.now();while(Date.now()-t0<ms){await sleep(50);const now=Date.now();if(micLevel()>micThr()){on+=now-last;if(on>=250)return true}last=now}return false}
 function dlMissAdd(){try{const st=dlSt(),t=today();st.log[t]=st.log[t]||{};st.log[t].rpMiss=(st.log[t].rpMiss||0)+1;save()}catch(e){}}
 async function dlRpt(o,x,v){const b=document.createElement('div');b.style.cssText='text-align:center;margin-top:14px';o.appendChild(b);const wait=Math.min(8000,Math.max(3000,((x.e-x.s)||2)*1300+1500));let skip=false;
   const draw=(msg,col)=>{b.innerHTML=`<div style="font-size:24px;font-weight:800;color:${col||'#7fd6a8'}">${msg}</div><div style="font-size:14px;color:#aab;margin-top:4px">${LB().dlMic===false?'소리 내서 따라 말해요':'🎤 목소리가 들리면 넘어가요'}</div><button class="btn ghost sm" id="dlRpS" style="color:#fff;margin-top:8px">다음 ▶</button>`;document.getElementById('dlRpS').onclick=()=>{skip=true}};
@@ -3355,13 +3357,19 @@ function micUI(){
     progress(v){wrap.querySelector('#micP').style.width=(v*100)+'%'},
     heard(txt,final){let h=wrap.querySelector('.heard');if(!h){h=document.createElement('div');h.className='heard';wrap.appendChild(h)}h.innerHTML='들린 말: <b>'+esc(txt||'')+'</b>'},
     nag(e){ui.nagged=true;wrap.querySelector('#micS').innerHTML='소리가 안 들려요 🙉<small>입으로 크게 말해야 다음으로 넘어가요'+(e&&e!=='no-speech'?' ('+esc(e)+')':'')+'</small>'},
-    done(msg){ui.state('ok');wrap.querySelector('#micS').innerHTML=msg||'잘했어요! 👏';wrap.querySelector('#micP').style.width='100%';wrap.querySelector('#micR').style.opacity=0}
+    done(msg){const q=wrap.querySelector('.quietB');if(q)q.remove();ui.state('ok');wrap.querySelector('#micS').innerHTML=msg||'잘했어요! 👏';wrap.querySelector('#micP').style.width='100%';wrap.querySelector('#micR').style.opacity=0}
   };
+  if(!isKidN()){const qb=document.createElement('button');qb.className='btn ghost sm quietB';qb.style.cssText='margin-top:8px;font-size:13px;opacity:.8';
+    qb.textContent=quietOn()?'🔊 다시 소리 내서 하기':'🤫 밖이에요 · 오늘은 속으로';
+    qb.onclick=()=>{const b=LB(),on=!quietOn();b.quietD=on?today():null;save();qb.textContent=on?'🔊 다시 소리 내서 하기':'🤫 밖이에요 · 오늘은 속으로';toast(on?'오늘은 속으로 해요 🤫 (말했어요 ▶ / 직접 확인)':'다시 소리 내서 해요 🔊');if(on&&SESS){SESS.manualNow=true;stopRec()}};
+    wrap.appendChild(qb)}
   return ui;
 }
+/* 11/14 엄마: 🤫 밖에서 하기 — 엄마만, 오늘만(다음 날 자동으로 꺼짐). 따라 말하기는 '말했어요 ▶', 채점(실력 확인 등)은 바로 직접 확인 */
+const quietOn=()=>{try{return !isKidN()&&LB().quietD===today()}catch(e){return false}};
 async function speak(ui,need,recKey,tok,sil){
   ui.nagged=false;
-  if(!S.voice){ // 부모가 말하기 확인을 끈 경우
+  if(!S.voice||quietOn()){ // 부모가 말하기 확인을 끈 경우 · 🤫 밖에서 하기
     ui.state('listen');return new Promise(r=>{const b=document.createElement('button');b.className='btn green';b.textContent='말했어요 ▶';b.style.marginTop='10px';ui.el.appendChild(b);b.onclick=()=>{b.remove();r(SESS&&SESS.tok===tok)}});
   }
   if(!MIC.ok)await micInit(); /* 말할 때만 마이크 켜기 */
@@ -3473,6 +3481,7 @@ function recognizeOnce(ui,tok,exp){
 async function listenAnswer(ui,expected,tok,pl){
   let silent=0;
   if(SESS)SESS.manualNow=false;
+  if(quietOn())return {fallback:true,manual:true};
   while(SESS&&SESS.tok===tok){
     if(SESS.skipNow){SESS.skipNow=false;return {skip:true}}
     if(SESS.manualNow){SESS.manualNow=false;return {fallback:true,manual:true}}
