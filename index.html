@@ -237,7 +237,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.35.2</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.35.3</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -975,7 +975,7 @@ function waitVoice(need,ui,recKey,sil){sil=sil||0.45;
       resolve(ok)};
     const iv=setInterval(()=>{
       if(!SESS||SESS.tok!==tok){finish(false);return}
-      if(quietOn()){finish(true);return}
+      if(quietOn()){clearInterval(iv);try{if(rec&&rec.state!=='inactive')rec.stop()}catch(e){}quietWait(ui,Math.min(7,Math.max(3,need*5)),tok).then(resolve);return}
       const now=performance.now();
       if(segPlaying||now-lastPlayEnd<300){ui.state('play');return}
       ui.state('listen');
@@ -3369,7 +3369,8 @@ function micUI(){
 const quietOn=()=>{try{return !isKidN()&&LB().quietD===today()}catch(e){return false}};
 async function speak(ui,need,recKey,tok,sil){
   ui.nagged=false;
-  if(!S.voice||quietOn()){ // 부모가 말하기 확인을 끈 경우 · 🤫 밖에서 하기
+  if(quietOn())return quietWait(ui,Math.min(7,Math.max(3,(need||0.5)*5)),tok); // 🤫 밖에서 하기: 생각할 시간 준 뒤 '생각했어요 ▶'
+  if(!S.voice){ // 부모가 말하기 확인을 끈 경우
     ui.state('listen');return new Promise(r=>{const b=document.createElement('button');b.className='btn green';b.textContent='말했어요 ▶';b.style.marginTop='10px';ui.el.appendChild(b);b.onclick=()=>{b.remove();r(SESS&&SESS.tok===tok)}});
   }
   if(!MIC.ok)await micInit(); /* 말할 때만 마이크 켜기 */
@@ -3478,10 +3479,21 @@ function recognizeOnce(ui,tok,exp){
   });
 }
 /* 말할 때까지 계속 듣기. 결과 {text,score} 또는 {skip:true} 또는 {fallback:true} */
+/* 11/14 엄마: 🤫 속으로 할 시간 — 막대가 문장 길이만큼(3~7초) 차고 나서 '생각했어요 ▶' (저절로 안 넘어감) */
+async function quietWait(ui,sec,tok){const live=()=>SESS&&SESS.tok===tok;ui.nagged=true;ui.state('listen');ui.nagged=true;
+  const st=ui.el.querySelector('#micS');if(st)st.innerHTML='🤫 속으로 말해요';ui.level(0);const t0=performance.now();
+  while(performance.now()-t0<sec*1000){if(!live())return false;ui.progress((performance.now()-t0)/(sec*1000));await sleep(100)}
+  if(!live())return false;ui.progress(1);if(st)st.innerHTML='🤫 다 말했으면 눌러요';
+  return new Promise(r=>{const b=document.createElement('button');b.className='btn green';b.textContent='생각했어요 ▶';b.style.marginTop='10px';ui.el.appendChild(b);
+    const iv=setInterval(()=>{if(!live()){clearInterval(iv);b.remove();r(false)}},300);b.onclick=()=>{clearInterval(iv);b.remove();r(true)}})}
 async function listenAnswer(ui,expected,tok,pl){
+  if(quietOn()){const ok=await quietWait(ui,Math.min(7,Math.max(3,2+String(expected||'').split(/\s+/).length*0.5)),tok);return ok?{fallback:true,manual:true}:null}
+  const r=await listenAnswer0(ui,expected,tok,pl);
+  if(r&&r.manual&&quietOn()){const ok=await quietWait(ui,3,tok);if(!ok)return null} // 듣던 중에 🤫 누른 경우
+  return r}
+async function listenAnswer0(ui,expected,tok,pl){
   let silent=0;
   if(SESS)SESS.manualNow=false;
-  if(quietOn())return {fallback:true,manual:true};
   while(SESS&&SESS.tok===tok){
     if(SESS.skipNow){SESS.skipNow=false;return {skip:true}}
     if(SESS.manualNow){SESS.manualNow=false;return {fallback:true,manual:true}}
