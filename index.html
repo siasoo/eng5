@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.37.8</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.38.1</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1339,6 +1339,7 @@ function wdMore(){if(S.course==='wd')return;if(!CHAIN())return;const P=L().plan;
   migCur(cu);cu.cg=null;const idx=curGroup(cu);if(!idx.length)return;if(BUDC()&&BUDL()-planCnt(P)<idx.length&&wdToday()>0)return; // 25문장이 차면 더 안 붙여요 (11/15: 하루 첫 묶음은 복습이 많아도 꼭)
   const m=cu.n,w=S.course==='wd'?'단어':'문장';
   {const tl=trvLTask(m);if(tl&&!P.tasks.some(x=>x.type==='trvL'&&x.n===m)){tl.id='t'+P.tasks.length;P.tasks.push(tl)}}
+  if(LB().name==='나'&&cu.fromTest){const t2={type:'quiz',kind:'tfix',g:'new',n:m,idx,grp:idx,items:idx.map(i=>[m,i]),title:'영어로 말하기 · 테스트에서 틀린 문장',sub:`${lab(m)} · ${ttl(m)} · ${idx.length}문장 · 바로 맞히면 넘어가요`};t2.id='t'+P.tasks.length;P.tasks.push(t2);save();return} /* 11/15 엄마: 테스트에서 틀린 문장은 블록·5번 낭독 없이 말하기만 */
   kidParts(m,cu.fromTest&&!cu.k?0:(cu.g||0)).forEach(([type])=>{const t2={type,n:m,idx,kid:true,g:'new',title:KIDNAME[type][0],sub:`${lab(m)} · ${ttl(m)} · 오늘 ${Math.min(wdTarget(),wdToday()+newCnt(m,idx))}/${wdTarget()}${w} · ${KIDNAME[type][1]}`};t2.id='t'+P.tasks.length;P.tasks.push(t2)});save()}
 function kidParts(n,g){if(S.course==='wd')return [['ipyex'],['spell'],['step3']];const ps=[];if(g===0&&RULES[ruleKey(n)])ps.push(['rule']);ps.push(['ipyex'],['step2'],['block'],['step3']);return ps}
 const KIDNAME={spell:['스펠링','뜻을 보고 글자를 하나씩 골라요'],rule:['오늘의 규칙','규칙을 읽고 예문 듣기'],ipyex:['듣고 따라 말하기','원어민 소리를 듣고 따라 말해요'],step2:['실감 나게 5번 읽기','영어를 보면서 연기하듯 읽어요'],block:['블록 맞추기','한국어를 보고 영어 블록을 순서대로'],step3:['영어로 말하기','한국어만 보고 영어로 · 틀린 문장은 내일 다시']};
@@ -1402,6 +1403,7 @@ function buildPlanIpy(force){
     const idx=curGroup(cur);const grs=unitGroups(cur.n);
     if(cur.g>0&&cur.k===0&&S.course!=='wd'&&!cur.fromTest){const pv=grs[cur.g-1],rp=pv.length>10?2:4;add({type:'step2',n:cur.n,idx:pv,reps:rp,g:'review',title:'어제 배운 문장 다시 읽기',sub:`${lab(cur.n)} · ${pv.length}문장 · ${rp}번씩`})}
     {const tl=trvLTask(cur.n);if(tl)add(tl)}
+    if(LB().name==='나'&&cur.fromTest)add({type:'quiz',kind:'tfix',g:'new',n:cur.n,idx,grp:idx,items:idx.map(i=>[cur.n,i]),title:'영어로 말하기 · 테스트에서 틀린 문장',sub:`${lab(cur.n)} · ${ttl(cur.n)} · ${idx.length}문장 · 바로 맞히면 넘어가요`});else
     kidParts(cur.n,cur.fromTest?0:cur.g).slice(cur.k).forEach(([type])=>{const rq=cur.k>0&&cur.rq&&cur.rq.length?cur.rq:null;add({type,n:cur.n,idx:rq||idx,grp:idx,kid:true,g:'new',title:KIDNAME[type][0]+(rq?' · 다시 도전':''),sub:rq?`${lab(cur.n)} · 틀린 문장 ${rq.length}개만 · ${KIDNAME[type][1]}`:`${lab(cur.n)} · ${ttl(cur.n)} · ${cur.g+1}/${grs.length}묶음 · ${KIDNAME[type][1]}`})});
 }
   else if(cur){P.newN=cur.n;
@@ -1489,7 +1491,7 @@ function buildPlan0(force){
   }else if(!allLearned&&wd>=1&&wd<=6)P.kind='reviewday';
   return P;
 }
-function getPlan(){const l=L();if(trvM()&&!l.trvMig&&l.plan&&l.plan.date===today()){l.plan=null} /* 11/15 엄마: 새 버전 처음 열면 오늘 여행영어 계획 바로 새로 */if(!l.cum8){const w=S.course==='wd';for(const x of Object.values(l.lessons)){if(!l.cum7){if(x.st>=6)x.st=w?7:8;else if(x.st===5)x.st=w?6:7;else if(x.st===4)x.st=5}else if(!w){if(x.st>=7)x.st=8;else if(x.st===6)x.st=7;else if(x.st===5)x.st=6}}l.cum7=1;l.cum8=1;save()}if(l.plan&&l.plan.capped)l.plan.capped=false;if(l.mig!==89){l.mig=89;if(l.plan&&!l.plan.tasks.some(x=>x.done))l.plan=null}
+function getPlan(){const l=L();if(trvM()&&!l.trvMig&&l.plan&&l.plan.date===today()){l.plan=null}if(trvM()&&!l.trvMig2){l.trvMig2=1;for(const k of Object.keys(l.wrong||{})){const [n,i]=parseKey(k),u=ipyL(n),it=u&&u.items&&u.items[i];if(!it||it[8]==='ex'||!TRVE.has(it[0]))delete l.wrong[k]}if(l.plan&&l.plan.date===today())l.plan=null;save()} /* 11/15 엄마: 틀린 것 다시에도 단어·직원 말 안 나오게 */ /* 11/15 엄마: 새 버전 처음 열면 오늘 여행영어 계획 바로 새로 */if(!l.cum8){const w=S.course==='wd';for(const x of Object.values(l.lessons)){if(!l.cum7){if(x.st>=6)x.st=w?7:8;else if(x.st===5)x.st=w?6:7;else if(x.st===4)x.st=5}else if(!w){if(x.st>=7)x.st=8;else if(x.st===6)x.st=7;else if(x.st===5)x.st=6}}l.cum7=1;l.cum8=1;save()}if(l.plan&&l.plan.capped)l.plan.capped=false;if(l.mig!==89){l.mig=89;if(l.plan&&!l.plan.tasks.some(x=>x.done))l.plan=null}
   if(!l.plan||l.plan.date!==today()){l.plan=buildPlan(false);save()}
   if(isRdC()&&kidMode()&&l.cur&&!l.plan.rd12&&l.plan.tasks.some(x=>!x.done&&x.g==='new'&&(x.type==='rword'||x.type==='rmean'||x.type==='ipyex'||x.type==='rlisten'))){l.plan=buildPlan(false);l.plan.rd12=1;save()} // 끊어 해석 자료가 생긴 단원은 새 방식으로
   if(S.course==='wd'&&kidMode()&&l.plan.tasks.some(x=>!x.done&&(x.type==='wdl'||x.type==='wds'||x.type==='spell'&&x.g==='new'))){l.plan=buildPlan(false);save()} // 예전 방식 단어 계획은 새 방식(17개·한 단어씩)으로
@@ -3306,6 +3308,8 @@ function renderReward(){
 /* ---------- 학습 모드 ---------- */
 let SESS=null;const sAudio=new Audio();
 async function startSession(){
+  if(LB().name==='나'&&LB().qAsk!==today()){const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:250;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center';o.innerHTML=`<div style="background:#fffaf2;border-radius:18px;padding:20px;max-width:340px;width:88%;text-align:center"><div style="font-size:20px;font-weight:900;margin-bottom:12px">오늘은 어떻게 할까요?</div><button class="btn green" id="qaV" style="width:100%;margin:6px 0">🔊 소리 내서 할게요</button><button class="btn ghost" id="qaQ" style="width:100%;margin:6px 0">🤫 밖이에요 · 속으로 할게요</button><div style="font-size:12.5px;color:#888;margin-top:6px">하루 한 번만 물어봐요</div></div>`;document.body.appendChild(o);
+    const q=await new Promise(r=>{o.querySelector('#qaV').onclick=()=>r(false);o.querySelector('#qaQ').onclick=()=>r(true)});o.remove();const b=LB();b.qAsk=today();b.quietD=q?today():null;save()} /* 11/15 엄마: 속으로는 그날 처음에 한 번만 고르기 */
   if(dlGate(()=>startSession()))return;if(!isKidN()&&!window.__dOff&&IDM.length&&idmSt().log[today()]==null){idmToday(()=>startSession());return} /* 11/10 엄마: 엄마도 공부 시작 전에 우리말 5개 */bikeStop();if(woNeed()){woRun(()=>startSession());return}if(prNeed(S.course)){prRun(()=>startSession());return}if(lnNeed(S.course)){lnRun(()=>startSession());return}if(grNeed(S.course)){grRun(()=>startSession());return}cheerStart();
   if(!FILES.size&&S.course!=='wd'){toast('먼저 음원 폴더를 연결해 주세요');return}
   if(S.voice){
@@ -3428,6 +3432,7 @@ async function runNext(){
   if(t.rdAdv)advance(t.rdAdv,t.type==='rxchunk'&&t.sScore!=null?t.sScore:100); // 끊어 해석 복습도 80% 넘어야 다음 단계
   if(t.rd){const cu=L().cur;if(cu&&cu.n===t.n){if(t.rdLast){markLearned(t.n);L().cur=null}else cu.k=(cu.k||0)+1}}
   if(t.kind==='cycle'){L().cycle=t.cycleTo}
+  if(t.kind==='tfix'){const c2=L().cur;if(c2&&c2.n===t.n){migCur(c2);c2.hist.push(t.grp);if(CHAIN())L().wdDay={d:today(),n:wdToday()+t.grp.length};c2.cg=null;c2.g=c2.hist.length;if(!remIdx(c2).length){markLearned(t.n);L().cur=null}else c2.k=0;save()}}
   const cu=L().cur;
   if(t.g==='new'&&cu&&cu.n===t.n&&STEPNAME[t.type]&&!t.rd){
     if(t.after&&t.kid){migCur(cu);cu.s3={sum:0,cnt:0};
@@ -3526,7 +3531,7 @@ function micUI(){
     nag(e){ui.nagged=true;wrap.querySelector('#micS').innerHTML='소리가 안 들려요 🙉<small>입으로 크게 말해야 다음으로 넘어가요'+(e&&e!=='no-speech'?' ('+esc(e)+')':'')+'</small>'},
     done(msg){const q=wrap.querySelector('.quietB');if(q)q.remove();ui.state('ok');wrap.querySelector('#micS').innerHTML=msg||'잘했어요! 👏';wrap.querySelector('#micP').style.width='100%';wrap.querySelector('#micR').style.opacity=0}
   };
-  if(!isKidN()){const qb=document.createElement('button');qb.className='btn ghost sm quietB';qb.style.cssText='margin-top:8px;font-size:13px;opacity:.8';
+  if(!isKidN()&&LB().name!=='나'){const qb=document.createElement('button');qb.className='btn ghost sm quietB';qb.style.cssText='margin-top:8px;font-size:13px;opacity:.8';
     qb.textContent=quietOn()?'🔊 다시 소리 내서 하기':'🤫 밖이에요 · 오늘은 속으로';
     qb.onclick=()=>{const b=LB(),on=!quietOn();b.quietD=on?today():null;save();qb.textContent=on?'🔊 다시 소리 내서 하기':'🤫 밖이에요 · 오늘은 속으로';toast(on?'오늘은 속으로 해요 🤫 (말했어요 ▶ / 직접 확인)':'다시 소리 내서 해요 🔊');if(on&&SESS){SESS.manualNow=true;stopRec()}};
     wrap.appendChild(qb)}
@@ -3902,7 +3907,7 @@ function woRun(done){micRelease();const b=LB();b.wo=b.wo||{day:'',ptr:0};const k
     u.done('정답을 들어 봐요');$('woAns').style.display='block';$('woNx').style.display='block';
     $('woNx').onclick=fin;await say(X.en)}}
 /* ===== 🎯 집중 연습: 3번 넘게 틀린 문장 → 기차 칸 맞추기 → 칸씩 따라 말하기 → 통째로 ===== */
-function addFocus(add,l){if(!kidMode())return;const ks=Object.keys(l.wrong).filter(k=>{const s=l.stats[k],[n,i]=parseKey(k);return s&&s[1]>=3&&!isWord(i)}).sort((a,b)=>l.stats[b][1]-l.stats[a][1]).slice(0,2);
+function addFocus(add,l){if(!kidMode()||LB().name==='나')return;const ks=Object.keys(l.wrong).filter(k=>{const s=l.stats[k],[n,i]=parseKey(k);return s&&s[1]>=3&&!isWord(i)}).sort((a,b)=>l.stats[b][1]-l.stats[a][1]).slice(0,2);
   if(ks.length)add({type:'focus',g:'wrong',items:ks.map(parseKey),title:'🎯 집중 연습',sub:`자꾸 틀리는 문장 ${ks.length}개 · 기차 칸으로 쪼개서 말해요`})}
 /* 지금 틀린 문장이 3번째 이상이면 그 자리에서 기차 연습 (같은 문장은 하루 한 번) */
 function foWill(n,i){if(!kidMode()||isWord(i)||(SESS&&['first','skiptest'].includes(SESS.kind)))return false;const k=n+'-'+i,s=L().stats[k]||[0,0],f=LB().foD;return s[1]>=3&&!(f&&f.d===today()&&f.ks.includes(L().id+k))}
@@ -4080,7 +4085,7 @@ async function runStep1(t,tok){
 /* STEP 2 연기낭독 훈련: 영어 문장을 듣고, 연기하듯 두 번 읽기 */
 async function runStep2(t,tok){
   if(S.voice&&!MIC.ok)await micInit();
-  const n=t.n,items=await getItems(n),idx=t.idx||halfIdx(n,t.h);const allW=S.course!=='ipy'&&idx.every(i=>items[i]&&items[i].part==='ex');const REPS=allW?1:(t.reps||5);if(allW&&/5번 읽기/.test(t.title||''))t.title=t.title.replace(/[^·]*5번 읽기/,'단어 소리 내어 읽기 (1번)'); /* 단어만 있으면 1번 */ // 5번 읽기 (마지막은 영어 가리고) — 아이·어른 모두 // 단어는 한 번씩만
+  const n=t.n,items=await getItems(n),idx=t.idx||halfIdx(n,t.h);const allW=S.course!=='ipy'&&idx.every(i=>items[i]&&items[i].part==='ex');const REPS=allW?1:(t.reps||(isKidN()&&L().cur&&L().cur.n===t.n&&L().cur.fromTest?3:5)); /* 11/15 엄마: 아이들 실력 확인에서 틀린 문장은 3번 */if(REPS===3&&/5번/.test(t.title||''))t.title=t.title.replace('5번','3번');if(allW&&/5번 읽기/.test(t.title||''))t.title=t.title.replace(/[^·]*5번 읽기/,'단어 소리 내어 읽기 (1번)'); /* 단어만 있으면 1번 */ // 5번 읽기 (마지막은 영어 가리고) — 아이·어른 모두 // 단어는 한 번씩만
   const q0=Math.min(t.q||0,idx.length),r0=t.rep||1;
   for(let q=q0;q<idx.length;q++){
     const i=idx[q],it=items[i];
@@ -5897,7 +5902,7 @@ async function runQuiz(t,tok){
     let fbK=false;if(useSR()){
       const r=await autoQuizItem(n,i,it,ui,tok);
       if(r===null)return false;
-      if(r!=='fallback'){if(r)good++;else{if(foWill(n,i)&&!await focusOne(n,i,it,tok,`<div class="stitle">🚂 기차로 다시 연습</div><div class="sh">자꾸 틀리는 문장이에요 · 칸으로 쪼개 봐요</div><div class="ko" style="font-size:22px;font-weight:800;margin:10px 0">${esc(it.ko)}</div>`))return false;(t.wr=t.wr||[]).push(i);if(t.kind==='skiptest')(t.wrK=t.wrK||[]).push(n+'-'+i);if(S.course==='wd')(t.fails=t.fails||[]).push([n,i])}if(!isWord(i)){sTotal++;if(r)sGood++}continue}
+      if(r!=='fallback'){if(r)good++;else{if(LB().name!=='나'&&foWill(n,i)&&!await focusOne(n,i,it,tok,`<div class="stitle">🚂 기차로 다시 연습</div><div class="sh">자꾸 틀리는 문장이에요 · 칸으로 쪼개 봐요</div><div class="ko" style="font-size:22px;font-weight:800;margin:10px 0">${esc(it.ko)}</div>`))return false;(t.wr=t.wr||[]).push(i);if(t.kind==='skiptest')(t.wrK=t.wrK||[]).push(n+'-'+i);if(S.course==='wd')(t.fails=t.fails||[]).push([n,i])}if(!isWord(i)){sTotal++;if(r)sGood++}continue}
       ui.state('play');fbK=kidMode();
     }
     const need=Math.min(1.4,Math.max(0.35,enLen(n,i)*0.5));
@@ -5920,7 +5925,7 @@ async function runQuiz(t,tok){
     (t.wr=t.wr||[]).push(i);if(t.kind==='skiptest')(t.wrK=t.wrK||[]).push(n+'-'+i);if(S.course==='wd')(t.fails=t.fails||[]).push([n,i]);
     // 틀리면 정답을 한 번 따라 말하고 넘어가기
     $('qBtns').innerHTML='';
-    if(foWill(n,i)){if(!await focusOne(n,i,it,tok,`<div class="stitle">🚂 기차로 다시 연습</div><div class="sh">자꾸 틀리는 문장이에요 · 칸으로 쪼개 봐요</div><div class="ko" style="font-size:22px;font-weight:800;margin:10px 0">${esc(it.ko)}</div>`))return false;continue}
+    if(LB().name!=='나'&&foWill(n,i)){if(!await focusOne(n,i,it,tok,`<div class="stitle">🚂 기차로 다시 연습</div><div class="sh">자꾸 틀리는 문장이에요 · 칸으로 쪼개 봐요</div><div class="ko" style="font-size:22px;font-weight:800;margin:10px 0">${esc(it.ko)}</div>`))return false;continue}
     if(kidMode()){for(let k=0;k<2;k++){const u3=micUI();u3.prompt=`정답을 따라 말해요! (${k+1}/2)`;$('micBox').innerHTML='';$('micBox').appendChild(u3.el);if(S.voice&&!MIC.ok)await micInit();const o3=await speak(u3,0.35,null,tok);if(!o3)return false;u3.done(k?'잘했어요!':'좋아요! 한 번 더');await sleep(400)}continue} // 민채: 정답은 한 번만 듣고 따라 말하기 2번
     const ui2=micUI();ui2.prompt='정답을 따라 말해요!';$('micBox').innerHTML='';$('micBox').appendChild(ui2.el);
     await playEn(n,i,it.en);
@@ -5959,7 +5964,14 @@ async function autoQuizItem(n,i,it,ui,tok){
   if(r.fallback){if(!r.manual)toast('음성 인식을 쓸 수 없어서 직접 체크로 바꿔요 ('+SESS.noSR+')');return 'fallback'}
   const key=`${L().id}|${today()}|${n}-${i}|퀴즈`;
   const pl=it.flag==='?'?STRICT.easy:passLine();
-  const ok=!r.skip&&!r.pass2&&r.score>=pl;
+  let ok=!r.skip&&!r.pass2&&r.score>=pl;
+  if((LB().name==='나'||isKidN())&&!ok&&!r.pass2&&!r.quiet&&!r.skip){ /* 아이들도 한 번 더 기회 (또 틀리면 원래대로 정답 듣고 2번 따라) */ /* 11/15 엄마: 바로 맞히면 끝 · 틀리면 한 번 더 · 또 틀리면 3번 따라 읽고 안 보고 한 번 */
+    ui.el.insertAdjacentHTML('beforeend','<div class="verdict ng" id="try2">❌ 한 번 더 말해 봐요</div>');const r2=await gradeSR(ui,it.en,pl0,tok);if(!live()||r2===null)return null;const t2=document.getElementById('try2');if(t2)t2.remove();
+    if(!r2.fallback&&!r2.skip&&r2.score>=pl){r={...r2,pass2:true};ok=false}
+    else if(isKidN()){if(!r2.fallback)r=r2}
+    else{recordResult(n,i,false);$('qBtns').innerHTML='';$('ans').classList.remove('hidden');ui.done('정답을 들어 봐요');await playEn(n,i,it.en);if(!live())return null;
+      for(let k=0;k<3;k++){$('micBox').innerHTML='';const u2=micUI();u2.prompt=`보면서 따라 읽어요 (${k+1}/3)`;$('micBox').appendChild(u2.el);if(S.voice&&!MIC.ok)await micInit();const o2=await speak(u2,0.35,null,tok);if(!o2||!live())return null;u2.done(k<2?'좋아요! 한 번 더':'잘했어요!');await sleep(300)}
+      $('ans').classList.add('hidden');$('micBox').innerHTML='';const u4=micUI();u4.prompt='이제 안 보고 말해요!';$('micBox').appendChild(u4.el);await playKo(n,i,it.ko);if(!live())return null;const o4=await speak(u4,Math.min(1.4,Math.max(0.35,enLen(n,i)*0.5)),null,tok);if(!o4||!live())return null;u4.done('정답 확인!');$('ans').classList.remove('hidden');await playEn(n,i,it.en);await sleep(500);return false}}
   idbPut('rec',key,{text:(r.skip?'(모르겠어요)':r.text)+(r.judged?' (직접 확인)':''),score:r.skip?0:Math.round(r.score*100),ok,hint:!!SESS.hinted});
   $('qBtns').innerHTML='';
   $('ans').classList.remove('hidden');
