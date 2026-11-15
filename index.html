@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.37.0</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.37.1</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1500,7 +1500,11 @@ function getPlan(){const l=L();if(!l.cum8){const w=S.course==='wd';for(const x o
   const cu=l.cur,kd=kidMode();if(l.hardU&&l.lessons[l.hardU])delete l.hardU;if(!LB().noPlace&&!(l.ptDay===today()&&l.ptN>=PTCAP())&&!l.hardU&&isIpy()&&!['wd','rd','tbr'].includes(S.course)&&!l.plan.tasks.some(x=>x.kind==='skiptest'&&!x.done)&&!(cu&&cu.fromTest)&&!Object.keys(l.partial||{}).length&&!Object.keys(l.fix||{}).length){
     let tk=skipTask(cu?cu.n:kd?nextUnit():l.next);if(BUDC())tk=((dow(today())===1&&isKidN()&&LB().name!=='민채')||REVONLY())?null:sizeTest(tk,BUDL()-planCnt({tasks:l.plan.tasks.filter(x=>x.done||x.g!=='new')}));if(tk&&!(l.ptDay===today()&&(l.ptN||0)>=1&&tk.items.length>TMX())){tk.id='t'+l.plan.tasks.length;l.plan.tasks=l.plan.tasks.filter(x=>x.done||!(x.g==='new'));const ps=l.plan.tasks.findIndex(x=>!x.done&&x.g!=='wrong');l.plan.tasks.splice(ps<0?l.plan.tasks.length:ps,0,tk);l.plan.tasks.forEach((x,k)=>x.id='t'+k);l.plan.place=true;save()}}
   return l.plan}
-const REVONLY=()=>!!(LB().revOnly||{})[S.course]; /* 엄마: 잠시 쉬는 과목은 복습만 */
+const REVONLY=()=>!!(LB().revOnly||{})[S.course]||momRev(S.course); /* 엄마: 잠시 쉬는 과목은 복습만 */
+/* 11/15 엄마 계획: ✈️ 여행영어 먼저(하루 60) → 끝나면 🏠 생활영어 진도 → 2027-02부터 📘 기적 만들기 진도 · 그 전엔 복습만 (복습 없는 날은 목록에서 숨김) */
+const momTrvFin=()=>{try{const b=LB(),k=b.trvAK||b.trvK||{};return Object.keys(k.lessons||{}).length>=59||today()>='2026-12-20'}catch(e){return false}};
+const momRev=c=>{try{return LB().name==='나'&&((c==='home'&&!momTrvFin())||(c==='gj'&&today()<'2027-02-01'))}catch(e){return false}};
+const momHasRev=(b,c)=>{const k=b[c+'AK']||b[c+'K']||{},t=today();if(k.plan&&k.plan.date===t&&k.plan.tasks&&k.plan.tasks.length)return true;return Object.values(k.lessons||{}).some(x=>x&&x.st>=1&&x.st<8&&x.due&&x.due<=t)||Object.values(k.wrong||{}).some(w=>w&&w.d&&w.d<t)};
 function markLearned(n){if(REVONLY())return;
   const l=L();const t=today();
   if(!l.lessons[n])l.lessons[n]={d:t,st:1,due:addDays(t,1)};
@@ -2369,7 +2373,7 @@ async function dlRun(done,onSkip){const st=dlSt(),m=document.createElement('div'
   let pigMsg='';if(isKidN()){const lg=piggy().log;/* 11/8 밤 엄마: 스누피·여행 매일 300원 없앰 (영어에 포함) */if(fullDone&&st.log[today()].full){pigAdd('dlfull','🏆 '+st.log[today()].full+' 통째로 보기 완주',2000);pigMsg+='🐷 완주 +2,000원'}} /* 11/7 엄마: 매일 300원 · 한 편 완주 2,000원 자동 적립 */
   box.innerHTML=`<div style="padding:18px;text-align:center;max-height:80vh;overflow:auto"><div style="font-size:48px">🎬</div><b style="font-size:20px">오늘 새 문장 ${N.length}개${T.length?(dlSH()?` · 복습 ${T.length}개`:` · 소리 테스트 ${ok}/${T.length}`):''}${dlSH()?`<div style="font-size:16px;margin-top:6px">🗣️ 따라 말하기 ${(st.log[today()]||{}).sh||0}번 · ⏱️ ${Math.max(1,Math.round((Date.now()-tRun)/60000))}분</div>`:''}${(st.log[today()]||{}).loop?` · 이어 듣기 ${Math.round(st.log[today()].loop/60)}분`:''}</b>${pigMsg?`<div style="margin-top:10px;padding:10px;border-radius:12px;background:#3a2f1f;color:#f6c344;font-weight:700;font-size:17px">${pigMsg}<div style="font-size:14px;color:#fff;margin-top:4px">🐷 저금통에 지금 <b>${piggy().sum.toLocaleString()}원</b> 모였어요!</div></div>`:''}${dlProgHTML(st)}<div style="color:#aab;margin-top:6px">내일은 오늘 본 장면을 소리만 듣고 맞혀요</div><button class="btn green" id="dlEnd" style="width:100%;margin-top:14px">끝 ✅</button></div>`;
   st.fin=today();save();markDone('dl');$('dlEnd').onclick=()=>{m.remove();done()}}
-function kidPace(c){try{return withCourse(c,()=>{if(!isIpy())return '';const l=L(),t=today(),left=leftLessons(),u=c==='wd'?'묶음':IPYV()>=2?'단':'과';if(left<=0)return '🎉 다 배웠어요! 이제 복습만 해요';
+function kidPace(c){try{return withCourse(c,()=>{if(!isIpy())return '';if(trvM()){const l=L(),N=TOTAL();let left=0,lu=0;for(const m of TRV_ORD)if(m<=N&&!l.lessons[m]){const k=eligIdx(m).length;if(k){left+=k;lu++}}if(!left)return '🎉 필수 표현 다 배웠어요! 이제 복습만 해요';return `🏁 필수 표현 남은 ${left}문장 (${lu}단) · 하루 60이면 <b>${addDays(today(),Math.ceil(left/60)).slice(5).replace('-','/')}</b>쯤 끝나요`}if(momRev(c))return c==='home'?'🔁 지금은 복습만 · 여행영어 끝나면 진도 시작':'🔁 지금은 복습만 · 2월부터 바짝';const l=L(),t=today(),left=leftLessons(),u=c==='wd'?'묶음':IPYV()>=2?'단':'과';if(left<=0)return '🎉 다 배웠어요! 이제 복습만 해요';
   const ds=Object.values(l.lessons).filter(x=>!x.old).map(x=>x.d).sort();if(ds.length<5||ds[0]>addDays(t,-7))return `🏁 남은 ${left}${u} · 1~2주 하면 끝나는 날이 보여요`;
   const w=Math.max(1,Math.min(4,(new Date(t+'T12:00')-new Date(ds[0]+'T12:00'))/864e5/7)),pw=Math.max(0.5,ds.filter(d=>d>=addDays(t,-27)).length/w);
   return `🏁 남은 ${left}${u} · 지금처럼 하면 <b>${ym(addDays(t,Math.ceil(left/pw*7)))}</b>에 끝나요`})}catch(e){return ''}} /* 아이 화면: 남은 양 + 끝나는 달 */
@@ -2450,7 +2454,7 @@ const lsJ=k=>{try{return JSON.parse(localStorage.getItem(k)||'{}')||{}}catch(e){
 /* 11/12 엄마: 엄마('나')는 목록 고칠 때 기본 '앞으로 계속' (아이들은 '오늘만') */const kScope=()=>window.__kScope||(LB().name==='나'?'all':'day');
 const curList0=b=>b&&b.dayList&&b.dayList.d===today()&&Array.isArray(b.dayList.l)?b.dayList.l:(b&&b.todayList)||[]; // 오늘만 바꾼 목록이 있으면 그것
 /* 11/10 엄마: 한국사 ↔ 과학 번갈아 — 민지: 중1 과학 끝날 때까지 한국사는 하루 건너 · 민채: 과학 시작(1월)부터 한국사 끝날 때까지 하루씩 번갈아 */
-const curList=b=>{const L=curList0(b);try{if(!b||b.dayList&&b.dayList.d===today())return L;const odd=dnumT(today())%2===1,has=c=>L.includes(c);
+const curList=b=>{const L=curList0(b);try{if(!b||b.dayList&&b.dayList.d===today())return L;if(b.name==='나')return L.filter(c=>!(momRev(c)&&!momHasRev(b,c)));const odd=dnumT(today())%2===1,has=c=>L.includes(c);
   if(b.name==='민지'){/* 11/11 엄마: 과목 고루 — 과학 → 사회 → 역사 → 과학 → 사회 → 역사 → 한국사 (한국사는 일주일 1번쯤) · 학기 중 하루 1과목, 방학(1~2월) 하루 2과목 · 자동 · 아직 없는/끝난 과목은 빠짐 · 독해는 매일 */
     const lf={sc:((b.sc||{}).i||0)<SC.length,so:false,hi:false,kh:((b.kh||{}).i||1)<=KH.length},SEQ=['sc','so','hi','sc','so','hi','kh'].filter(c=>has(c)&&lf[c]);
     if(new Set(SEQ).size>1){const d=dnumT(today()),vac=today()>='2027-01-01'&&today()<'2027-03-02',n=SEQ.length,pick=new Set([SEQ[(vac?2*d:d)%n]]);if(vac){for(let k=1;k<n&&pick.size<2;k++)pick.add(SEQ[(2*d+k)%n])}return L.filter(c=>!['sc','so','hi','kh'].includes(c)||pick.has(c))}}
