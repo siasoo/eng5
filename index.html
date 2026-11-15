@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.37.3</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.37.8</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1302,6 +1302,11 @@ function solidItems(max){const l=L(),st=l.stats||{},ok=l.solidOK||{},since=addDa
 function solidTask(){const it=solidItems(12);if(!it.length)return null;const sn={};it.forEach(([n,i])=>{sn[n+'-'+i]=(L().stats[n+'-'+i]||[0,0]).slice()});
   return S.course==='wd'?{type:'spell',items:it,solid:sn,g:'review',day:true,title:'💪 주말 단단히 · 이번 주 자주 틀린 단어',sub:`${it.length}개 · 주말에 두 번 맞히면 졸업 ✅`}
     :{type:'quiz',kind:'review',items:it,solid:sn,g:'review',title:'💪 주말 단단히 · 이번 주 자주 틀린 문장',sub:`${it.length}문장 · 뜻 보고 말하기 · 틀리면 따라 읽기 · 주말에 두 번 맞히면 졸업 ✅`}}
+/* 11/15 엄마: 엄마는 틀린 문장을 그날 끝에 한 번 더 — 맞히면 그날로 끝, 또 틀리면 다음 날 '틀린 것 다시' */
+function ewMaybe(t){if(t.ew){if(t.kid)return; /* 아이들: 맞혀도 다음 날 한 번 더 (recordResult가 한 칸 줄여 둠) */const l=L();for(const [k,s0] of Object.entries(t.snap||{})){const s1=l.stats[k]||[0,0];if(s1[0]>s0[0]&&s1[1]===s0[1])delete l.wrong[k]}save();return}
+  const kidE=isKidN();if(!kidMode()||!isIpy()||S.course==='wd'||!kidE)return; /* 11/15 엄마: 엄마는 다음 날만 · 아이들만 그날 끝 최대 5개 */ /* 11/15 엄마: 아이들도 그날 끝에 최대 5개 */const l=L(),P=l.plan;if(!P||P.date!==today()||P.ewAdded)return;if(P.tasks.some(x=>!x.done))return;if(CHAIN()&&wdToday()<wdTarget()&&nextUnit()<=TOTAL())return;
+  const W=Object.entries(l.wrong||{}).filter(([k,w])=>w&&typeof w==='object'&&w.d===today()&&!w.ok).map(([k])=>{const [a,b]=k.split('-');return [+a,+b]}).filter(([a,b])=>!isNaN(a)&&!isNaN(b)).sort((x,y)=>((l.stats[y[0]+'-'+y[1]]||[0,0])[1])-((l.stats[x[0]+'-'+x[1]]||[0,0])[1])).slice(0,kidE?5:20);if(!W.length)return;
+  const snap={};W.forEach(([a,b])=>snap[a+'-'+b]=(l.stats[a+'-'+b]||[0,0]).slice());P.ewAdded=1;P.tasks.push({type:'quiz',kind:'review',g:'review',items:W,ew:1,kid:kidE?1:0,snap,id:'t'+P.tasks.length,title:'❗ 오늘 틀린 것 한 번 더',sub:kidE?`${W.length}문장 · 오늘 바로잡고 내일 한 번 더 확인해요`:`${W.length}문장 · 맞히면 오늘 끝 · 또 틀리면 내일 다시`});save()}
 function solidDone(t){if(!t.solid)return;const l=L();l.solidOK=l.solidOK||{};for(const [k,s0] of Object.entries(t.solid)){const s1=l.stats[k]||[0,0];if(s1[0]>s0[0]&&s1[1]===s0[1])l.solidOK[k]=(l.solidOK[k]||0)+1;else if(s1[1]>s0[1])l.solidOK[k]=0}save()}
 function buildPlanWd(P,l,t,wd,wkOK){const add=t2=>{t2.id='t'+P.tasks.length;P.tasks.push(t2)};l.cur=null;
   // 어제 못 끝낸 새 단어는 멈춘 단계부터 이어서 (오늘 분량에 포함)
@@ -1484,7 +1489,7 @@ function buildPlan0(force){
   }else if(!allLearned&&wd>=1&&wd<=6)P.kind='reviewday';
   return P;
 }
-function getPlan(){const l=L();if(!l.cum8){const w=S.course==='wd';for(const x of Object.values(l.lessons)){if(!l.cum7){if(x.st>=6)x.st=w?7:8;else if(x.st===5)x.st=w?6:7;else if(x.st===4)x.st=5}else if(!w){if(x.st>=7)x.st=8;else if(x.st===6)x.st=7;else if(x.st===5)x.st=6}}l.cum7=1;l.cum8=1;save()}if(l.plan&&l.plan.capped)l.plan.capped=false;if(l.mig!==89){l.mig=89;if(l.plan&&!l.plan.tasks.some(x=>x.done))l.plan=null}
+function getPlan(){const l=L();if(trvM()&&!l.trvMig&&l.plan&&l.plan.date===today()){l.plan=null} /* 11/15 엄마: 새 버전 처음 열면 오늘 여행영어 계획 바로 새로 */if(!l.cum8){const w=S.course==='wd';for(const x of Object.values(l.lessons)){if(!l.cum7){if(x.st>=6)x.st=w?7:8;else if(x.st===5)x.st=w?6:7;else if(x.st===4)x.st=5}else if(!w){if(x.st>=7)x.st=8;else if(x.st===6)x.st=7;else if(x.st===5)x.st=6}}l.cum7=1;l.cum8=1;save()}if(l.plan&&l.plan.capped)l.plan.capped=false;if(l.mig!==89){l.mig=89;if(l.plan&&!l.plan.tasks.some(x=>x.done))l.plan=null}
   if(!l.plan||l.plan.date!==today()){l.plan=buildPlan(false);save()}
   if(isRdC()&&kidMode()&&l.cur&&!l.plan.rd12&&l.plan.tasks.some(x=>!x.done&&x.g==='new'&&(x.type==='rword'||x.type==='rmean'||x.type==='ipyex'||x.type==='rlisten'))){l.plan=buildPlan(false);l.plan.rd12=1;save()} // 끊어 해석 자료가 생긴 단원은 새 방식으로
   if(S.course==='wd'&&kidMode()&&l.plan.tasks.some(x=>!x.done&&(x.type==='wdl'||x.type==='wds'||x.type==='spell'&&x.g==='new'))){l.plan=buildPlan(false);save()} // 예전 방식 단어 계획은 새 방식(17개·한 단어씩)으로
@@ -1502,7 +1507,7 @@ function getPlan(){const l=L();if(!l.cum8){const w=S.course==='wd';for(const x o
   return l.plan}
 const REVONLY=()=>!!(LB().revOnly||{})[S.course]||momRev(S.course); /* 엄마: 잠시 쉬는 과목은 복습만 */
 /* 11/15 엄마 계획: ✈️ 여행영어 먼저(하루 60) → 끝나면 🏠 생활영어 진도 → 2027-02부터 📘 기적 만들기 진도 · 그 전엔 복습만 (복습 없는 날은 목록에서 숨김) */
-const momTrvFin=()=>{try{const b=LB(),k=b.trvAK||b.trvK||{};return Object.keys(k.lessons||{}).length>=59||today()>='2026-12-20'}catch(e){return false}};
+const momTrvFin=()=>{try{const b=LB(),k=b.trvAK||b.trvK||{};return Object.keys(k.lessons||{}).length>=59&&today()>='2026-11-30'||today()>='2026-11-30'}catch(e){return false}}; /* 11/15 엄마: 생활영어는 여행 다녀온 뒤(11/30~) · 29일까지는 여행영어만 */
 const momRev=c=>{try{return LB().name==='나'&&((c==='home'&&!momTrvFin())||(c==='gj'&&today()<'2027-02-01'))}catch(e){return false}};
 const momHasRev=(b,c)=>{const k=b[c+'AK']||b[c+'K']||{},t=today();if(k.plan&&k.plan.date===t&&k.plan.tasks&&k.plan.tasks.length)return true;return Object.values(k.lessons||{}).some(x=>x&&x.st>=1&&x.st<8&&x.due&&x.due<=t)||Object.values(k.wrong||{}).some(w=>w&&w.d&&w.d<t)};
 function markLearned(n){if(REVONLY())return;
@@ -2373,7 +2378,7 @@ async function dlRun(done,onSkip){const st=dlSt(),m=document.createElement('div'
   let pigMsg='';if(isKidN()){const lg=piggy().log;/* 11/8 밤 엄마: 스누피·여행 매일 300원 없앰 (영어에 포함) */if(fullDone&&st.log[today()].full){pigAdd('dlfull','🏆 '+st.log[today()].full+' 통째로 보기 완주',2000);pigMsg+='🐷 완주 +2,000원'}} /* 11/7 엄마: 매일 300원 · 한 편 완주 2,000원 자동 적립 */
   box.innerHTML=`<div style="padding:18px;text-align:center;max-height:80vh;overflow:auto"><div style="font-size:48px">🎬</div><b style="font-size:20px">오늘 새 문장 ${N.length}개${T.length?(dlSH()?` · 복습 ${T.length}개`:` · 소리 테스트 ${ok}/${T.length}`):''}${dlSH()?`<div style="font-size:16px;margin-top:6px">🗣️ 따라 말하기 ${(st.log[today()]||{}).sh||0}번 · ⏱️ ${Math.max(1,Math.round((Date.now()-tRun)/60000))}분</div>`:''}${(st.log[today()]||{}).loop?` · 이어 듣기 ${Math.round(st.log[today()].loop/60)}분`:''}</b>${pigMsg?`<div style="margin-top:10px;padding:10px;border-radius:12px;background:#3a2f1f;color:#f6c344;font-weight:700;font-size:17px">${pigMsg}<div style="font-size:14px;color:#fff;margin-top:4px">🐷 저금통에 지금 <b>${piggy().sum.toLocaleString()}원</b> 모였어요!</div></div>`:''}${dlProgHTML(st)}<div style="color:#aab;margin-top:6px">내일은 오늘 본 장면을 소리만 듣고 맞혀요</div><button class="btn green" id="dlEnd" style="width:100%;margin-top:14px">끝 ✅</button></div>`;
   st.fin=today();save();markDone('dl');$('dlEnd').onclick=()=>{m.remove();done()}}
-function kidPace(c){try{return withCourse(c,()=>{if(!isIpy())return '';if(trvM()){const l=L(),N=TOTAL();let left=0,lu=0;for(const m of TRV_ORD)if(m<=N&&!l.lessons[m]){const k=eligIdx(m).length;if(k){left+=k;lu++}}if(!left)return '🎉 필수 표현 다 배웠어요! 이제 복습만 해요';return `🏁 필수 표현 남은 ${left}문장 (${lu}단) · 하루 60이면 <b>${addDays(today(),Math.ceil(left/60)).slice(5).replace('-','/')}</b>쯤 끝나요`}if(momRev(c))return c==='home'?'🔁 지금은 복습만 · 여행영어 끝나면 진도 시작':'🔁 지금은 복습만 · 2월부터 바짝';const l=L(),t=today(),left=leftLessons(),u=c==='wd'?'묶음':IPYV()>=2?'단':'과';if(left<=0)return '🎉 다 배웠어요! 이제 복습만 해요';
+function kidPace(c){try{return withCourse(c,()=>{if(!isIpy())return '';if(trvM()){const l=L(),N=TOTAL();let left=0,lu=0;for(const m of TRV_ORD)if(m<=N&&!l.lessons[m]){const k=eligIdx(m).length;if(k){left+=k;lu++}}if(!left)return '🎉 필수 표현 다 배웠어요! 이제 복습만 해요';return `🏁 필수 표현 남은 ${left}문장 (${lu}단) · 하루 60이면 <b>${addDays(today(),Math.ceil(left/60)).slice(5).replace('-','/')}</b>쯤 끝나요`}if(momRev(c))return c==='home'?'🔁 여행 다녀온 뒤(11/30~) 진도 시작':'🔁 지금은 복습만 · 2월부터 바짝';const l=L(),t=today(),left=leftLessons(),u=c==='wd'?'묶음':IPYV()>=2?'단':'과';if(left<=0)return '🎉 다 배웠어요! 이제 복습만 해요';
   const ds=Object.values(l.lessons).filter(x=>!x.old).map(x=>x.d).sort();if(ds.length<5||ds[0]>addDays(t,-7))return `🏁 남은 ${left}${u} · 1~2주 하면 끝나는 날이 보여요`;
   const w=Math.max(1,Math.min(4,(new Date(t+'T12:00')-new Date(ds[0]+'T12:00'))/864e5/7)),pw=Math.max(0.5,ds.filter(d=>d>=addDays(t,-27)).length/w);
   return `🏁 남은 ${left}${u} · 지금처럼 하면 <b>${ym(addDays(t,Math.ceil(left/pw*7)))}</b>에 끝나요`})}catch(e){return ''}} /* 아이 화면: 남은 양 + 끝나는 달 */
@@ -2454,7 +2459,7 @@ const lsJ=k=>{try{return JSON.parse(localStorage.getItem(k)||'{}')||{}}catch(e){
 /* 11/12 엄마: 엄마('나')는 목록 고칠 때 기본 '앞으로 계속' (아이들은 '오늘만') */const kScope=()=>window.__kScope||(LB().name==='나'?'all':'day');
 const curList0=b=>b&&b.dayList&&b.dayList.d===today()&&Array.isArray(b.dayList.l)?b.dayList.l:(b&&b.todayList)||[]; // 오늘만 바꾼 목록이 있으면 그것
 /* 11/10 엄마: 한국사 ↔ 과학 번갈아 — 민지: 중1 과학 끝날 때까지 한국사는 하루 건너 · 민채: 과학 시작(1월)부터 한국사 끝날 때까지 하루씩 번갈아 */
-const curList=b=>{const L=curList0(b);try{if(!b||b.dayList&&b.dayList.d===today())return L;if(b.name==='나')return L.filter(c=>!(momRev(c)&&!momHasRev(b,c)));const odd=dnumT(today())%2===1,has=c=>L.includes(c);
+const curList=b=>{const L=curList0(b);try{if(!b||b.dayList&&b.dayList.d===today())return L;if(b.name==='나')return L.filter(c=>!(c==='home'&&today()<'2026-11-30')&&!(momRev(c)&&!momHasRev(b,c)));const odd=dnumT(today())%2===1,has=c=>L.includes(c);
   if(b.name==='민지'){/* 11/11 엄마: 과목 고루 — 과학 → 사회 → 역사 → 과학 → 사회 → 역사 → 한국사 (한국사는 일주일 1번쯤) · 학기 중 하루 1과목, 방학(1~2월) 하루 2과목 · 자동 · 아직 없는/끝난 과목은 빠짐 · 독해는 매일 */
     const lf={sc:((b.sc||{}).i||0)<SC.length,so:false,hi:false,kh:((b.kh||{}).i||1)<=KH.length},SEQ=['sc','so','hi','sc','so','hi','kh'].filter(c=>has(c)&&lf[c]);
     if(new Set(SEQ).size>1){const d=dnumT(today()),vac=today()>='2027-01-01'&&today()<'2027-03-02',n=SEQ.length,pick=new Set([SEQ[(vac?2*d:d)%n]]);if(vac){for(let k=1;k<n&&pick.size<2;k++)pick.add(SEQ[(2*d+k)%n])}return L.filter(c=>!['sc','so','hi','kh'].includes(c)||pick.has(c))}}
@@ -3394,7 +3399,7 @@ async function runNext(){
   else if(t.type==='rxchunk')ok=await runRxChunk(t,tok);
   else if(t.type==='rxq')ok=await runRxQ(t,tok);
   if(!SESS||SESS.tok!==tok||!ok)return;
-  t.done=true;try{solidDone(t)}catch(e){}['q','rep','s1','sum','qs','bq','sq','fails','rq','_cnt','qq','wq'].forEach(k=>delete t[k]);
+  t.done=true;try{solidDone(t)}catch(e){}try{ewMaybe(t)}catch(e){}['q','rep','s1','sum','qs','bq','sq','fails','rq','_cnt','qq','wq'].forEach(k=>delete t[k]);
   if(t.rxEnd!=null&&t.g==='new'){let cu=L().cur;if(!cu||cu.n!==t.n){cu=L().cur={n:t.n,k:0,tries:[],s3:{sum:0,cnt:0}}}cu.pos=t.rxEnd;save()}
   if(t.rxRemN){const x=L().lessons[t.rxRemN];if(x){x.rxrem=t.rxRem;save()}}
   if(t.rdAdv&&t.type==='rxchunk'){const x=L().lessons[t.rdAdv];if(x&&x.rxrem)delete x.rxrem}
@@ -3960,23 +3965,25 @@ async function runBlock(t,tok){
     const blocks=RL||CK?ec:makeBlocks(it),FK=CK?chunkFake(ec,items,i):'';
     if(blocks.length<2)continue; /* 단어 하나는 블록 맞추기 없이 넘어가요 */let order=shuffle(blocks.slice());for(let z=0;z<5&&blocks.length>1&&order.join('|')===blocks.join('|');z++)order=shuffle(order);if(FK)order.splice(Math.floor(Math.random()*(order.length+1)),0,FK);
     $('sMain').innerHTML=stepHead(t,'한국어를 보고 영어 블록을 <b>순서대로</b> 눌러요. 다 만들면 소리 내어 읽어요.')+`<div class="qcard"><div class="cnt">${q+1} / ${queue.length}</div>
-      ${RL||CK?`<div class="ko" style="font-size:18px">${esc(it.ko)}</div><div class="slots" id="bline">${ec.map((x,k)=>`<div class="slot"><div class="sb empty ${RL?'r'+RL[k]:'ck'}" data-k="${k}">${esc(x)}</div><small>${esc((String(it.kc||'').split(/\s*\/\s*/)[k])||'')}</small></div>`).join('')}</div>`:`<div class="ko">${chunkHTML(it.kc)}</div><div class="bline" id="bline"></div>`}${hintHTML(it.h)}${FK?'<div style="font-size:13px;color:var(--sub);text-align:center">💡 가짜 블록이 하나 숨어 있어요!</div>':''}<div class="bpool" id="bpool"></div>
+      ${RL||CK?`<div class="ko" style="font-size:18px">${esc(it.ko)}</div><div class="slots" id="bline">${ec.map((x,k)=>`<div class="slot"><div class="sb empty ${RL?'r'+RL[k]:'ck'}" data-k="${k}">${esc(x)}</div><small>${esc((String(it.kc||'').split(/\s*\/\s*/)[k])||'')}</small></div>`).join('')}</div>`:`<div class="ko">${chunkHTML(it.kc)}</div><div class="bline" id="bline"></div>`}<div id="bHTx" style="display:none">${hintHTML(it.h)}</div>${FK?'<div style="font-size:13px;color:var(--sub);text-align:center">💡 가짜 블록이 하나 숨어 있어요!</div>':''}<div class="bpool" id="bpool"></div>
       <div id="micBox"></div><div class="sbtns" id="qBtns"><button class="btn ghost" id="bHint">💡 다음 블록</button><button class="btn ghost" id="bHear">🔊 정답 듣기</button></div></div>`;
-    let pos=0,miss=0;
+    let pos=0,miss=0,used=false; /* 11/15 엄마: 힌트(다음 블록·정답 듣기) 쓰면 틀린 걸로 */
     await new Promise(res=>{
       const pick=(el,txt)=>{if(txt===blocks[pos]){el.remove();if(RL||CK){const sb=$('bline').querySelector(`.sb[data-k="${pos}"]`);if(sb)sb.classList.remove('empty')}else $('bline').insertAdjacentHTML('beforeend',`<span class="blk on">${esc(txt)}</span>`);pos++;if(pos>=blocks.length)res()}
-        else{miss++;el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake')}};
-      order.forEach(txt=>{const el=document.createElement('button');el.className='blk'+(RL?' rb r'+RL[blocks.indexOf(txt)]:'');el.textContent=txt;el.onclick=()=>{if(FK&&txt===FK&&pos<blocks.length&&blocks[pos]!==FK){miss++;el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');toast('그건 가짜 블록이에요 🙅');return}pick(el,txt)};$('bpool').appendChild(el)});
-      $('bHint').onclick=()=>{miss++;const el=[...$('bpool').children].find(e=>e.textContent===blocks[pos]);if(el)pick(el,blocks[pos])};
-      $('bHear').onclick=()=>{miss++;playEn(n,i,it.en)};
+        else{miss++;bHS();el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake')}};
+      const bHS=()=>{const h=$('bHTx');if(h)h.style.display=''}; /* 11/15 엄마: 단어 힌트는 틀렸을 때만 */
+      order.forEach(txt=>{const el=document.createElement('button');el.className='blk'+(RL?' rb r'+RL[blocks.indexOf(txt)]:'');el.textContent=txt;el.onclick=()=>{if(FK&&txt===FK&&pos<blocks.length&&blocks[pos]!==FK){(miss++,bHS());el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');toast('그건 가짜 블록이에요 🙅');return}pick(el,txt)};$('bpool').appendChild(el)});
+      $('bHint').onclick=()=>{miss++;used=true;bHS();const el=[...$('bpool').children].find(e=>e.textContent===blocks[pos]);if(el)pick(el,blocks[pos])};
+      $('bHear').onclick=()=>{miss++;used=true;bHS();playEn(n,i,it.en)};
     });
     if(!SESS||SESS.tok!==tok)return false;
     $('qBtns').innerHTML='';$('bline').insertAdjacentHTML('afterend',`${prHTML(it,'ans')}${wexHTML(it)}`);
     const ui=micUI();ui.prompt='소리 내어 읽어요!';$('micBox').appendChild(ui.el);ui.state('play');
     await playEn(n,i,it.en);if(!SESS||SESS.tok!==tok)return false;
     const ok=await speak(ui,Math.min(1.4,Math.max(0.35,enLen(n,i)*0.5)),`${L().id}|${today()}|${n}-${i}|블록`,tok);if(!ok)return false;
-    ui.done(miss?'좋아요! 한 번 더 나와요':'완벽해요! 🧩');
-    if(miss>=2&&!again.includes(i)){again.push(i);queue=queue.concat([i])}
+    const bad=used||miss>=2;ui.done(used?'힌트를 봤으니 틀린 걸로 · 한 번 더 나와요':miss?'좋아요! 한 번 더 나와요':'완벽해요! 🧩');
+    if(bad&&!again.includes(i)){again.push(i);queue=queue.concat([i])}
+    if(bad&&kidMode()){const l=L(),k=n+'-'+i;if(!l.wrong[k]||typeof l.wrong[k]!=='object'){l.wrong[k]={n:2,d:today()};save()}}
     await sleep(500);
   }
   return true;
