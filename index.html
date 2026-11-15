@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.37.1</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.37.3</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1336,7 +1336,7 @@ function wdMore(){if(S.course==='wd')return;if(!CHAIN())return;const P=L().plan;
   {const tl=trvLTask(m);if(tl&&!P.tasks.some(x=>x.type==='trvL'&&x.n===m)){tl.id='t'+P.tasks.length;P.tasks.push(tl)}}
   kidParts(m,cu.fromTest&&!cu.k?0:(cu.g||0)).forEach(([type])=>{const t2={type,n:m,idx,kid:true,g:'new',title:KIDNAME[type][0],sub:`${lab(m)} · ${ttl(m)} · 오늘 ${Math.min(wdTarget(),wdToday()+newCnt(m,idx))}/${wdTarget()}${w} · ${KIDNAME[type][1]}`};t2.id='t'+P.tasks.length;P.tasks.push(t2)});save()}
 function kidParts(n,g){if(S.course==='wd')return [['ipyex'],['spell'],['step3']];const ps=[];if(g===0&&RULES[ruleKey(n)])ps.push(['rule']);ps.push(['ipyex'],['step2'],['block'],['step3']);return ps}
-const KIDNAME={spell:['스펠링','뜻을 보고 글자를 하나씩 골라요'],rule:['오늘의 규칙','규칙을 읽고 예문 듣기'],ipyex:['듣고 따라 말하기','원어민 소리를 듣고 따라 말해요'],step2:['실감 나게 5번 읽기','영어를 보면서 연기하듯 읽어요'],block:['블록 맞추기','한국어를 보고 영어 블록을 순서대로'],step3:['영어로 말하기','한국어만 보고 영어로 · 80점 넘으면 통과']};
+const KIDNAME={spell:['스펠링','뜻을 보고 글자를 하나씩 골라요'],rule:['오늘의 규칙','규칙을 읽고 예문 듣기'],ipyex:['듣고 따라 말하기','원어민 소리를 듣고 따라 말해요'],step2:['실감 나게 5번 읽기','영어를 보면서 연기하듯 읽어요'],block:['블록 맞추기','한국어를 보고 영어 블록을 순서대로'],step3:['영어로 말하기','한국어만 보고 영어로 · 틀린 문장은 내일 다시']};
 const partPos=(n,type,h)=>partsFor(n).findIndex(p=>p[0]===type&&p[1]===h);
 const halfLabel=(n,h)=>{if(h==='all'||h==null)return '';const a=halfIdx(n,h),b=unitIdx(n,'st');const s=b.indexOf(a[0])+1;return ` (${s}~${s+a.length-1})`};
 function buildPlanIpy(force){
@@ -1376,7 +1376,7 @@ function buildPlanIpy(force){
     if(S.course==='wd')add({type:'spell',items:items.slice(0,x.st>=5?items.length:10),g:'review',title:`${STAGE_NAME[x.st]} 복습 · 스펠링`,sub:`${lab(x.n)} · ${ttl(x.n)}`});
     else if(x.st<=2&&kidMode()){add({type:'step2',n:x.n,idx:items.slice(0,6).map(z=>z[1]),reps:2,g:'review',title:`다시 읽기 · ${x.st===1?'하루':'3일'} 지난 문장`,sub:`${lab(x.n)} · ${ttl(x.n)} · 6문장 2번씩`})}
     else if(x.st<=2)add({type:'step2',n:x.n,h:'all',g:'review',title:`STEP 2 연기낭독 · ${x.st===1?'6~10':'11~15'}회째`,sub:`${lab(x.n)} · ${ttl(x.n)} · 5회 낭독 (마지막은 영어 가리고)`});
-    add({type:'quiz',kind:'review',g:'review',items,adv:partRem?null:x.n,partN:partRem?x.n:null,partRem,title:`${STAGE_NAME[x.st]} 복습 · ${kidMode()?'영어로 말하기':'STEP 3'}${x.retry?' (다시 도전)':''}${partRem?' (나눠서 · 나머지는 내일)':''}`,sub:`${lab(x.n)} · ${ttl(x.n)} · ${x.st>=4?'전체 '+items.length+'문장':items.length+'문장'} · ${x.st===FIN?'모두 맞혀야 ★':'80% 넘으면 통과'}`});added++;
+    add({type:'quiz',kind:'review',g:'review',items,adv:partRem?null:x.n,partN:partRem?x.n:null,partRem,title:`${STAGE_NAME[x.st]} 복습 · ${kidMode()?'영어로 말하기':'STEP 3'}${x.retry&&!kidMode()?' (다시 도전)':''}${partRem?' (나눠서 · 나머지는 내일)':''}`,sub:`${lab(x.n)} · ${ttl(x.n)} · ${x.st>=4?'전체 '+items.length+'문장':items.length+'문장'} · ${kidMode()?'틀린 문장만 내일 다시':x.st===FIN?'모두 맞혀야 ★':'80% 넘으면 통과'}`});added++;
   }
   if(S.course==='wd'&&kidMode()){if((wkOK||wd>=1&&wd<=6)&&wdToday()<wdTarget()){const items=wdPick(wdTarget()-wdToday());if(items.length){P.newN=items[0][0];addWdDay(add,items)}}}
   else if(!LB().noPlace&&!(l.hardU&&!l.lessons[l.hardU])&&kidMode()&&!['wd','rd','tbr'].includes(S.course)&&(l.placeStarted||!Object.values(l.lessons).some(x=>!x.old&&!x.skip))&&!(cur&&(cur.hist&&cur.hist.length||cur.k>0||cur.fromTest))&&nextUnit()<=TOTAL()){
@@ -1421,7 +1421,7 @@ function buildPlanIpyV1(P,l,t,wd){
   for(const x of due){
     const items=sampleReview(x.n,x.st);const sec=items.length*10;
     if(added>=1&&est+sec>LIMIT-reserve)break;
-    add({type:'quiz',kind:'review',g:'review',items,adv:x.n,title:`${STAGE_NAME[x.st]} 복습${x.retry?' (다시 도전)':''}`,sub:`${lab(x.n)} · ${ttl(x.n)} · ${x.st===FIN?'모두 맞혀야 ★':'80% 넘으면 통과'}`});added++;
+    add({type:'quiz',kind:'review',g:'review',items,adv:x.n,title:`${STAGE_NAME[x.st]} 복습${x.retry&&!kidMode()?' (다시 도전)':''}`,sub:`${lab(x.n)} · ${ttl(x.n)} · ${kidMode()?'틀린 문장만 내일 다시':x.st===FIN?'모두 맞혀야 ★':'80% 넘으면 통과'}`});added++;
   }
   if(canNew){
     const n=l.next;P.newN=n;P.newNs.push(n);const all=[];for(let i=0;i<nItems(n);i++)all.push([n,i]);
@@ -1473,7 +1473,7 @@ function buildPlan0(force){
     if(x.st===1)add({type:'listen',n:x.n,k:'q',g:'review',title:'뜻 맞추기 듣기',sub:`${lab(x.n)} · ${ttl(x.n)} · 영어 듣고 뜻 말하기`});
     const items=[];for(let i=0;i<nItems(x.n);i++)items.push([x.n,i]);for(let w=0;w<nWords(x.n);w++)items.push([x.n,'w'+w]);
     const need=x.st===FIN?'모두 맞혀야 ★':'문장 80% 넘으면 통과';
-    add({type:'quiz',kind:'review',g:'review',items,adv:x.n,title:`${STAGE_NAME[x.st]} 복습 · 말하기 퀴즈${x.retry?' (다시 도전)':''}`,sub:`${lab(x.n)} · ${ttl(x.n)} · ${need}`});
+    add({type:'quiz',kind:'review',g:'review',items,adv:x.n,title:`${STAGE_NAME[x.st]} 복습 · 말하기 퀴즈${x.retry&&!kidMode()?' (다시 도전)':''}`,sub:`${lab(x.n)} · ${ttl(x.n)} · ${need}`});
     added++;
   }
   // 5) 새 진도: 1일치. 목표보다 늦고 시간이 남으면 2일치
@@ -1516,7 +1516,7 @@ function advance(n,score){
   if(x.st>=DONE)return;
   const s=x.st;
   // 80% 넘어야 다음 복습으로, 마지막 복습은 모두 맞혀야 ★
-  if(score!=null&&score<(s===FIN?100:80)){x.due=addDays(today(),s===FIN?3:1);x.retry=(x.retry||0)+1;save();return false}
+  if(score!=null&&!kidMode()&&score<(s===FIN?100:80)){x.due=addDays(today(),s===FIN?3:1);x.retry=(x.retry||0)+1;save();return false} /* 11/15 엄마: 아이·엄마는 점수로 단원 전체를 다시 하지 않아요 — 틀린 문장만 '틀린 것 다시'로 */
   delete x.retry;x.st=s+1;
   if(x.st<=FIN)x.due=addDays(today(),CUM[x.st]-CUM[s]);else{x.due=null;x.m=today()}
   save();return true;
@@ -4125,7 +4125,8 @@ async function runStep3(t,tok){
     if(SESS&&SESS.tok===tok){$('sMain').innerHTML=`<div class="endbox"><div class="stitle">STEP 3 입영작 마스터 훈련 · 앞부분</div><div class="score">${t.score}점</div><p>뒷부분까지 하면 최종 점수가 나와요.</p><div class="sbtns"><button class="btn green big" id="qNext">다음 ▶</button></div></div>`;await new Promise(r=>$('qNext').onclick=r)}
     return true}
   const score=Math.round(cu.s3.sum/(cu.s3.cnt*5)*100);const cur=cu;(cur.tries=cur.tries||[]).push(score);
-  t.score=score;t.after=score>=80||S.course==='wd'?'done':score>40?'s3':'s2';save();
+  t.score=score;t.after=score>=80||S.course==='wd'||kidMode()?'done':score>40?'s3':'s2'; /* 11/15 엄마: 아이·엄마는 점수 상관없이 다음 묶음 · 틀린 문장만 '틀린 것 다시'로 */
+  if(kidMode()&&S.course!=='wd'&&(t.wr||[]).length){const l=L();for(const i of new Set(t.wr)){const k=n+'-'+i;if(!l.wrong[k]||typeof l.wrong[k]!=='object')l.wrong[k]={n:2,d:today()}}}save();
   if(SESS&&SESS.tok===tok){
     const kLast=t.kid&&cur.hist&&remIdx(cur).filter(i=>!idx.includes(i)).length===0;
     const msg=score>=80&&t.kid&&!kLast?`<div class="big">🎉</div><div class="sh">${S.course==='wd'?'오늘 단어 통과!':'오늘 문장 통과!'}</div><p>${S.course==='wd'?'남은 단어는 내일 이어서 배워요.':'80점 이상! 내일은 다음 문장을 배워요.'}</p>`
