@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.38.4</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.38.5</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -5963,8 +5963,7 @@ async function autoQuizItem(n,i,it,ui,tok){
   const pl0=it.flag==='?'?STRICT.easy:passLine();
   let r=await gradeSR(ui,it.en,pl0,tok);
   if(!live()||r===null)return null;
-  if(r.skip&&kidMode()&&!isWord(i)&&!it.word){const c0=woChunks(it.en)[0];ui.el.insertAdjacentHTML('beforeend',`<div class="verdict" id="skHint" style="background:#fff7ea;color:#8a4b14">💡 힌트: <b>${esc(c0)}</b> … 로 시작해요. 한 번 더 말해 봐요!</div>`);
-    if(SESS)SESS.hinted=true;await say(c0);if(!live())return null;r=await gradeSR(ui,it.en,pl0,tok);if(!live()||r===null)return null;const hk=document.getElementById('skHint');if(hk)hk.remove()}
+  /* 11/15: 🙋 모르겠어요 → 힌트 없이 바로 정답·발음·따라 말하기 */
   if(r.fallback){if(!r.manual)toast('음성 인식을 쓸 수 없어서 직접 체크로 바꿔요 ('+SESS.noSR+')');return 'fallback'}
   const key=`${L().id}|${today()}|${n}-${i}|퀴즈`;
   const pl=it.flag==='?'?STRICT.easy:passLine();
