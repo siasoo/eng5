@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.38.1</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.38.2</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -3680,7 +3680,8 @@ async function listenAnswer0(ui,expected,tok,pl){
       if(silent>=1)addManual(ui);if(silent>=1)ui.nag(err);if(silent>=3){toast('잘 안 들려서 이번 문장은 직접 확인으로 해요');return {fallback:true,manual:true}}continue} /* 11/15 엄마: 아이들도 3번 못 알아들을 때만 직접 체크 */
     let best={text:alts[0],score:-1};for(const a of alts){const s=matchScore(expected,a);if(s>best.score)best={text:a,score:s}}
     // 말하다 잠깐 멈추면 인식이 중간에 끊겨요 → 이어서 한 번 더 듣고 합쳐서 채점
-    if(pl&&best.score<pl&&best.score>0&&words(best.text).length<words(expected).length){
+    const nE=words(expected).length,nH=words(best.text).length; /* 11/15 엄마: 말하는 도중에 맞았다고 넘어가지 않게 — 단어가 덜 들렸으면 끝까지 듣고 합쳐서 채점 */
+    if(pl&&best.score>0&&nH<nE&&(best.score<pl||(nE>=4&&nH<nE-1))){
       const c=await recognizeOnce(ui,tok);if(!SESS||SESS.tok!==tok)return null;
       for(const a of c.alts){const tx=best.text+' '+a;const s=matchScore(expected,tx);if(s>best.score)best={text:tx,score:s}}
       if(c.alts.length)ui.heard(best.text,true)}
@@ -5877,8 +5878,11 @@ async function qListPut(t,q,H,keys,koOf){const ps=q-q%5,sm=$('sMain'),cut=H.inde
   if(L0&&+L0.dataset.ps===ps&&L0.dataset.t===t.id)qSum(t,L0);
   else{if(L0&&L0.dataset.t===t.id)await qQuietCheck(t,keys);const rows=[];for(let k=ps;k<Math.min(ps+5,keys.length);k++)rows.push(`<div class="qrow" data-q="${k}"><div class="qr-ko">${k+1}. ${esc(await koOf(k))}</div><div class="qr-res">${qResH(t.qr[k])}</div><div class="qr-live"></div></div>`);
     sm.innerHTML=head+`<div id="qlist" data-ps="${ps}" data-t="${t.id}">${rows.join('')}</div>`;L0=document.getElementById('qlist')}
-  L0.querySelectorAll('.qrow').forEach(r=>{const k=+r.dataset.q;r.style.opacity=k>q?.5:1});const cur=L0.querySelector(`.qrow[data-q="${q}"]`);if(cur){cur.classList.add('cur');cur.querySelector('.qr-live').innerHTML=card;cur.onclick=e=>{const id=(e.target.closest('button')||{}).id;if(id==='ngB')cur.dataset.res='0';else if(id==='okB')cur.dataset.res='1'};try{cur.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){}}}
-const qResH=r=>r?`<div style="font-size:17px;font-weight:800;color:${r.ok===false?'#a33':'#2e7d32'}">${r.ok===false?'❌':r.ok?'⭕':'✔'} ${esc(r.en||'')}</div>${r.ok===false?'<div style="font-size:12.5px;color:#8a4b14">다음에 이 문장만 다시 나와요</div>':''}`:'';
+  L0.querySelectorAll('.qrow').forEach(r=>{const k=+r.dataset.q;r.style.opacity=k>q?.5:1;
+    if(k<q&&t.qr[k]){r.style.cursor='pointer';r.onclick=()=>{const v=t.qr[k];const key=keys[k];const [n,i]=Array.isArray(key)?key:[t.n,key];const l=L(),wk=n+'-'+i;v.ok=v.ok===false?true:false; /* 11/15 엄마: 잘못 누르거나 잘못 채점된 건 줄을 눌러 ⭕↔❌ */
+      if(v.ok===false){l.wrong[wk]={n:2,d:today(),ok:0};const s0=l.stats[wk]||[0,0];s0[1]++;l.stats[wk]=s0;(t.wr=t.wr||[]).push(i);toast('❌로 바꿨어요 · 내일 다시 나와요')}
+      else{if(l.wrong[wk]&&l.wrong[wk].d===today())delete l.wrong[wk];t.wr=(t.wr||[]).filter(x=>x!==i);toast('⭕로 바꿨어요')}save();r.querySelector('.qr-res').innerHTML=qResH(v)}}});const cur=L0.querySelector(`.qrow[data-q="${q}"]`);if(cur){cur.classList.add('cur');cur.querySelector('.qr-live').innerHTML=card;cur.onclick=e=>{const id=(e.target.closest('button')||{}).id;if(id==='ngB')cur.dataset.res='0';else if(id==='okB')cur.dataset.res='1'};try{cur.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){}}}
+const qResH=r=>r?`<div style="font-size:17px;font-weight:800;color:${r.ok===false?'#a33':'#2e7d32'}">${r.ok===false?'❌':r.ok?'⭕':'✔'} ${esc(r.en||'')}</div>${r.ok===false?'<div style="font-size:12.5px;color:#8a4b14">다음에 이 문장만 다시 나와요 · 잘못 됐으면 눌러서 ⭕로</div>':'<div style="font-size:12px;color:#aaa">잘못 됐으면 눌러서 ❌로</div>'}`:'';
 async function runQuiz(t,tok){
   const Z=t.qs||{};let good=Z.good||0,sGood=Z.sGood||0,sTotal=Z.sTotal||0;const total=t.items.length;if(SESS)SESS.kind=t.kind;
   for(let q=Math.min(Z.q||0,total);q<total;q++){
