@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.39.2</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.39.3</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -3314,7 +3314,7 @@ function renderReward(){
 /* ---------- 학습 모드 ---------- */
 let SESS=null;const sAudio=new Audio();
 async function startSession(){
-  if(LB().name==='나'&&LB().qAsk!==today()){const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:250;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center';o.innerHTML=`<div style="background:#fffaf2;border-radius:18px;padding:20px;max-width:340px;width:88%;text-align:center"><div style="font-size:20px;font-weight:900;margin-bottom:12px">오늘은 어떻게 할까요?</div><button class="btn green" id="qaV" style="width:100%;margin:6px 0">🔊 소리 내서 할게요</button><button class="btn ghost" id="qaQ" style="width:100%;margin:6px 0">🤫 밖이에요 · 속으로 할게요</button><div style="font-size:12.5px;color:#888;margin-top:6px">하루 한 번만 물어봐요</div></div>`;document.body.appendChild(o);
+  if(LB().name==='나'){ /* 11/16 엄마: 공부 시작할 때마다 소리/속으로 고르기 */const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:250;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center';o.innerHTML=`<div style="background:#fffaf2;border-radius:18px;padding:20px;max-width:340px;width:88%;text-align:center"><div style="font-size:20px;font-weight:900;margin-bottom:12px">이번엔 어떻게 할까요?</div><button class="btn green" id="qaV" style="width:100%;margin:6px 0">🔊 소리 내서 할게요 <small>(이어폰도 OK)</small></button><button class="btn ghost" id="qaQ" style="width:100%;margin:6px 0">🤫 밖이에요 · 속으로 할게요</button><div style="font-size:12.5px;color:#888;margin-top:6px">공부 시작할 때마다 물어봐요 · 한 번 시작하면 끝까지 그대로</div></div>`;document.body.appendChild(o);
     const q=await new Promise(r=>{o.querySelector('#qaV').onclick=()=>r(false);o.querySelector('#qaQ').onclick=()=>r(true)});o.remove();const b=LB();b.qAsk=today();b.quietD=q?today():null;save()} /* 11/15 엄마: 속으로는 그날 처음에 한 번만 고르기 */
   if(dlGate(()=>startSession()))return;if(!isKidN()&&!window.__dOff&&IDM.length&&idmSt().log[today()]==null){idmToday(()=>startSession());return} /* 11/10 엄마: 엄마도 공부 시작 전에 우리말 5개 */bikeStop();if(woNeed()){woRun(()=>startSession());return}if(prNeed(S.course)){prRun(()=>startSession());return}if(lnNeed(S.course)){lnRun(()=>startSession());return}if(grNeed(S.course)){grRun(()=>startSession());return}cheerStart();
   if(!FILES.size&&S.course!=='wd'){toast('먼저 음원 폴더를 연결해 주세요');return}
