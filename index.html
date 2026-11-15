@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.39.0</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.39.2</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -5874,20 +5874,38 @@ function beepOK(){try{const c=MIC.ctx||(window.__bc=window.__bc||new (window.Aud
 const qLM=()=>kidMode();
 function qSum(t,L0){t.qr=t.qr||{};L0.querySelectorAll('.qrow').forEach(r=>{const lv=r.querySelector('.qr-live');if(lv&&lv.innerHTML){const v=lv.querySelector('.verdict'),en=((lv.querySelector('#ans .en')||lv.querySelector('.en')||{}).textContent||'').trim(),k=+r.dataset.q;t.qr[k]={en,ok:r.dataset.res==='0'?false:r.dataset.res==='1'?true:v?v.classList.contains('ok'):null};lv.innerHTML='';r.classList.remove('cur');r.querySelector('.qr-res').innerHTML=qResH(t.qr[k])}})}
 /* 🤫 밖에서 하기 + 목록: 생각 시간 지나면 저절로 다음 줄 → 5줄 끝에 틀린 줄만 톡 (11/15 엄마) */
-async function qQuietCheck(t,keys){const L0=document.getElementById('qlist');if(!L0||!quietOn()||L0.dataset.qc)return [];L0.dataset.qc=1;qSum(t,L0);const tok=SESS&&SESS.tok,bad=new Set();
-  const rows=[...L0.querySelectorAll('.qrow')];rows.forEach(r=>{r.style.opacity=1;r.style.cursor='pointer';r.onclick=()=>{const k=+r.dataset.q;if(bad.has(k)){bad.delete(k);r.style.background=''}else{bad.add(k);r.style.background='#fdecea'}}});
-  L0.insertAdjacentHTML('beforeend',`<div id="qqc" style="margin-top:8px;padding:10px;border-radius:12px;background:#fff3c4;text-align:center"><b>🤫 틀리게 말한 줄만 톡 눌러요</b><button class="btn green" id="qqcGo" style="width:100%;margin-top:8px">다 골랐어요 ▶</button></div>`);
-  await new Promise(res=>{$('qqcGo').onclick=res;const iv=setInterval(()=>{if(!SESS||SESS.tok!==tok){clearInterval(iv);res()}},400)});const qc=$('qqc');if(qc)qc.remove();rows.forEach(r=>{r.onclick=null;r.style.background=''});
-  const out=[];for(const k of bad){const key=keys[k];const [n,i]=Array.isArray(key)?key:[t.n,key];recordResult(n,i,false);(t.wr=t.wr||[]).push(i);if(t.qr[k])t.qr[k].ok=false;const r=L0.querySelector(`.qrow[data-q="${k}"] .qr-res`);if(r)r.innerHTML=qResH(t.qr[k]);out.push(k)}save();return out}
+function qToggle(t,keys,k,r){const v=t.qr[k];if(!v)return;const key=keys[k];const [n,i]=Array.isArray(key)?key:[t.n,key];const l=L(),wk=n+'-'+i;v.ok=v.ok===false?true:false; /* 11/15 엄마: 잘못 누르거나 잘못 채점된 건 줄을 눌러 ⭕↔❌ */
+  if(v.ok===false){l.wrong[wk]={n:2,d:today(),ok:0};const s0=l.stats[wk]||[0,0];s0[1]++;l.stats[wk]=s0;(t.wr=t.wr||[]).push(i);toast('❌로 바꿨어요 · 내일 다시 나와요')}
+  else{if(l.wrong[wk]&&l.wrong[wk].d===today())delete l.wrong[wk];t.wr=(t.wr||[]).filter(x=>x!==i);toast('⭕로 바꿨어요')}save();const q=r.querySelector('.qr-res');if(q)q.innerHTML=qResH(v)}
+async function qQuietCheck(t,keys){const L0=document.getElementById('qlist');if(!L0||!quietOn()||L0.dataset.qc)return [];L0.dataset.qc=1;qSum(t,L0);const tok=SESS&&SESS.tok,bad=new Set(),init={};Object.entries(t.qr||{}).forEach(([k,v])=>init[k]=v&&v.ok);
+  const rows=[...L0.querySelectorAll('.qrow')],pend=new Set();
+  const setV=(k,r,ok)=>{const v=t.qr[k];if(!v)return;const key=keys[k];const [n,i]=Array.isArray(key)?key:[t.n,key];const l=L(),wk=n+'-'+i;const was=v.ok;v.ok=ok;
+    if(ok===false&&was!==false){l.wrong[wk]={n:2,d:today(),ok:0};const s0=l.stats[wk]||[0,0];s0[1]++;l.stats[wk]=s0;(t.wr=t.wr||[]).push(i)}
+    if(ok===true&&was===false){if(l.wrong[wk]&&l.wrong[wk].d===today())delete l.wrong[wk];t.wr=(t.wr||[]).filter(x=>x!==i)}save()};
+  const draw=(k,r)=>{const v=t.qr[k];const q=r.querySelector('.qr-res');if(!q||!v)return;if(!pend.has(k)){q.innerHTML=qResH(v);return}
+    const sel=v.ok===true?'ok':v.ok===false?'ng':'';q.innerHTML=`<div style="font-size:17px;font-weight:800;color:#555">${esc(v.en||'')}</div><div style="display:flex;gap:8px;margin-top:6px"><button class="btn ${sel==='ok'?'green':'ghost'} qqO" style="flex:1">⭕ 맞게 말했어요</button><button class="btn ${sel==='ng'?'':'ghost'} qqX" style="flex:1;${sel==='ng'?'background:#c0392b;color:#fff':''}">❌ 틀렸어요</button></div>`;
+    q.querySelector('.qqO').onclick=e=>{e.stopPropagation();setV(k,r,true);draw(k,r);upd()};q.querySelector('.qqX').onclick=e=>{e.stopPropagation();setV(k,r,false);draw(k,r);upd()}};
+  const left=()=>[...pend].filter(k=>!t.qr[k]||t.qr[k].ch!==1).length;
+  rows.forEach(r=>{const k=+r.dataset.q;r.style.opacity=1;if(r.dataset.quiet==='1'&&t.qr[k]){pend.add(k);t.qr[k].ok=null;t.qr[k].ch=0}draw(k,r);
+    if(!pend.has(k)){r.style.cursor='pointer';r.onclick=()=>{if(t.qr&&t.qr[k]){qToggle(t,keys,k,r);return}if(bad.has(k)){bad.delete(k);r.style.background=''}else{bad.add(k);r.style.background='#fdecea'}}}});
+  const _sv=setV;
+  L0.insertAdjacentHTML('beforeend',`<div id="qqc" style="margin-top:8px;padding:10px;border-radius:12px;background:#fff3c4;text-align:center"><b>🤫 줄마다 ⭕/❌ 골라요</b><div style="font-size:13px;color:#8a4b14">❌ 고른 문장은 바로 다시 말해요</div><button class="btn green" id="qqcGo" style="width:100%;margin-top:8px">다 골랐어요 ▶</button></div>`);
+  const upd=()=>{pend.forEach(k=>{if(t.qr[k]&&t.qr[k].ok!==null)t.qr[k].ch=1});const n=left(),b=$('qqcGo');if(b){b.disabled=n>0;b.style.opacity=n>0?.5:1;b.textContent=n>0?`${n}개 더 골라요`:'다 골랐어요 ▶'}};upd();
+  await new Promise(res=>{$('qqcGo').onclick=()=>{if(left()>0)return;res()};const iv=setInterval(()=>{if(!SESS||SESS.tok!==tok){clearInterval(iv);res()}},400)});const qc=$('qqc');if(qc)qc.remove();rows.forEach(r=>{r.onclick=null;r.style.background='';const k=+r.dataset.q;if(t.qr[k])delete t.qr[k].ch;pend.delete(k);draw(k,r)});
+  const out=[];for(const k of bad){const key=keys[k];const [n,i]=Array.isArray(key)?key:[t.n,key];recordResult(n,i,false);(t.wr=t.wr||[]).push(i);if(t.qr[k])t.qr[k].ok=false;const r=L0.querySelector(`.qrow[data-q="${k}"] .qr-res`);if(r)r.innerHTML=qResH(t.qr[k]);out.push(k)}save();
+  /* 11/16 엄마: 🤫에서 ❌ 고른 문장은 바로 다시 말하기 (보고 2번 → 가리고 1번) */
+  const redo=[...new Set([...out,...Object.keys(t.qr||{}).map(Number).filter(k=>t.qr[k]&&t.qr[k].ok===false&&init[k]!==false)])].sort((a,b)=>a-b);
+  if(redo.length){L0.querySelectorAll('.qr-live').forEach(x=>x.innerHTML='');for(const k of redo){if(!SESS||SESS.tok!==tok)break;const key=keys[k];const [n,i]=Array.isArray(key)?key:[t.n,key];const it=(await getItems(n))[i];const row=L0.querySelector(`.qrow[data-q="${k}"]`);if(!it||!row)continue;
+    const lv=row.querySelector('.qr-live');lv.innerHTML=`<div class="qcard"><div class="ans hidden" id="ans"><div class="en">${esc(it.en)}</div></div><div id="micBox"></div><div class="sbtns" id="qBtns"></div></div>`;try{row.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){}
+    $('ans').classList.remove('hidden');await playEn(n,i,it.en);if(!SESS||SESS.tok!==tok)break;const rr=await fol2Hide(n,i,it,tok);lv.innerHTML='';if(rr===null)break}}
+  return out}
 async function qListPut(t,q,H,keys,koOf){const ps=q-q%5,sm=$('sMain'),cut=H.indexOf('<div class="qcard">'),head=cut>=0?H.slice(0,cut):'',card=cut>=0?H.slice(cut):H;t.qr=t.qr||{};
   let L0=document.getElementById('qlist');
   if(L0&&+L0.dataset.ps===ps&&L0.dataset.t===t.id)qSum(t,L0);
   else{if(L0&&L0.dataset.t===t.id)await qQuietCheck(t,keys);const rows=[];for(let k=ps;k<Math.min(ps+5,keys.length);k++)rows.push(`<div class="qrow" data-q="${k}"><div class="qr-ko">${k+1}. ${esc(await koOf(k))}</div><div class="qr-res">${qResH(t.qr[k])}</div><div class="qr-live"></div></div>`);
     sm.innerHTML=head+`<div id="qlist" data-ps="${ps}" data-t="${t.id}">${rows.join('')}</div>`;L0=document.getElementById('qlist')}
   L0.querySelectorAll('.qrow').forEach(r=>{const k=+r.dataset.q;r.style.opacity=k>q?.5:1;
-    if(k<q&&t.qr[k]){r.style.cursor='pointer';r.onclick=()=>{const v=t.qr[k];const key=keys[k];const [n,i]=Array.isArray(key)?key:[t.n,key];const l=L(),wk=n+'-'+i;v.ok=v.ok===false?true:false; /* 11/15 엄마: 잘못 누르거나 잘못 채점된 건 줄을 눌러 ⭕↔❌ */
-      if(v.ok===false){l.wrong[wk]={n:2,d:today(),ok:0};const s0=l.stats[wk]||[0,0];s0[1]++;l.stats[wk]=s0;(t.wr=t.wr||[]).push(i);toast('❌로 바꿨어요 · 내일 다시 나와요')}
-      else{if(l.wrong[wk]&&l.wrong[wk].d===today())delete l.wrong[wk];t.wr=(t.wr||[]).filter(x=>x!==i);toast('⭕로 바꿨어요')}save();r.querySelector('.qr-res').innerHTML=qResH(v)}}});const cur=L0.querySelector(`.qrow[data-q="${q}"]`);if(cur){cur.classList.add('cur');cur.querySelector('.qr-live').innerHTML=card;cur.onclick=e=>{const id=(e.target.closest('button')||{}).id;if(id==='ngB')cur.dataset.res='0';else if(id==='okB')cur.dataset.res='1'};try{cur.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){}}}
+    if(k<q&&t.qr[k]){r.style.cursor='pointer';r.onclick=()=>qToggle(t,keys,k,r)}});const cur=L0.querySelector(`.qrow[data-q="${q}"]`);if(cur){cur.classList.add('cur');cur.querySelector('.qr-live').innerHTML=card;cur.onclick=e=>{const id=(e.target.closest('button')||{}).id;if(id==='ngB')cur.dataset.res='0';else if(id==='okB')cur.dataset.res='1'};try{cur.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){}}}
 const qResH=r=>r?`<div style="font-size:17px;font-weight:800;color:${r.ok===false?'#a33':'#2e7d32'}">${r.ok===false?'❌':r.ok?'⭕':'✔'} ${esc(r.en||'')}</div>${r.ok===false?'<div style="font-size:12.5px;color:#8a4b14">다음에 이 문장만 다시 나와요 · 잘못 됐으면 눌러서 ⭕로</div>':'<div style="font-size:12px;color:#aaa">잘못 됐으면 눌러서 ❌로</div>'}`:'';
 async function runQuiz(t,tok){
   const Z=t.qs||{};let good=Z.good||0,sGood=Z.sGood||0,sTotal=Z.sTotal||0;const total=t.items.length;if(SESS)SESS.kind=t.kind;
@@ -5987,6 +6005,7 @@ async function autoQuizItem(n,i,it,ui,tok){
   const key=`${L().id}|${today()}|${n}-${i}|퀴즈`;
   const pl=it.flag==='?'?STRICT.easy:passLine();
   let ok=!r.skip&&!r.pass2&&r.score>=pl;
+  if(r.quiet){const c=document.querySelector('#qlist .qrow.cur');if(c)c.dataset.quiet='1'} /* 11/16 엄마: 🤫는 끝에 직접 ⭕/❌ */
   if((LB().name==='나'||isKidN())&&!ok&&!r.pass2&&!r.quiet&&!r.skip){ /* 아이들도 한 번 더 기회 (또 틀리면 원래대로 정답 듣고 2번 따라) */ /* 11/15 엄마: 바로 맞히면 끝 · 틀리면 한 번 더 · 또 틀리면 3번 따라 읽고 안 보고 한 번 */
     $('ans').classList.add('hidden'); /* 한 번 더 말할 땐 정답 가리기 */ui.el.insertAdjacentHTML('beforeend','<div class="verdict ng" id="try2">❌ 한 번 더 말해 봐요</div>');const r2=await gradeSR(ui,it.en,pl0,tok);if(!live()||r2===null)return null;const t2=document.getElementById('try2');if(t2)t2.remove();
     if(!r2.fallback&&!r2.skip&&r2.score>=pl){r={...r2,pass2:true};ok=false}
