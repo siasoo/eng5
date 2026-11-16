@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.39.7</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.39.8</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1060,7 +1060,7 @@ function addMoreIpy(){
   const l=L(),P=getPlan();let cur=l.cur;
   if(!isKidN()&&!LB().noPlace&&!['wd','rd','tbr'].includes(S.course)&&!P.tasks.some(x=>x.kind==='skiptest'&&!x.done)){ /* 엄마: 더 하기는 다음 단원 실력 확인부터 (통과하면 또 더 하기) */
     const fresh=cur&&!cur.k&&!(cur.hist||[]).length&&!cur.fromTest&&!(l.partial||{})[cur.n],m=!cur?(kidMode()?nextUnit():l.next):fresh?cur.n:0;
-    const tk=m&&m<=TOTAL()?skipTask(m):null;if(tk){tk.moreT=1;tk.id='t'+P.tasks.length+'x';P.tasks.push(tk);P.capped=false;P.extra=(P.extra||0)+1;save();return true}}
+    const tk=m&&m<=TOTAL()?skipTask(m,trvM()?20:0):null;if(tk){tk.moreT=1; /* 11/16 엄마: 여행영어 더 하기는 단 하나(3~4문장)씩 말고 여러 단 묶어서 20문장 */tk.id='t'+P.tasks.length+'x';P.tasks.push(tk);P.capped=false;P.extra=(P.extra||0)+1;save();return true}}
   if(S.course==='wd'&&kidMode()){const items=wdPick(10);if(!items.length)return false;addWdDay(t2=>{t2.id='t'+P.tasks.length+'x';P.tasks.push(t2)},items);P.capped=false;P.extra=(P.extra||0)+1;save();return true}
   if(!cur){const m=kidMode()?nextUnit():l.next;if(m>TOTAL())return false;cur=l.cur={n:m,k:0,tries:[],s3:{sum:0,cnt:0}}}
   const add=t2=>{t2.id='t'+P.tasks.length+'x';P.tasks.push(t2)};
@@ -1683,7 +1683,7 @@ const EN_TIP=[
 function enTip(en){if(!en)return '';const s=String(en).toLowerCase().replace(/[’‘]/g,"'").replace(/\s+/g,' ').trim(),out=[];for(const [re,t] of EN_TIP){if(re.test(s)&&!out.includes(t)){out.push(t);if(out.length>=3)break}}
   return out.length?`<div class="enTip" style="font-size:13.5px;line-height:1.5;color:#7a5a00;background:#fff8e1;border-radius:10px;padding:6px 10px;margin:8px auto 0;max-width:420px;text-align:left;font-weight:500">${out.map(t=>'💡 '+esc(t)).join('<br>')}</div>`:''}
 function tipPop(){try{const t=document.querySelector('#ans .enTip');if(!t||document.getElementById('tipPop'))return;const d=document.createElement('div');d.id='tipPop';d.style.cssText='position:fixed;left:50%;top:18%;transform:translateX(-50%);z-index:300;max-width:360px;width:88%;background:#fff8e1;border:3px solid #f6c344;border-radius:16px;padding:14px 16px;box-shadow:0 6px 20px rgba(0,0,0,.25);font-size:17px;line-height:1.5;color:#5a4300;font-weight:600';d.innerHTML='<div style="font-size:14px;color:#a07800;margin-bottom:4px">💡 이것만 기억해요!</div>'+t.innerHTML+'<div style="text-align:right;font-size:12px;color:#a07800;margin-top:6px">눌러서 닫기</div>';d.onclick=()=>d.remove();document.body.appendChild(d);setTimeout(()=>d.remove(),5000)}catch(e){}} /* 11/10 엄마: 틀리면 💡 팁을 크게 바로 보여 줘요 */
-function recordResult(n,i,ok){if(!ok)tipPop();
+function recordResult(n,i,ok){if(!ok&&LB().name!=='나')tipPop(); /* 11/16 엄마: 나는 위 팝업 없이 정답 칸 💡만 */
   const l=L();const k=n+'-'+i;const s=l.stats[k]||[0,0];s[ok?0:1]++;l.stats[k]=s;
   if(SESS&&(SESS.kind==='first'||SESS.kind==='skiptest'))return save(); // 처음 배우는 날 틀린 건 다음 날 복습에서 먼저 나와요
   const td=today();let w=l.wrong[k];if(typeof w==='number')w={n:2,d:''};if(w&&w.ok===undefined)w.ok=w.d===td&&w.n<2?1:0;
@@ -2178,9 +2178,11 @@ async function dlRun(done,onSkip){const st=dlSt(),m=document.createElement('div'
     const rest=10-S2.length,plan=[[.75,kPr(x),'🐢 천천히 · 한글 발음 보며'],[.75,kPr(x),'🐢 천천히 · 한글 발음 보며'],[.75,kPr(x),'🐢 천천히 · 한글 발음 보며'],[1,bigEn(x),'🔤 원래 속도 · 영어만 보며'],[1,bigEn(x),'🔤 원래 속도 · 영어만 보며'],[1,bigEn(x),'🔤 원래 속도 · 영어만 보며'],[1,kKo(x),'💡 한글 뜻만 보며'],[1,kKo(x),'💡 한글 뜻만 보며'],[1,null,'🙈 아무것도 없이 · 소리만'],[1,null,'🙈 아무것도 없이 · 소리만']].slice(10-rest);
     for(const [r,h,l] of plan)S2.push(()=>[x,r,h,l]);
     for(let i=0;i<S2.length;i++){if(i>=6&&(Date.now()-tRun)/1000>DL_BUD)break;const [xx,r,h,l]=S2[i]();await kSh(xx,r,h,`${hd} · ② 따라 말하기`,l,i+1,S2.length)}
-    /* ③ 들리는지 확인 */cover(false);$('dlB').innerHTML=`<div style="font-size:14px;color:#aab">${hd} · ③ 마지막! 이제 들리죠?</div>${kBar(1,1)}<div style="text-align:center;font-size:22px;margin-top:12px">👂 자막 없이 들어요</div>`;bandOn(x);await dlPlay(v,x,0,1);bandOff();
-    $('dlB').innerHTML=`<div style="font-size:14px;color:#aab">${hd} · ③ 들렸나요?</div><div style="margin-top:8px">${kEn(x)}</div><div style="display:flex;gap:8px;margin-top:10px"><button class="btn green" id="kH1" style="flex:1">🎉 들렸어요!</button><button class="btn ghost" id="kH0" style="flex:1;color:#fff">😅 아직 조금</button></div>`;
-    const hr=await new Promise(r=>{$('kH1').onclick=()=>r(1);$('kH0').onclick=()=>r(0)});kLog(hr?'hear':'hear0')};
+    /* ③ 들리는지 확인 */cover(false);$('dlB').innerHTML=`<div style="font-size:14px;color:#aab">${hd} · ③ 마지막! 이제 들리죠?</div>${kBar(1,1)}<div style="text-align:center;font-size:22px;margin-top:12px">👂 자막 없이 들어요</div>`;bandOn(x);await dlPlay(v,x,0,1);bandOff();cover(true); /* 11/16 엄마: 듣고 나서 자막·정답 바로 안 보이게 → 생각한 뒤 고르고 나서 정답 */
+    $('dlB').innerHTML=`<div style="font-size:14px;color:#aab">${hd} · ③ 들렸나요?</div><div style="margin-top:10px;font-size:18px;text-align:center">🤔 무슨 말인지 떠올려 봐요</div><button class="btn ghost" id="kHa" style="width:100%;margin-top:8px;color:#fff">🔁 한 번 더 듣기</button><div style="display:flex;gap:8px;margin-top:10px"><button class="btn green" id="kH1" style="flex:1">🎉 들렸어요!</button><button class="btn ghost" id="kH0" style="flex:1;color:#fff">😅 아직 조금</button></div>`;
+    $('kHa').onclick=async()=>{cover(false);bandOn(x);await dlPlay(v,x,0,1);bandOff();cover(true)};
+    const hr=await new Promise(r=>{$('kH1').onclick=()=>r(1);$('kH0').onclick=()=>r(0)});
+    card(`${kEn(x)}<div style="font-size:18px;color:#dde;margin-top:4px">${esc(x.ko)}</div>`);$('dlB').innerHTML=`<div style="font-size:14px;color:#aab">${hd} · ③ 정답</div><div style="margin-top:10px;font-size:18px;text-align:center">${hr?'🎉 잘했어요!':'👂 다음에 또 들어요'}</div>`;await sleep(2200);kLog(hr?'hear':'hear0')};
   const kRev=async(q,i,tot)=>{const x=q.x,r=q.r;const hd=`🔁 ${q.r.st===1?'어제 배운':'예전에 배운'} 문장 ${i+1}/${tot} · 따라 말하기 2번`;
     /* 11/11 엄마: 복습은 한글 발음 없이 — ① 💡 뜻만 보고 영어로 떠올려 말하기 → 원어민 소리로 확인 ② 🔤 영어 자막 보며 따라 말하기 */
     card(`<div style="font-size:15px;color:#f6c344;font-weight:700">💡 이 뜻을 영어로 말해 봐요</div>${kKo(x)}`);
@@ -2408,6 +2410,7 @@ function kidLeft(c,done){if(hwDL(c)&&!done)return hwLate(c)?`⌛ ${hwT(c)}가 �
     if(!(c==='wd'||DS[c]))return '';
     const old=S.course;S.course=c;let P=null,used=0;try{P=getPlan();used=BUDC()?bud0():0}finally{S.course=old;save()}
     if(!P||!P.tasks)return '';const n=P.tasks.length,k=P.tasks.filter(x=>x.done).length;if(!n&&used>0){markDone(c);setTimeout(renderKidToday,0);return ''} /* 오늘 분량을 이미 다 했으면 완료 */if(!n&&(LB().revOnly||{})[c]){markDone(c);setTimeout(renderKidToday,0);return '🔁 복습만 하는 과목 · 오늘은 복습 없음'}if(!n)return '오늘은 쉬어요 😊';if((LB().revOnly||{})[c])return `🔁 복습만 · ${n}단계`;
+    if(n&&k>=n){const o=JSON.parse(localStorage.getItem('eng5_bridge')||'{}')[today()]||{};if(!(o[c]&&o[c].done)){markDone(c);setTimeout(renderKidToday,0)}return '오늘 할 양 끝! ✅'}
     return `오늘 ${n}단계 중 <b>${n-k}단계 남음</b>`}catch(e){return ''}}
 function preApply(){try{const b=LB(),t=today();if(!b.preM||!b.preM.length)return;const due=b.preM.filter(x=>x.d<=t);if(!due.length)return;b.preM=b.preM.filter(x=>x.d>t);due.forEach(x=>{if(!piggy().log.some(z=>z.d===t&&z.k===x.k))pigAdd(x.k,x.title+' (🌙 어제 미리 함)',x.amt)});for(const d in (b.preDone||{}))if(d<addDays(t,-30))delete b.preDone[d];save()}catch(e){}}
 function renderKidToday(){const box=$('kidToday');if(!box)return;if(SESS){box.innerHTML='';return}const kid=isKidL();if(!window.__dOff)preApply();
@@ -2447,7 +2450,7 @@ if(['민지','민채'].includes(b.name)&&!b.dlOff1108){b.dlOff1108=1;b.dlOff=b.d
     eb.querySelectorAll('[data-up],[data-dn]').forEach(x=>x.onclick=()=>{const L0=cur(),c=x.dataset.up||x.dataset.dn,i=L0.indexOf(c),j=x.dataset.up?i-1:i+1;if(i<0||j<0||j>=L0.length)return;[L0[i],L0[j]]=[L0[j],L0[i]];apply(L0)})};
   box.querySelectorAll('[data-kgo]').forEach(b=>b.onclick=()=>{const c=b.dataset.kgo;if(c===vcHost()){const d0=o[c]&&o[c].done&&(!o[c].who||o[c].who===nm);if(d0&&!vcDone()){vcRun(()=>renderAll());return}if(!d0)window.__vcAuto=c} /* 💬 오늘의 말 이어서 */if(!['dl','sl','mh','eh','ehm'].includes(c)&&dlGate(()=>b.click()))return;if(c==='pr'){prModal();return}if(c==='tbr'&&!doneSet.has(c)&&!ehNeed(c)&&mcvNeed()){mcvRun(()=>{renderAll();setTimeout(()=>{const e=document.querySelector('[data-kgo="tbr"]');if(e)e.click()},300)});return} /* 11/13 민채 리딩 앞 영상 */if(c==='ehm'){if(ehSt().d>=EH.length&&!ehDue().length){toast('영어홀릭 끝까지 다 검토했어요 ✅');return}ehRun(()=>{markDone(c);renderAll()});return} /* 11/15 엄마: 다 했어도 누르면 다음 쪽 계속 검토 */if(!doneSet.has(c)&&ehNeed(c)){ehRun(()=>{renderAll();setTimeout(()=>{const e=document.querySelector(`[data-kgo="${c}"]`);if(e)e.click()},300)});return} /* 11/12 엄마: 리딩 전에 영어홀릭 2쪽 */if(c==='mje'){if(doneSet.has('mje')){toast('오늘 영어는 끝! 📗');return}mjeRun(()=>renderAll());return}if(c==='sc'){if(doneSet.has('sc')){toast('오늘 과학은 끝! 🔬');return}scRun(()=>renderAll());return}if(c==='so'){if(doneSet.has('so')){toast('오늘 사회는 끝! 🗺️');return}scRun(()=>renderAll(),'so');return}if(c==='kh'){if(doneSet.has('kh')){toast(window.__dOff?'내일 한국사는 미리 했어요 ✅':'오늘 한국사는 끝! 🌙 내일 것은 맨 아래 "미리 하기"에서');return}khRun(()=>renderAll());return}if(c==='dl'){dlRun(()=>{markDone('dl');renderAll()});return}if(c==='sl'){if(doneSet.has(c)){toast('잘 자요 🌙');return}if(slLate()){toast('10시 20분이 지났어요 · 내일은 일찍 자요 🌙');return}if(confirm('씻고 양치하고 렌즈까지 했어요? 이제 자러 가요? 😴\n(10시 20분 전에 누우면 🐷 +200원)')){markDone(c);pigAdd(c,'😴 10시 20분 전에 잠자기',200);renderAll();setTimeout(nightSched,2500);toast('잘 자요 🌙 🐷 +200원')}return}if(c==='mh'||c==='eh'){const nm2=cName(c);if(doneSet.has(c)){toast('오늘은 이미 체크했어요 ✅');return}const hwL=hwLate(c),amtH=hwL?0:CHK_AMT(c);if(confirm(`${nm2[1]} ${nm2[0]} 다 했어요?${hwL?`\n(⏰ ${hwT(c)}가 지나서 오늘은 돈 없이 체크만 돼요)`:''}`)){markDone(c);pigAdd(c,`${nm2[1]} ${nm2[0]}${hwL?` (⏰ ${hwT(c)} 지남)`:''}`,amtH);/* 11/8 밤 엄마: 주말 학원 숙제 보너스 없앰 · 숙제는 체크 금액만 따로 */renderAll();toast(hwL?`${nm2[1]} ${nm2[0]} 체크 ✅ · ${hwT(c)}가 지나서 돈은 없어요. 내일은 일찍!`:`${nm2[1]} ${nm2[0]} 체크! 🐷 +${CHK_AMT(c).toLocaleString()}원`)}return}if(c==='tv'){tvModal();return}if(c==='dk'&&(prNeed('dk')||lnNeed('dk'))){const go=()=>prNeed('dk')?prRun(go):lnNeed('dk')?lnRun(go):openExt('dk');go();return} /* 민지: 독해 앞에 발음 1단계 · 2단계 */
     const dn=b.textContent.includes('완료');if(dn&&(c==='kr'||c==='wd'||DS[c])){doneChooser(c);return}if(EXT[c]){openExt(c);return}setCourse(c);if(S.course!==c)return;const P=getPlan();
-    if(P.capped){P.capped=false;save()}if(!P.tasks.some(x=>!x.done)){toast('오늘 이 과정은 다 했어요 ✅');return}startSession()});
+    if(P.capped){P.capped=false;save()}if(!P.tasks.some(x=>!x.done)){if(P.tasks.length)markDone(c);toast('오늘 이 과정은 다 했어요 ✅');renderKidToday();return}startSession()}); /* 11/16 엄마: 다 했는데 완료 안 뜨던 것 */
   const wb=$('weekBox');if(wb&&wb.previousElementSibling!==box)box.after(wb);const $pb=$('pigBtn');if($pb)$pb.onclick=pigModal;const $ib=$('idmB');if($ib)$ib.onclick=idmBook;const $tb=$('tbB0');if($tb)$tb.onclick=tbOpen;
   if(!window.__dOff&&kid&&nm==='민채'&&new Date().getDay()>=1&&new Date().getDay()<=5){const EN=curList(b).filter(c=>['gw','gj','wd','rd','tbr','ipy','trv','home','eng'].includes(c));if(EN.length&&EN.every(c=>doneSet.has(c))&&new Date().getHours()<12&&!piggy().log.some(x=>x.d===today()&&(x.k==='enam'||x.k==='early'))){pigAdd('enam','🌅 오전에 영어 다 끝',1000);toast('🌅 오전에 영어 다 끝! 🐷 +1,000원');setTimeout(renderKidToday,0)}} /* 11/8 밤 엄마: 민채는 오전(12시 전)에 영어만 다 끝내도 1,000원 */
   if(!window.__dOff&&kid&&isKidN()&&!curList(b).includes('eh')){const core=curList(b).filter(c=>['gw','gj','wd','rd','tbr'].includes(c));if(core.length&&core.every(c=>doneSet.has(c))&&!piggy().log.some(x=>x.d===today()&&x.k==='eng')){pigAdd('eng','📒 영어 숙제 (앱 영어 공부 다 함)',500);toast('📒 영어 숙제 다 했어요! 🐷 +500원') /* 11/8 밤 엄마: 민채 영어 앱 숙제 = 민지 영어 학원 숙제 500원, 매일 */;setTimeout(renderKidToday,0)}}
@@ -4138,7 +4141,7 @@ async function runStep3(t,tok){
     t.q=q+1;t.sum=sum;keep();
     await playEn(n,i,it.en);await sleep(pt===5?500:900);
   }
-  if(qLM()&&quietOn()){const bq=await qQuietCheck(t,idx);sum=Math.max(0,sum-bq.length*4)}
+  if(qLM()&&(quietOn()||LB().name==='나')){const bq=await qQuietCheck(t,idx);sum=Math.max(0,sum-bq.length*4)}
   if(S.course==='wd'&&t.fails&&t.fails.length){const ok=await wdAgain(t,t.fails,tok);if(!ok)return false;t.fails=[]}
   cu.s3.sum+=sum;cu.s3.cnt+=idx.length;
   const lastHalf=t.kid||partsFor(n).filter(p=>p[0]==='step3').pop()[1]===t.h;
@@ -5879,7 +5882,7 @@ function qSum(t,L0){t.qr=t.qr||{};L0.querySelectorAll('.qrow').forEach(r=>{const
 function qToggle(t,keys,k,r){const v=t.qr[k];if(!v)return;const key=keys[k];const [n,i]=Array.isArray(key)?key:[t.n,key];const l=L(),wk=n+'-'+i;v.ok=v.ok===false?true:false; /* 11/15 엄마: 잘못 누르거나 잘못 채점된 건 줄을 눌러 ⭕↔❌ */
   if(v.ok===false){l.wrong[wk]={n:2,d:today(),ok:0};const s0=l.stats[wk]||[0,0];s0[1]++;l.stats[wk]=s0;(t.wr=t.wr||[]).push(i);toast('❌로 바꿨어요 · 내일 다시 나와요')}
   else{if(l.wrong[wk]&&l.wrong[wk].d===today())delete l.wrong[wk];t.wr=(t.wr||[]).filter(x=>x!==i);toast('⭕로 바꿨어요')}save();const q=r.querySelector('.qr-res');if(q)q.innerHTML=qResH(v)}
-async function qQuietCheck(t,keys){const L0=document.getElementById('qlist');if(!L0||!quietOn()||L0.dataset.qc)return [];L0.dataset.qc=1;qSum(t,L0);const tok=SESS&&SESS.tok,bad=new Set(),init={};Object.entries(t.qr||{}).forEach(([k,v])=>init[k]=v&&v.ok);
+async function qQuietCheck(t,keys){const L0=document.getElementById('qlist');if(!L0||!(quietOn()||LB().name==='나')||L0.dataset.qc)return [];const qOn=quietOn(); /* 11/16 엄마: 소리 모드도 5줄 끝마다 확인(마지막 줄도 고칠 수 있게) */L0.dataset.qc=1;qSum(t,L0);const tok=SESS&&SESS.tok,bad=new Set(),init={};Object.entries(t.qr||{}).forEach(([k,v])=>init[k]=v&&v.ok);
   const rows=[...L0.querySelectorAll('.qrow')],pend=new Set();
   const setV=(k,r,ok)=>{const v=t.qr[k];if(!v)return;const key=keys[k];const [n,i]=Array.isArray(key)?key:[t.n,key];const l=L(),wk=n+'-'+i;const was=v.ok;v.ok=ok;
     if(ok===false&&was!==false){l.wrong[wk]={n:2,d:today(),ok:0};const s0=l.stats[wk]||[0,0];s0[1]++;l.stats[wk]=s0;(t.wr=t.wr||[]).push(i)}
@@ -5891,8 +5894,8 @@ async function qQuietCheck(t,keys){const L0=document.getElementById('qlist');if(
   rows.forEach(r=>{const k=+r.dataset.q;r.style.opacity=1;if(r.dataset.quiet==='1'&&t.qr[k]){pend.add(k);t.qr[k].ok=null;t.qr[k].ch=0}draw(k,r);
     if(!pend.has(k)){r.style.cursor='pointer';r.onclick=()=>{if(t.qr&&t.qr[k]){qToggle(t,keys,k,r);return}if(bad.has(k)){bad.delete(k);r.style.background=''}else{bad.add(k);r.style.background='#fdecea'}}}});
   const _sv=setV;
-  L0.insertAdjacentHTML('beforeend',`<div id="qqc" style="margin-top:8px;padding:10px;border-radius:12px;background:#fff3c4;text-align:center"><b>🤫 줄마다 ⭕/❌ 골라요</b><div style="font-size:13px;color:#8a4b14">❌ 고른 문장은 바로 다시 말해요</div><button class="btn green" id="qqcGo" style="width:100%;margin-top:8px">다 골랐어요 ▶</button></div>`);
-  const upd=()=>{pend.forEach(k=>{if(t.qr[k]&&t.qr[k].ok!==null)t.qr[k].ch=1});const n=left(),b=$('qqcGo');if(b){b.disabled=n>0;b.style.opacity=n>0?.5:1;b.textContent=n>0?`${n}개 더 골라요`:'다 골랐어요 ▶'}};upd();
+  L0.insertAdjacentHTML('beforeend',`<div id="qqc" style="margin-top:8px;padding:10px;border-radius:12px;background:#fff3c4;text-align:center">${pend.size?'<b>🤫 줄마다 ⭕/❌ 골라요</b><div style="font-size:13px;color:#8a4b14">❌ 고른 문장은 바로 다시 말해요</div>':'<b>✅ 결과 확인</b><div style="font-size:13px;color:#8a4b14">잘못 채점된 줄은 눌러서 ⭕↔❌ · ❌로 바꾼 문장은 바로 다시 말해요</div>'}<button class="btn green" id="qqcGo" style="width:100%;margin-top:8px">다 골랐어요 ▶</button></div>`);
+  const upd=()=>{pend.forEach(k=>{if(t.qr[k]&&t.qr[k].ok!==null)t.qr[k].ch=1});const n=left(),b=$('qqcGo');if(b){b.disabled=n>0;b.style.opacity=n>0?.5:1;b.textContent=n>0?`${n}개 더 골라요`:pend.size?'다 골랐어요 ▶':'다음 ▶'}};upd();
   await new Promise(res=>{$('qqcGo').onclick=()=>{if(left()>0)return;res()};const iv=setInterval(()=>{if(!SESS||SESS.tok!==tok){clearInterval(iv);res()}},400)});const qc=$('qqc');if(qc)qc.remove();rows.forEach(r=>{r.onclick=null;r.style.background='';const k=+r.dataset.q;if(t.qr[k])delete t.qr[k].ch;pend.delete(k);draw(k,r)});
   const out=[];for(const k of bad){const key=keys[k];const [n,i]=Array.isArray(key)?key:[t.n,key];recordResult(n,i,false);(t.wr=t.wr||[]).push(i);if(t.qr[k])t.qr[k].ok=false;const r=L0.querySelector(`.qrow[data-q="${k}"] .qr-res`);if(r)r.innerHTML=qResH(t.qr[k]);out.push(k)}save();
   /* 11/16 엄마: 🤫에서 ❌ 고른 문장은 바로 다시 말하기 (보고 2번 → 가리고 1번) */
@@ -5963,7 +5966,7 @@ async function runQuiz(t,tok){
     const ok2=await speak(ui2,Math.min(1.4,Math.max(0.35,enLen(n,i)*0.5)),`${L().id}|${today()}|${n}-${i}|다시`,tok);
     if(!ok2)return false;ui2.done('좋아요! 다음에 또 나와요');await sleep(700);
   }
-  if(qLM()&&quietOn()){const bq=await qQuietCheck(t,t.items);good=Math.max(0,good-bq.length)}
+  if(qLM()&&(quietOn()||LB().name==='나')){const bq=await qQuietCheck(t,t.items);good=Math.max(0,good-bq.length)}
   if(S.course==='wd'&&t.fails&&t.fails.length){t.qs={q:total,good,sGood,sTotal};keep();const ok=await wdAgain(t,t.fails,tok);if(!ok)return false;t.fails=[]}
   const score=total?Math.round(good/total*100):100;t.score=score;t.sScore=sTotal?Math.round(sGood/sTotal*100):100;
   let passMsg='';
