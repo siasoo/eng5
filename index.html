@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.39.6</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.39.7</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -3654,6 +3654,7 @@ function recognizeOnce(ui,tok,exp){
     r.onaudiostart=go;setTimeout(go,120); // '준비' 없이 바로 '말해요' (폰은 켜자마자 듣기 시작해요)
     const guard=setTimeout(()=>{if(!done){try{r.abort()}catch(e){}setTimeout(()=>{if(!done){done=true;res({alts:finals||(interim?[interim]:[]),err:err||'timeout'})}},800)}},15000);
     r.addEventListener&&r.addEventListener('end',()=>clearTimeout(guard));
+    const skIv=setInterval(()=>{if(done){clearInterval(skIv);return}if(SESS&&(SESS.skipNow||SESS.replayNow||SESS.manualNow)){clearInterval(skIv);try{r.abort()}catch(e){}done=true;clearTimeout(guard);if(SESS&&SESS.rec===r)SESS.rec=null;res({alts:[],err:null})}},120); /* 11/16 엄마: 🙋 모르겠어요 누르면 폰이 끝날 때까지 안 기다리고 바로 */
     try{r.start()}catch(e){done=true;clearTimeout(guard);res({alts:[],err:'start'})}
   });
 }
