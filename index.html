@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.41.7</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.41.8</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -940,7 +940,8 @@ function say(t,lang='en-US'){
     speechSynthesis.speak(u);
   });
 }
-function clip(d,i){if(isIpy()){const x=ipyL(d)&&ipyL(d).items[i];return x?[null,null,x[2],x[3],x[9]||ipyKey(d)]:null}return (CLIPS[d]||[])[i]}
+const TRV_NOCLIP=new Set(['The meat is very good.']); /* 11/17 엄마: 원래 음원 그 자리에 '음식점에서 활용하기'가 들어 있음 → 영어 읽기 목소리로 */
+function clip(d,i){if(isIpy()){const x=ipyL(d)&&ipyL(d).items[i];if(x&&TRV_NOCLIP.has(x[0]))return [null,null,null,null,null];return x?[null,null,x[2],x[3],x[9]||ipyKey(d)]:null}return (CLIPS[d]||[])[i]}
 const hasSeg=(d,c)=>isIpy()?!!(c&&(FILES.has(c[4])||AUTOURL.has(c[4]))):FILES.has(d+'-r');
 async function playEn(d,i,text,mul){const c=typeof i==='number'?clip(d,i):null;if(c&&c[2]!=null&&hasSeg(d,c)){const r=await playRange(isIpy()?c[4]:d,c[2],c[3],mul);if(r!==false||!isIpy())return r}if(text)await say(text);return true}
 async function playKo(d,i,text){const c=typeof i==='number'?clip(d,i):null;if(c&&c[0]!=null&&hasSeg(d,c))return playRange(d,c[0],c[1]);if(text)await say(text,'ko-KR');return true}
