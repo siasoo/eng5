@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.41.4</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.41.5</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -2049,7 +2049,7 @@ async function lnRun(done){const st=lnSt(),Q=lnPick();if(!Q.length){st.day=today
       await new Promise(r=>$('lnRuleGo').onclick=r);st.seen[it.r]=today();save()}
     const opts=shuffle([it.c,...it.o]);
     $('lnB').innerHTML=`<div style="font-size:14px;color:#aab">${R.icon} ${esc(R.name)} · 소리만 듣고 빈칸에 들어갈 말을 골라요</div><div style="font-size:21px;font-weight:700;margin:10px 0;line-height:1.5">${esc(it.b).replace('____','<span style="display:inline-block;min-width:70px;border-bottom:3px solid #f6c344">&nbsp;</span>')}</div><button class="btn ghost" id="lnAg" style="color:#fff">🔁 다시 듣기</button>${opts.map((o,j)=>`<button class="btn ghost" data-lo="${j}" style="display:block;width:100%;margin-top:8px;font-size:19px;padding:12px;color:#fff;text-align:left">${esc(o)}</button>`).join('')}<div id="lnR"></div>`;
-    let busy=false;const play=async()=>{if(busy)return;busy=true;await dlPlay(v,x);busy=false};$('lnAg').onclick=play;await play();
+    let busy=false;const play=async()=>{if(busy)return;busy=true;try{await dlPlay(v,x)}finally{busy=false}};$('lnAg').onclick=play;const lnNow=LB().name!=='민채'; /* 11/17 엄마: 민지·엄마는 소리 나오는 중에도 바로 고르고 바로 다음 */if(lnNow)play().catch(()=>{});else await play();
     const pick=await new Promise(res=>m.querySelectorAll('[data-lo]').forEach(b=>b.onclick=()=>res(opts[+b.dataset.lo])));v.pause();
     const right=pick.toLowerCase()===it.c.toLowerCase();m.querySelectorAll('[data-lo]').forEach(b=>{b.disabled=true;const o=opts[+b.dataset.lo];if(o===it.c)b.style.cssText+=';background:#1f5e3a;border-color:#4caf50';else if(o===pick)b.style.cssText+=';background:#5e1f1f;border-color:#e57373'});
     st.lv=st.lv||{};if(right){ok++;const lv=q.rev?((st.lv[q.i]!=null?st.lv[q.i]:0)+1):0;if(lv>=PR_INT.length){delete st.due[q.i];delete st.lv[q.i]}else{st.lv[q.i]=lv;st.due[q.i]=addDays(today(),PR_INT[lv])}}else{st.due[q.i]=addDays(today(),2);st.lv[q.i]=q.rev?Math.max(-1,(st.lv[q.i]!=null?st.lv[q.i]:0)-1):-1}save();
@@ -2058,7 +2058,7 @@ async function lnRun(done){const st=lnSt(),Q=lnPick();if(!Q.length){st.day=today
       <button class="btn ghost" id="lnSee" style="width:100%;margin-top:8px;color:#fff" disabled>🎬 자막 영상 보는 중…</button><button class="btn green" id="lnNx" style="width:100%;margin-top:8px" disabled>${k+1<okItems.length?'다음 ▶':'끝! 공부 시작 ▶'}</button>`;
     $('lnSee').onclick=async()=>{cover(false);await play()};
     /* 답을 고르면 자막 영상이 저절로 한 번 나오고, 다 봐야 '다음'이 눌려요 (엄마 11/7) */
-    cover(false);try{v.scrollIntoView({block:'start',behavior:'smooth'})}catch(e){}await play();
+    cover(false);try{v.scrollIntoView({block:'start',behavior:'smooth'})}catch(e){}if(lnNow){v.pause();busy=false;play().catch(()=>{})}else await play();
     if($('lnSee')){$('lnSee').disabled=false;$('lnSee').textContent='🎬 자막이랑 한 번 더 보기'}if($('lnNx'))$('lnNx').disabled=false;try{$('lnNx').scrollIntoView({block:'end',behavior:'smooth'})}catch(e){}
     await new Promise(r=>$('lnNx').onclick=r);v.pause()}
   fin(ok,okItems.length)}
