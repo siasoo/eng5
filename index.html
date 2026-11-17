@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.41.3</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.41.4</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -2563,20 +2563,23 @@ async function fbSendRender(){const el=$('fbSend');if(!el)return;if(LB().name!==
     <div id="fbSt" style="margin-top:8px;font-size:14px">${sent.length?'불러오는 중…':''}</div></div>`;
   $('fbGo').onclick=async()=>{const k=(el.querySelector('[name=fbKid]:checked')||{}).value,tx=$('fbTx').value.trim();if(!S.ntfy){toast('설정에서 알림 주소를 먼저 넣어요');return}if(!tx){toast('보낼 내용을 붙여 넣어요');return}
     try{const r=await fetch('https://ntfy.sh/',{method:'POST',body:JSON.stringify({topic:String(S.ntfy).trim(),title:`📮 ${k}에게 엄마 피드백`,message:`${k}: ${tx}`,tags:['memo']})});if(!r.ok)throw 0}catch(e){toast('보내지 못했어요 · 인터넷을 확인해 주세요');return}
-    S.fbSent=(S.fbSent||[]).concat([{k,t:Date.now(),n:tx.length,h:tx.slice(0,30)}]).slice(-20);save();toast(`📮 ${k}에게 보냈어요! 다음에 영어방을 열면 먼저 나와요`);fbSendRender()};
+    S.fbSent=(S.fbSent||[]).concat([{k,t:Date.now(),last:Date.now(),n:tx.length,h:tx.slice(0,30),tx}]).slice(-20);save();toast(`📮 ${k}에게 보냈어요! 다음에 영어방을 열면 먼저 나와요`);fbSendRender()};
   if(!sent.length||!S.ntfy)return;
   let rd=[];try{const r=await fetch('https://ntfy.sh/'+encodeURIComponent(String(S.ntfy).trim())+'/json?poll=1&since=48h');const tx=await r.text();rd=tx.split('\n').filter(Boolean).map(z=>{try{return JSON.parse(z)}catch(e){return null}}).filter(m=>m&&m.event==='message'&&/^✅ .+ 엄마 피드백 읽음/.test(m.message||''))}catch(e){}
+  {let ch=false;(S.fbSent||[]).forEach(x=>{if(x.read)return;const R=rd.find(m=>m.message.startsWith(`✅ ${x.k} 엄마 피드백 읽음`)&&m.time*1000>=x.t-5000);if(R){x.read=R.message.replace(/^✅ \S+ 엄마 피드백 /,'');ch=true;return}
+    if(x.tx&&Date.now()-(x.last||x.t)>10*3600e3&&Date.now()-x.t<7*86400e3){x.last=Date.now();ch=true;fetch('https://ntfy.sh/',{method:'POST',body:JSON.stringify({topic:String(S.ntfy).trim(),title:`📮 ${x.k}에게 엄마 피드백 (다시)`,message:`${x.k}: ${x.tx}`,tags:['memo']})}).catch(()=>{})}}); /* 11/17 엄마: 안 읽은 피드백은 10시간마다 앱이 알아서 다시 보내기(7일까지) */
+   if(ch)save()}
   const st=$('fbSt');if(!st)return;
-  st.innerHTML=sent.slice().reverse().map(x=>{const R=rd.find(m=>m.message.startsWith(`✅ ${x.k} 엄마 피드백 읽음`)&&m.time*1000>=x.t-5000);const d=new Date(x.t);
+  st.innerHTML=sent.slice().reverse().map(x=>{const R=x.read?{message:'✅ '+x.k+' 엄마 피드백 '+x.read}:null;const d=new Date(x.t);
     return `<div style="padding:6px 0;border-top:1px dashed #eee">${R?'✅':'⏳'} <b>${esc(x.k)}</b> · ${d.getMonth()+1}/${d.getDate()} ${d.toTimeString().slice(0,5)} 보냄 · ${R?`<span style="color:#2e7d32">${esc(R.message.replace(/^✅ \S+ 엄마 피드백 /,''))}</span>`:'<span style="color:#888">아직 안 읽었어요</span>'}<div style="font-size:12px;color:#999">${esc(x.h)}…</div></div>`}).join('')}
 /* ===== 📮 엄마 피드백 (11/16 엄마): 엄마가 ntfy에 "민지: …" / "민채: …"로 보내면 아이 앱이 공부 시작 전에 보여 줘요 → 끝까지 눈으로 읽기 + ✏️ 고친 문장만 소리 내서 읽기 → 엄마에게 읽음 알림 ===== */
-let FB_T=0;
+let FB_T=0;const fbH=t=>{let h=0;t=String(t).replace(/\s+/g,' ').trim();for(let i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))|0;return 'h'+(h>>>0).toString(36)};
 async function fbFetch(force){try{if(!isKidN()||!S.ntfy||(!force&&Date.now()-FB_T<60000))return;FB_T=Date.now();const b=LB(),nm=b.name;
   const r=await fetch('https://ntfy.sh/'+encodeURIComponent(String(S.ntfy).trim())+'/json?poll=1&since=24h');if(!r.ok)return;const tx=await r.text();
   const re=new RegExp('^\\s*(?:📮\\s*)?'+nm+'\\s*[:：]');
   const L=tx.split('\n').filter(Boolean).map(z=>{try{return JSON.parse(z)}catch(e){return null}}).filter(m=>m&&m.event==='message'&&m.message&&re.test(m.message)).sort((a,c)=>a.time-c.time);
-  const seen=b.fbSeen||[],nw=L.filter(m=>!seen.includes(m.id));if(!nw.length)return;
-  b.fb={ids:nw.map(m=>m.id),text:nw.map(m=>m.message.replace(re,'').trim()).join('\n\n')};save()}catch(e){}}
+  const seen=b.fbSeen||[],hs=new Set();const nw=L.filter(m=>{const h=fbH(m.message);if(seen.includes(m.id)||seen.includes(h)||hs.has(h))return false;hs.add(h);return true});if(!nw.length)return; /* 11/17: 엄마 앱이 다시 보낸 같은 피드백은 한 번만 */
+  const ids=nw.map(m=>m.id).concat(nw.map(m=>fbH(m.message)));if(b.fb&&b.fb.ids&&ids.every(i=>b.fb.ids.includes(i)))return;b.fb={ids,text:nw.map(m=>m.message.replace(re,'').trim()).join('\n\n')};save()}catch(e){}}
 function fbGate(cb){try{const b=LB();if(!isKidN()||!b.fb||!b.fb.ids||b.fb.ids.every(i=>(b.fbSeen||[]).includes(i)))return false;fbRun(b.fb,cb);return true}catch(e){return false}}
 function fbLines(txt){const L=String(txt).split('\n'),out=[];for(let i=0;i<L.length;i++){if(!L[i].includes('✏️'))continue;let s=L[i].replace(/^.*?✏️\s*/,'').replace(/^(이렇게 써 보면 어때\?|다음엔 이렇게\s*[:：]?|고친 글\s*[:：]?|다시 써 준 글\s*[:：]?)\s*/,'').trim();
     if(!s){for(let j=i+1;j<L.length;j++){if(L[j].trim()){s=L[j].trim();break}}}if(s&&s.length>=4)out.push(s)}return out.slice(0,6)}
@@ -2595,7 +2598,7 @@ async function fbRun(F,cb){const b=LB(),nm=b.name,txt=String(F.text).replace(/\*
     if(h){vo++;const e=$('fbV');if(e)e.textContent='⭕ 잘 읽었어요!';await sleep(Math.min(6000,s.length*120))}
     else await new Promise(res=>{$('fbN').innerHTML=`<button class="btn green" id="fbNx" style="width:100%">읽었어요 ▶</button>`;$('fbNx').onclick=res})}
   try{micRelease()}catch(e){}
-  b.fbSeen=(b.fbSeen||[]).concat(F.ids).slice(-40);delete b.fb;const hm=new Date().toTimeString().slice(0,5);b.fbLog=b.fbLog||{};b.fbLog[today()]={t:hm,n:S2.length,v:vo};save();
+  b.fbSeen=(b.fbSeen||[]).concat(F.ids).slice(-80);delete b.fb;const hm=new Date().toTimeString().slice(0,5);b.fbLog=b.fbLog||{};b.fbLog[today()]={t:hm,n:S2.length,v:vo};save();
   try{if(S.ntfy)fetch('https://ntfy.sh/',{method:'POST',body:JSON.stringify({topic:String(S.ntfy).trim(),title:`${nm} 엄마 피드백 읽음 ✅`,message:`✅ ${nm} 엄마 피드백 읽음 (${hm}) · 👀 끝까지 읽기${S2.length?` · 🗣️ 고친 문장 ${vo}/${S2.length}개 소리 내서`:''}`,tags:['eyes']})}).catch(()=>{})}catch(e){}
   m.remove();toast('엄마 피드백 다 읽었어요! 이제 공부해요 💪');cb&&cb()}
 /* 밤 11시 30분 하루 정리: 하루 한 번 예약 (잠자기 체크 또는 밤 9시 넘어 앱을 닫을 때) */
