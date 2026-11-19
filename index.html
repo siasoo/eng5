@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.41.12</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.41.13</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -3294,7 +3294,7 @@ function vcN(){const st=vcSt(),t=today(),dn=dnumT(t),left=VC.length-st.i;if(left
   const dec=jan?0:Math.max(0,dnumT('2026-12-31')-dn+1),cap=dec*5+(dl-dec)*10,ex=left>cap?Math.ceil((left-cap)/dl):0;return Math.min(15,base+ex,left)} /* 12월까지 5개 · 1~2월 10개 · 밀리면 남은 날로 자동 분배 (2/28 완료) */
 function vcLeft(){const st=vcSt();if(vcDone()){const g=st.log[today()];const W=(g&&g.w)||[];return `💬 오늘의 말 끝${W.length?' · '+W.slice(0,3).join(', '):''}${W.length>3?' …':''}`}const n=vcN();return `💬 이어서 오늘의 말 ${n}개 · ${Math.min(st.i,VC.length)}/${VC.length}`}
 /* 11/18 엄마: 아이가 친구랑 놀면서 찍지 않게 — 문제가 나오고 몇 초는 보기를 못 눌러요 (먼저 읽기) */
-function qWait(box,sel,ms=2500){try{if(!isKidN())return;const B=[...box.querySelectorAll(sel)];if(!B.length)return;B.forEach(b=>{b.disabled=true;b.style.opacity=.45});const n=document.createElement('div');n.style.cssText='font-size:13px;color:#a07a3c;margin-top:6px;text-align:center';n.textContent='📖 먼저 끝까지 읽어요…';B[B.length-1].after(n);setTimeout(()=>{if(B.some(b=>b.style.background))return;B.forEach(b=>{b.disabled=false;b.style.opacity=''});n.remove()},ms)}catch(e){}}
+function qWait(box,sel,ms=2500){try{if(!isKidN())return;const B=[...box.querySelectorAll(sel)];if(!B.length)return;B.forEach(b=>{b.disabled=true;b.style.opacity=.45});const n=document.createElement('div');n.style.cssText='font-size:13px;color:#a07a3c;margin-top:6px;text-align:center';n.textContent='📖 먼저 끝까지 읽어요…';B[B.length-1].after(n);setTimeout(()=>{B.forEach(b=>{b.disabled=false;b.style.opacity=''});n.remove()},ms) /* 11/19: 보기에 원래 흰 배경이 있어서 안 풀리던 것 고침 · 기다리는 동안은 못 누르니 그냥 풀기 */}catch(e){}}
 async function vcRun(done){const st=vcSt(),t=today(),dn=dnumT(t),m=document.createElement('div');m.style.cssText='position:fixed;inset:0;z-index:236;background:#fffaf2;color:#2b2b2b;overflow:auto;padding:14px';document.body.appendChild(m);
   const box=document.createElement('div');box.style.cssText='max-width:520px;margin:0 auto';m.appendChild(box);
   const head=sub=>`<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">💬 오늘의 말</b><button class="btn ghost sm" id="vcX">닫기</button></div><div style="font-size:13px;color:#888;margin-top:2px">${sub}</div>`;
