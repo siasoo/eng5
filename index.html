@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.3</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.5</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1228,7 +1228,8 @@ async function runGjw(t,tok){const A=t.items,Z=t.wq||{p:0},live=()=>SESS&&SESS.t
       await say(x.en,'en-US');if(!live())return false;if(!good){await sleep(300);await say(x.en,'en-US')}await sleep(250)}
     if(!live())return false;await sleep(500)}
   st.log[T]={n:A.length,ok};save();delete t.wq;return true}
-async function runWdq(t,tok){const A=t.items,live=()=>SESS&&SESS.tok===tok,bad=[];let ok=0;
+async function runWdq(t,tok){t.ww=1;const r0=await runSpell(t,tok);if(r0){const v=Object.values((t.sq&&t.sq.wwr)||{});t.score=v.length?Math.round(v.filter(Boolean).length/v.length*100):100;save()}return r0} /* 11/20 엄마: 고르기는 너무 쉬워 → 글자 골라 누르는 스펠링으로 */
+async function runWdqOld(t,tok){const A=t.items,live=()=>SESS&&SESS.tok===tok,bad=[];let ok=0;
   for(let p=0;p<A.length;p+=4){const G=A.slice(p,p+4),IT=[];for(const [n,i] of G)IT.push((await getItems(n))[i]);
     $('sMain').innerHTML=dayHead(t,'⚡ 그림과 뜻을 보고 <b>먼저 영어로 말하고</b>, 진짜 철자를 골라요.')+`<div class="cnt" style="text-align:right">${p+1}~${p+G.length} / ${A.length}</div>`+G.map((x,k)=>IT[k]?wwRow(IT[k],k,`<div class="wwO" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px"></div><div class="wwF"></div>`):'').join('')+`<div id="micBox"></div><div class="ans hidden" id="ans"></div><div class="sbtns" id="qBtns"><button class="btn ghost" id="skipB">🙋 몰라요</button></div>`;
     for(let k=0;k<G.length;k++){if(!live())return false;const it=IT[k];if(!it)continue;const [n,i]=G[k],row=document.querySelector(`[data-wr="${k}"]`);row.style.outline='3px solid #e8590c';row.scrollIntoView({block:'center',behavior:'smooth'});
@@ -1262,7 +1263,7 @@ async function runWdTestM(t,tok){const A=t.items,Z=t.wq||{p:0},live=()=>SESS&&SE
     /* ③ 스펠링 (한 단어씩, 틀리면 철자 듣고 한 번 더) */
     for(let k=0;k<G.length;k++){if(!live())return false;const it=IT[k];if(!it)continue;const [n,i]=G[k],cnt=`단어 ${p+k+1} / ${A.length}`;
       let ok=false,ok2=false;for(let tr=1;tr<=2&&!ok&&!ok2;tr++){if(tr>1){$('sMain').innerHTML=wdLearnHTML(t,it,`${cnt} · 철자 다시 듣기`,`틀렸어요. <b>철자를 ${SPN()}번</b> 듣고 다시 써 봐요.`);$('again').onclick=()=>playEn(n,i,it.en);await playEn(n,i,it.en);await spellAloud3(it,n,i,tok,SPN());if(!live())return false}
-        const s=await spellOne(t,tr>1?{...it,_show:true}:it,n,i,tok,cnt+` · ③ 스펠링${tr>1?' (다시)':''}`);if(s===null)return false;if(tr===1)ok=s;else ok2=s}
+        const s=await spellOne(t,tr>1?{...it,_show:true}:it,n,i,tok,cnt+` · ③ 스펠링${tr>1?' (다시)':''}`);if(s===null)return false;if(tr===1){ok=s;if(S.course==='wd')spFirst(n,i,s,it.en)}else ok2=s}
       const m=mc[k]!==false;recordResult(n,i,!!(m&&ok));wdFast(n,i,m&&ok?1:0);if(!(m&&ok)){Z.bad=(Z.bad||0)+1;t.wq=Z}}
     if((Z.bad||0)>=6&&p+5<A.length){t.items=A.slice(0,p+5);t.short=A.length-p-5;delete t.wq;toast(`오늘 잘했어요! 남은 새 단어 ${t.short}개는 내일 해요 😊`);return true}}
   delete t.wq;return true}
@@ -1277,7 +1278,7 @@ async function runWdTest(t,tok){const A=t.items;const Z=t.wq||{q:0};
     const m=await wdMC(t,it,n,i,tok,cnt+' · 고르기');if(m===null)return false;
     // 3) 스펠링 · 틀리면 철자를 1번 천천히 듣고, 단어를 보면서 한 번 더 (2번까지)
     let ok=false,ok2=false;for(let tr=1;tr<=2&&!ok&&!ok2;tr++){if(tr>1){$('sMain').innerHTML=wdLearnHTML(t,it,`${cnt} · 철자 다시 듣기`,`틀렸어요. <b>철자를 ${SPN()}번</b> 듣고 다시 써 봐요.`);$('again').onclick=()=>playEn(n,i,it.en);await playEn(n,i,it.en);await spellAloud3(it,n,i,tok,SPN());if(!SESS||SESS.tok!==tok)return false}
-      const s=await spellOne(t,tr>1?{...it,_show:true}:it,n,i,tok,cnt+` · 스펠링${tr>1?' (다시)':''}`);if(s===null)return false;if(tr===1)ok=s;else ok2=s} // 두 번째는 보면서 쓰니까 맞혀도 기록은 다시 볼 단어
+      const s=await spellOne(t,tr>1?{...it,_show:true}:it,n,i,tok,cnt+` · 스펠링${tr>1?' (다시)':''}`);if(s===null)return false;if(tr===1){ok=s;if(S.course==='wd')spFirst(n,i,s,it.en)}else ok2=s} // 두 번째는 보면서 쓰니까 맞혀도 기록은 다시 볼 단어
     recordResult(n,i,!!(m&&ok));wdFast(n,i,m===true&&ok===true?1:0);
     if(!(m&&ok)){Z.bad=(Z.bad||0)+1;t.wq=Z}
     if(!ok&&!ok2){$('sMain').innerHTML=wdLearnHTML(t,it,cnt,'괜찮아요! 이 단어는 <b>내일 복습</b>에서 다시 만나요.');$('again').onclick=()=>playEn(n,i,it.en);await playEn(n,i,it.en);await sleep(1500)}
@@ -1345,9 +1346,11 @@ function buildPlanWd(P,l,t,wd,wkOK){const add=t2=>{t2.id='t'+P.tasks.length;P.ta
     if(carryN){P.newN=old[0].items[0][0];if(P.wdKnown==null&&l.plan&&l.plan.wdKnown)P.wdKnown=l.plan.wdKnown;old.forEach(x=>add({...x,title:x.title.startsWith('이어서')?x.title:'이어서 · '+x.title}))}
     else if(W.nNew){const items=wdPick(W.nNew);if(items.length){P.newN=items[0][0];addWdDay(add,items)}}
     {gjwSync();const GW=gjwToday();if(GW.length)add({type:'gjw',items:GW,g:'review',day:true,title:'📘 기적 만들기 단어 확인',sub:`${GW.length}개 · 말해 보고 맞히면 끝 · 틀린 것만 내일 다시`})}
-    if(W.sp.length)add({type:'spell',items:W.sp,ww:1,g:'review',day:true,title:'복습 · ✏️ 스펠링',sub:`복습 단어 ${W.sp.length}개 · 틀린 단어만 내일 다시`});
-    if(W.qk.length)add({type:'wdq',items:W.qk,ww:1,g:'review',day:true,title:'⚡ 빠른 확인',sub:`복습 단어 ${W.qk.length}개 · 먼저 말하고 진짜 철자 고르기 · 틀린 것만 ✏️`});
+    {const SP=W.sp.concat(W.qk);if(SP.length)add({type:'spell',items:SP,ww:1,g:'review',day:true,title:'복습 · ✏️ 스펠링',sub:`복습 단어 ${SP.length}개 · 틀리면 철자 듣고 다시`})} /* 11/20 엄마: ⚡ 빠른 확인은 복습 스펠링에 합침 */W.qk=[];
+    if(W.qk.length)add({type:'wdq',items:W.qk,ww:1,g:'review',day:true,title:'⚡ 빠른 확인',sub:`복습 단어 ${W.qk.length}개 · ✏️ 스펠링 · 틀리면 철자 듣고 다시`});
+
     if(wkSolid()){const s2=solidTask();if(s2)add(s2)}
+    add({type:'wdrd',items:[],g:'review',day:true,title:'🔊 틀린 단어 따라읽기',sub:'오늘 처음에 틀린 단어만 · 2번씩 듣고 소리 내서'});
     return P}
   let rev=[];const units=[];
   for(const x of dueLessons(t)){if(rev.length>=cap)break;const it=sampleReview(x.n,x.st);if(!it.length&&x.st>=2&&x.st<=4){advance(x.n,100);continue}const room=cap-rev.length;
@@ -2489,7 +2492,7 @@ function preUI(box,kid,allDone,b){if(!kid||!isKidN())return;const ok=curList(b).
 function repSnap(){try{if(!isIpy()&&S.course!=='wd')return;const l=L(),P=l.plan;if(!P||P.date!==today())return;const ks=new Set();
   for(const x of P.tasks.filter(t=>!t.carried)){(x.items||[]).forEach(z=>ks.add(z[0]+'-'+z[1]));(x.idx||[]).forEach(i=>ks.add(x.n+'-'+i));(x.sk||[]).forEach(i=>ks.add(x.n+'-s'+i))}
   const sc=P.tasks.filter(x=>x.done&&x.score!=null&&x.kind!=='skiptest').map(x=>+x.score);const own=P.tasks.filter(x=>!x.carried);const pre=BUDC()?bud0():0,tn=(BUDC()&&l.bc&&l.bc.d===today()?l.bc.tn||0:0)+own.filter(x=>x.kind==='skiptest').reduce((a,x)=>a+(x.items||[]).length,0);
-  l.rep=l.rep||{};l.rep[today()]={tn,k:own.filter(x=>x.done).length,n:own.length,cnt:ks.size+pre,secs:Math.round(P.secs||0),sc:sc.length?Math.round(sc.reduce((a,b)=>a+b,0)/sc.length):null};
+  l.rep=l.rep||{};l.rep[today()]={tn,k:own.filter(x=>x.done).length,n:own.length,cnt:ks.size+pre,sp:(S.course==='wd'&&l.spDay&&l.spDay.d===today())?l.spDay.r:null,secs:Math.round(P.secs||0),sc:sc.length?Math.round(sc.reduce((a,b)=>a+b,0)/sc.length):null};
   const old=addDays(today(),-60);for(const d in l.rep)if(d<old)delete l.rep[d];save()}catch(e){}}
 function offShift(){try{const t=today();for(const b of (S.learners||[])){b.offDone=b.offDone||{};for(const [a,e] of offR()){const key=a+'~'+e;if(b.offDone[key]||t<a)continue;const k=dnumRaw(e)-dnumRaw(a)+1;const objs=[b,...Object.values(b).filter(v=>v&&typeof v==='object'&&v.lessons&&typeof v.lessons==='object')];
   for(const o of objs)for(const x of Object.values(o.lessons||{}))if(x&&typeof x.due==='string'&&x.due>=a)x.due=addDays(x.due,k);b.offDone[key]=1}}save()}catch(e){}} /* 쉬는 날이 시작되면 그 뒤 복습을 쉰 날만큼 뒤로 */
@@ -2510,7 +2513,7 @@ async function buildReport(d){const b=LB(),nm=b.name,br=lsJ('eng5_bridge')[d]||{
   const recKeys=await idbKeys('rec');let nDone=0;
   for(const c of list){const n=cName(c);const vh=c===(nm==='민지'?'dk':nm==='민채'?'kr':''),vcMiss=vh&&!(((b.vc||{}).log||{})[d])&&VC.length>0;const done=(!!(br[c]&&br[c].done&&(!br[c].who||br[c].who===nm))&&!vcMiss)||(c==='ys'&&d===today()&&ysFree());if(done)nDone++;let info=''; /* 11/9: 오늘의 말까지 해야 끝 */
     if(c==='wd'||DS[c]){const r=withCourse(c,()=>{if(d===today()){const P=getPlan();if(P&&P.date===d)repSnap()}const l=L();return {rep:(l.rep||{})[d],day:(l.days||{})[d],id:l.id}});
-      const rp=r.rep;if(rp){info=`${rp.cnt}${c==='wd'?'단어':'문장'}${rp.tn?` (실력 확인 ${rp.tn}문장 포함)`:''}${rp.sc!=null?' · 평균 '+rp.sc+'점':''} · ${Math.round(rp.secs/60)}분`;out.mins+=rp.secs/60}
+      const rp=r.rep;if(rp){const SP=c==='wd'&&rp.sp?Object.values(rp.sp):null,spW=SP?SP.filter(x=>!x[0]).map(x=>x[1]):[];info=`${rp.cnt}${c==='wd'?'단어':'문장'}${rp.tn?` (실력 확인 ${rp.tn}문장 포함)`:''}${SP&&SP.length?` · ✏️ 스펠링 처음에 맞힘 ${SP.length-spW.length}/${SP.length}${spW.length?' (틀림: '+spW.join(', ')+')':''}`:rp.sc!=null?' · 평균 '+rp.sc+'점':''} · ${Math.round(rp.secs/60)}분`;out.mins+=rp.secs/60}
       for(const k of recKeys.filter(k=>String(k).startsWith(r.id+'|'+d+'|')&&/\|퀴즈$/.test(k))){const v=await idbGet('rec',k);if(!v||v instanceof Blob||v.ok!==false)continue;const [n0,i0]=parseKey(k.split('|')[2]);
         const it=withCourse(c,()=>{try{return c==='wd'?null:ipyItems(n0)[i0]}catch(e){return null}});if(it)out.wrong.push({c:n[0],en:it.en,ko:it.ko,heard:typeof v.text==='string'?v.text:''})}}
     else if(c==='mje'){const g=((LB().mje||{}).log||{})[d];if(g)info=`${g.n>8?'Special':g.n+'과'} · ${g.rv?'복습':MJE_ST[g.s]}${g.v?' · 🎬 '+g.v.join(', '):''}${g.sp!=null?' · ⚡ '+g.sp+'개':''}${g.fw?' · 🔍 '+g.fw:''}${g.or!=null?' · 🔀 틀림 '+g.or:''}${g.role?' · 🎭 '+g.role.join(','):''}${g.q?' · 퀴즈 '+g.q:''}${g.w?' · ✍️ '+g.w:''}`}
@@ -3563,6 +3566,7 @@ async function runNext(){
   else if(t.type==='wds')ok=await runWdSay(t,tok);
   else if(t.type==='wdt')ok=await (kidMode()?runWdTestM:runWdTest)(t,tok);
   else if(t.type==='wdq')ok=await runWdq(t,tok);
+  else if(t.type==='wdrd')ok=await runWdRd(t,tok);
   else if(t.type==='gjw')ok=await runGjw(t,tok);
   else if(t.type==='trvL')ok=await runTrvL(t,tok);
   else if(t.type==='rlisten')ok=await runRListen(t,tok);
@@ -5992,7 +5996,7 @@ async function runSpell(t,tok){
       if(!SESS||SESS.tok!==tok)return false;Z.q=q;t.sq=Z;keep();
       const [n,i]=Z.queue[q];const it=(await getItems(n))[i];if(!it)continue;
       let r=await spellOne(t,it,n,i,tok,`${Z.round>1?'다시 도전 · ':''}${q+1} / ${Z.queue.length}`);
-      if(r===null)return false;if(t.ww&&Z.round===1){Z.wwr=Z.wwr||{};Z.wwr[n+'-'+i]=!!r;recordResult(n,i,!!r)}if(t.units&&Z.round===1){Z.res=Z.res||{};const z=(Z.res[n]=Z.res[n]||[0,0]);z[1]++;if(r)z[0]++;recordResult(n,i,!!r);if(S.course==='wd'){const f=(L().wf||{})[n+'-'+i],ls=(L().lessons[n]||{}).st;if(!r)wdFast(n,i,0);else if(f===1&&ls===1)wdFast(n,i,2);else if(f===1)wdFast(n,i,0)}}
+      if(r===null)return false;if(Z.round===1&&S.course==='wd')spFirst(n,i,r,it.en);if(t.ww&&Z.round===1){Z.wwr=Z.wwr||{};Z.wwr[n+'-'+i]=!!r;recordResult(n,i,!!r)}if(t.units&&Z.round===1){Z.res=Z.res||{};const z=(Z.res[n]=Z.res[n]||[0,0]);z[1]++;if(r)z[0]++;recordResult(n,i,!!r);if(S.course==='wd'){const f=(L().wf||{})[n+'-'+i],ls=(L().lessons[n]||{}).st;if(!r)wdFast(n,i,0);else if(f===1&&ls===1)wdFast(n,i,2);else if(f===1)wdFast(n,i,0)}}
       if(!r&&!/\s/.test(String(it.en).trim())){$('sMain').innerHTML=wdLearnHTML(t,it,`${q+1} / ${Z.queue.length} · 철자 다시 듣기`,'틀린 단어는 <b>철자를 3번</b> 듣고 바로 다시 해요.');$('again').onclick=()=>playEn(n,i,it.en);
         await playEn(n,i,it.en);await spellAloud3(it,n,i,tok,SPN());if(!SESS||SESS.tok!==tok)return false;r=await spellOne(t,it,n,i,tok,`${q+1} / ${Z.queue.length} · 바로 다시`);if(r===null)return false}
       if(!r)Z.retry.push([n,i]);
@@ -6012,6 +6016,12 @@ function phraseOne(t,it,n,i,tok,cnt){return new Promise(async res=>{ // 여러 �
       if(p>=W.length){$('spic').innerHTML=picHTML(it);$('sres').innerHTML=miss?'<div class="sfb bad">아까운 곳이 있었어요 — 한 번 더 나와요 🔁</div>':'<div class="sfb good">정답! 🎉</div>';if(!miss)beepOK();
         await playEn(n,i,it.en);if(SESS&&SESS.tok===tok){await sleep(200);await say(it.ko,'ko-KR')}if(!SESS||SESS.tok!==tok){res(null);return}setTimeout(()=>res(!miss),miss?1500:500)}}
     else{miss=true;b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake')}})})}
+function spFirst(n,i,ok,en){try{const l=L(),td=today();if(!l.spDay||l.spDay.d!==td)l.spDay={d:td,r:{}};const k=n+'-'+i;if(!(k in l.spDay.r))l.spDay.r[k]=[ok?1:0,String(en)];save()}catch(e){}} /* 11/20 엄마: 그날 처음 쓴 스펠링만 점수로 */
+async function runWdRd(t,tok){const live=()=>SESS&&SESS.tok===tok,D=L().spDay,K=D&&D.d===today()?Object.keys(D.r).filter(k=>!D.r[k][0]):[];t.items=K.map(k=>k.split('-').map(Number));
+  for(let q=0;q<K.length;q++){const [n,i]=K[q].split('-').map(Number);const it=(await getItems(n))[i];if(!it)continue;
+    for(let r=1;r<=2;r++){if(!live())return false;$('sMain').innerHTML=dayHead(t,'오늘 틀린 단어예요. <b>듣고 소리 내서 따라 읽어요</b>.')+`<div class="qcard"><div class="cnt">${q+1} / ${K.length} · ${r}번째</div><div class="ko" style="font-size:26px;margin:14px 0 6px">${esc(it.ko)}</div><div style="font-size:34px;font-weight:800;color:#2e7d32;letter-spacing:1px;margin-bottom:10px">${esc(it.en)}</div><div>${picHTML(it)}</div><div class="sbtns"><button class="btn ghost" id="rAg">🔁 다시 듣기</button><button class="btn" id="rOk" disabled>✅ 따라 읽었어요</button></div></div>`;
+      $('rAg').onclick=()=>playEn(n,i,it.en);await playEn(n,i,it.en);if(!live())return false;await sleep(900);if(!live())return false;const ok=$('rOk');if(!ok)return false;ok.disabled=false;await new Promise(res=>ok.onclick=res)}}
+  t.rd=K.length;save();return true} /* 11/20 엄마: 틀린 단어만 마지막에 2번씩 따라읽기 */
 function spellOne(t,it,n,i,tok,cnt){if(/\s/.test(String(it.en).trim()))return phraseOne(t,it,n,i,tok,cnt);return new Promise(res=>{
   const w=it.en,isL=c=>/[A-Za-z]/.test(c);let p=0,miss=false,opts=[];
   const skip=()=>{while(p<w.length&&!isL(w[p]))p++};
