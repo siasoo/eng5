@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.5</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.6</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -6084,15 +6084,18 @@ async function qListPut(t,q,H,keys,koOf){const ps=q-q%5,sm=$('sMain'),cut=H.inde
     if(k<q&&t.qr[k]){r.style.cursor='pointer';r.onclick=()=>qToggle(t,keys,k,r)}});const cur=L0.querySelector(`.qrow[data-q="${q}"]`);if(cur){cur.classList.add('cur');cur.querySelector('.qr-live').innerHTML=card;cur.onclick=e=>{const id=(e.target.closest('button')||{}).id;if(id==='ngB')cur.dataset.res='0';else if(id==='okB')cur.dataset.res='1'};try{cur.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){}}}
 const qResH=r=>r?`<div style="font-size:17px;font-weight:800;color:${r.ok===false?'#a33':'#2e7d32'}">${r.ok===false?'❌':r.ok?'⭕':'✔'} ${esc(r.en||'')}</div>${r.ok===false?'<div style="font-size:12.5px;color:#8a4b14">다음에 이 문장만 다시 나와요 · 잘못 됐으면 눌러서 ⭕로</div>':'<div style="font-size:12px;color:#aaa">잘못 됐으면 눌러서 ❌로</div>'}`:'';
 /* ===== 11/19 엄마: 🔥 같은 틀(단원)에서 3번 이상 틀리면 '틀부터 짚기' — ① 틀 카드 → ② 바뀌는 부분만 말하기 → ③ 통째로 말하기 ===== */
-function pwHit(l,n,i,ok){l.pw=l.pw||{};const p=l.pw[n]=l.pw[n]||{c:0,s:0,f:0,k:[]};if(ok){if(p.f){p.s=(p.s||0)+1;if(p.s>=4){p.f=0;p.s=0}}}else{p.c++;p.s=0;p.k=(p.k||[]).filter(x=>x!==i);p.k.push(i);if(p.k.length>5)p.k.shift();if(p.c>=3)p.f=1}}
+function pwHit(l,n,i,ok){l.pw=l.pw||{};const p=l.pw[n]=l.pw[n]||{c:0,s:0,f:0,k:[]};if(ok){if(p.f){p.s=(p.s||0)+1;if(p.s>=4){p.f=0;p.s=0}}}else{p.c++;p.s=0;p.m=p.m||{};p.m[i]=(p.m[i]||0)+1;p.k=(p.k||[]).filter(x=>x!==i);p.k.push(i);if(p.k.length>12){const o=p.k.shift();delete p.m[o]}if(p.c>=3)p.f=1}}
 async function pwDrill(n,tok){const l=L(),p=(l.pw||{})[n];if(!p||!p.k||!p.k.length)return true;const live=()=>SESS&&SESS.tok===tok;
-  const IT=[];for(const i of p.k.slice(-4)){const it=await quizItem(n,i);if(it&&it.en&&!it.word)IT.push([i,it])}if(!IT.length){p.c=0;save();return true}
+  const A0=[];for(const i of p.k){const it=await quizItem(n,i);if(it&&it.en&&!it.word)A0.push([i,it])}if(!A0.length){p.c=0;p.k=[];p.m={};save();return true} /* 11/21 엄마: 같은 단원이라도 틀이 다르면 묶지 않아요 — 앞 두 단어가 같은 문장끼리만 */
+  const fk=it=>String(it.en).toLowerCase().replace(/[^a-z' ]/g,' ').split(/\s+/).filter(Boolean).slice(0,2).join(' '),G={};A0.forEach(x=>{const f=fk(x[1]);if(f.split(' ').length===2)(G[f]=G[f]||[]).push(x)});
+  let best=null,gs=0;for(const g of Object.values(G)){const s2=g.reduce((a,[i])=>a+((p.m||{})[i]||1),0);if(g.length>=2&&s2>=3&&s2>gs){best=g;gs=s2}}if(!best)return true;
+  const IT=best.slice(-4);
   const W=IT.map(([,it])=>String(it.en).replace(/[.?!]+$/,'').split(/\s+/)),lo=x=>String(x||'').toLowerCase();
   let a=0;while(a<W[0].length-1&&W.every(w=>w[a]!=null&&lo(w[a])===lo(W[0][a])))a++;
   let z=0;while(W.every(w=>w.length-1-z>a&&lo(w[w.length-1-z])===lo(W[0][W[0].length-1-z])))z++;
   const ok2=IT.length>=2&&a>=2,pre=W[0].slice(0,a).join(' '),suf=W[0].slice(W[0].length-z).join(' '),slot=w=>w.slice(a,w.length-z).join(' '),end=(String(IT[0][1].en).match(/[.?!]$/)||['.'])[0];
   const title=ttl(n)||'',frame=ok2?`${esc(pre)} <span style="color:#d0661b">______</span>${suf?' '+esc(suf):''}${end}`:'';
-  $('sMain').innerHTML=`<div class="stitle">🔥 자주 틀리는 틀</div><div class="sh">이 틀에서 ${p.c}번 틀렸어요 · 틀부터 짚고 가요</div><div class="qcard" style="text-align:left"><div style="font-size:13px;font-weight:800;color:#c0582b">① 틀 카드</div>${title?`<div style="font-size:15px;color:#888;margin-top:4px">${esc(title)}</div>`:''}${frame?`<div style="font-size:24px;font-weight:900;margin:8px 0">${frame}</div><div style="font-size:14px;color:#666">🔁 틀은 그대로, 이 부분만 바뀌어요</div>`:''}${IT.map(([i,it],j)=>`<div style="padding:8px 0;border-top:1px dashed #eee;cursor:pointer" data-pe="${j}"><div style="font-size:15px;color:#666">${esc(it.ko)}</div><div style="font-size:18px;font-weight:800">🔊 ${ok2?esc(pre)+' <b style="color:#d0661b">'+esc(slot(W[j]))+'</b>'+(suf?' '+esc(suf):'')+end:esc(it.en)}</div></div>`).join('')}</div><button class="btn green" id="pwGo" style="width:100%;margin-top:10px">알겠어요 → ${ok2?'바뀌는 부분 말하기':'통째로 말하기'} ▶</button>`;
+  $('sMain').innerHTML=`<div class="stitle">🔥 자주 틀리는 틀</div><div class="sh">이 틀에서 ${gs}번 틀렸어요 · 틀부터 짚고 가요</div><div class="qcard" style="text-align:left"><div style="font-size:13px;font-weight:800;color:#c0582b">① 틀 카드</div>${title&&!ok2?`<div style="font-size:15px;color:#888;margin-top:4px">${esc(title)}</div>`:''}${frame?`<div style="font-size:24px;font-weight:900;margin:8px 0">${frame}</div><div style="font-size:14px;color:#666">🔁 틀은 그대로, 이 부분만 바뀌어요</div>`:''}${IT.map(([i,it],j)=>`<div style="padding:8px 0;border-top:1px dashed #eee;cursor:pointer" data-pe="${j}"><div style="font-size:15px;color:#666">${esc(it.ko)}</div><div style="font-size:18px;font-weight:800">🔊 ${ok2?esc(pre)+' <b style="color:#d0661b">'+esc(slot(W[j]))+'</b>'+(suf?' '+esc(suf):'')+end:esc(it.en)}</div></div>`).join('')}</div><button class="btn green" id="pwGo" style="width:100%;margin-top:10px">알겠어요 → ${ok2?'바뀌는 부분 말하기':'통째로 말하기'} ▶</button>`;
   $('sMain').querySelectorAll('[data-pe]').forEach(e=>e.onclick=()=>{const [i,it]=IT[+e.dataset.pe];playEn(n,i,it.en)});
   let go=false;const gp=new Promise(r=>$('pwGo').onclick=()=>{go=true;r()});for(const [i,it] of IT){if(go||!live())break;await playEn(n,i,it.en);await sleep(300)}await gp;if(!live())return false;
   const step=async(lab,it,i,head,target,isSlot)=>{$('sMain').innerHTML=`<div class="stitle">🔥 ${lab}</div><div class="qcard"><div class="ko">${esc(it.ko)}</div>${head}<div class="ans hidden" id="ans"><div class="en">${esc(it.en)}</div>${prHTML(it,'ans')}</div><div id="micBox"></div><div class="sbtns" id="qBtns"><button class="btn ghost" id="pwK">🙋 모르겠어요</button></div></div>`;
@@ -6104,7 +6107,7 @@ async function pwDrill(n,tok){const l=L(),p=(l.pw||{})[n];if(!p||!p.k||!p.k.leng
     if(!good){$('qBtns').innerHTML='<button class="btn ghost" id="pwR">🔁 다시 듣기</button><button class="btn green" id="pwN">따라 말했어요 ▶</button>';$('pwR').onclick=()=>playEn(n,i,it.en);await new Promise(r=>$('pwN').onclick=r)}else await sleep(700);return good};
   if(ok2)for(let j=0;j<IT.length;j++){const [i,it]=IT[j];if(await step(`② 바뀌는 부분만 말하기 ${j+1}/${IT.length}`,it,i,`<div style="font-size:22px;font-weight:900;margin:8px 0">${frame}</div>`,slot(W[j]),1)===null)return false}
   let got=0;for(let j=0;j<IT.length;j++){const [i,it]=IT[j];const r=await step(`③ 통째로 말하기 ${j+1}/${IT.length}`,it,i,'',it.en,0);if(r===null)return false;if(r)got++}
-  p.c=0;p.d=today();const b=LB(),t=today();b.pwLog=b.pwLog||{};b.pwLog[t]=b.pwLog[t]||[];const nm=`${lab(n)}${ok2?` "${pre} ~"`:title?` ${title}`:''} (통째로 ${got}/${IT.length})`;if(!b.pwLog[t].includes(nm))b.pwLog[t].push(nm);save();
+  best.forEach(([i])=>{p.k=p.k.filter(x=>x!==i);delete (p.m||{})[i]});p.c=p.k.reduce((a,i)=>a+((p.m||{})[i]||1),0);if(p.c<3)p.f=0;p.d=today();const b=LB(),t=today();b.pwLog=b.pwLog||{};b.pwLog[t]=b.pwLog[t]||[];const nm=`${lab(n)}${ok2?` "${pre} ~"`:title?` ${title}`:''} (통째로 ${got}/${IT.length})`;if(!b.pwLog[t].includes(nm))b.pwLog[t].push(nm);save();
   $('sMain').innerHTML=`<div class="qcard" style="text-align:center"><div style="font-size:44px">${got===IT.length?'🎉':'💪'}</div><b style="font-size:19px">이 틀 ${got}/${IT.length} 맞혔어요!</b><div style="margin-top:6px;color:#666;font-size:14px">이 틀 문장을 앞으로 4번 맞히면 🔥 표시가 없어져요</div></div><button class="btn green" id="pwE" style="width:100%;margin-top:10px">원래 공부로 ▶</button>`;await new Promise(r=>$('pwE').onclick=r);return live()}
 async function runQuiz(t,tok){
   const Z=t.qs||{};let good=Z.good||0,sGood=Z.sGood||0,sTotal=Z.sTotal||0;const total=t.items.length;if(SESS)SESS.kind=t.kind;
