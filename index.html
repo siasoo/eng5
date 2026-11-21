@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.17</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.18</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -6073,7 +6073,7 @@ async function ftOpen(){if(isKidN()&&LB().name!=='나'){toast('엄마 전용이�
   const fb=()=>m.querySelectorAll('[data-ff]').forEach(x=>{const on=x.dataset.ff===flt;x.style.background=on?'#2f7d6d':'';x.style.color=on?'#fff':''});fb();
   m.querySelectorAll('[data-ff]').forEach(b=>b.onclick=()=>{flt=G.f=b.dataset.ff;save();fb();fx.clear();draw()});
   m.querySelector('#ftGo').onclick=()=>{const q=VIEW.findIndex(k=>V(k)==null);if(q<0){toast('다 했어요! 🎉');return}if(q>=shown)more(q+20);const c=L0.querySelector(`.ftC[data-x="${VIEW[q]}"]`);if(c)c.scrollIntoView({block:'center',behavior:'smooth'})};
-  L0.onclick=async e=>{const b=e.target.closest('[data-a]');if(!b)return;const c=b.closest('.ftC'),x=IT[+c.dataset.x],a=b.dataset.a;
+  L0.onclick=async e=>{const b=e.target.closest('[data-a]'),c=e.target.closest('.ftC');if(!c)return;const x=IT[+c.dataset.x],a=b?b.dataset.a:(V(+c.dataset.x)==null?'see':'tog'); /* 11/22 엄마: 문장 아무 데나 누르면 ⭕/❌ 바뀌게 (처음엔 펼치기) */
     if(a==='tog'){const v=V(+c.dataset.x);if(v!=null){set(c,v===1?0:1);toast(v===1?'❌로 바꿨어요':'⭕로 바꿨어요')}}else if(a==='know'){set(c,1);c.querySelector('.ftG').textContent='💡 알았어요 · 뜻 맞나 확인해요'}else if(a==='see'){if(c.dataset.sh&&V(+c.dataset.x)!=null&&!e.target.closest('[data-a=hear]'))return;c.dataset.sh=1;if(V(+c.dataset.x)==null){set(c,0);c.querySelector('.ftG').textContent=EM?'👀 뜻을 보고 확인 · 모르는 걸로 (❌)':'👀 보고 확인 · 모르는 걸로 (❌)'}else paint(c);if(!EM)await hear(x)}else if(a==='hear')await hear(x);
     else if(a==='mic'){if(b.dataset.busy)return;b.dataset.busy=1;b.textContent='🎙️ 듣는 중…';const alts=await ftHear();delete b.dataset.busy;b.textContent='🎤 말하기';if(alts==null){toast('여기선 음성 인식이 안 돼요 · 👀 보기로 확인해요');return}
       const sc=alts.length?Math.max(...alts.map(y=>{try{return matchScore(x.en,y)}catch(z){return 0}})):0;c.querySelector('.ftG').textContent=alts[0]?'🎤 들린 말: '+alts[0]:'🎤 소리가 안 들렸어요';set(c,sc>=0.8?1:0);if(sc<0.8)await hear(x)}};
