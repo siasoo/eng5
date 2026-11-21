@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.11</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.14</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -382,7 +382,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
         </div>
       </div>
       <p class="hint">자유롭게 듣고 보는 곳이에요. 여기서 들은 건 진도에 들어가지 않아요. 진도는 ‘오늘 공부’에서만 나가요.</p>
-      <div class="steps" id="steps"></div>
+      <button class="btn ghost" id="ftOpen" style="width:100%;margin:6px 0 10px">📝 과정 전체 테스트 · 한 페이지에서 주르륵</button><div class="steps" id="steps"></div>
       <div class="lesson">
         <div class="coverbox"><div id="coverWrap"><div class="cover-empty">음원 폴더를 연결하면<br>문장 카드가 나와요</div></div></div>
         <div>
@@ -6026,6 +6026,60 @@ const EHKO={'a boy':'남자아이 한 명','a boy and a girl':'남자아이와 �
 const ehKoP=x=>{const m=x&&x.t==='pick'&&String(x.q||'').match(/^"(.+)"을\(를\) 대신할 대명사는/);return m&&EHKO[m[1]]?m[1]:null};
 function ehKo(x){const p=ehKoP(x);if(!p)return '';const h=((window.__ehS||{}).ko||{})[p];return h&&h.n>=2?'':EHKO[p]} /* 11/21 엄마: 대명사 문제 밑에 우리말(그와 나) · 다른 날 2번 연속 맞히면 빼요 */
 function ehKoUp(x,r){try{const p=ehKoP(x),S2=window.__ehS;if(!p||!S2)return;const H=S2.ko=S2.ko||{},h=H[p]||{n:0,d:''},t=today();if(r===true||r&&r.ok){if(h.d!==t){h.n++;h.d=t}}else{h.n=0;h.d=t}H[p]=h}catch(e){}}
+/* ===== 📝 과정 전체 테스트 (11/22 엄마): 과정 문장 전부를 한 페이지에서 위에서부터 · 🎤로 채점 · ❌ 틀린 것만 다시 · 🔀 섞기 · 🌐 모든 과정 합치기 · 멈춘 곳부터 이어서 ===== */
+function ftHear(){return new Promise(res=>{const R0=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R0)return res(null);let r;try{r=new R0()}catch(e){return res(null)}r.lang='en-US';r.interimResults=false;r.maxAlternatives=3;let got=[],done=false;const fin=()=>{if(done)return;done=true;try{r.stop()}catch(e){}res(got)};
+  r.onresult=e=>{try{got=[...e.results[0]].map(a=>a.transcript)}catch(x){}fin()};r.onerror=fin;r.onend=fin;setTimeout(fin,9000);try{r.start()}catch(e){fin()}})}
+const FT_SHORT=en=>/^\s*(yes|no|yeah|nope|sure|okay|ok)\b/i.test(en)&&String(en).trim().split(/\s+/).length<=5; /* 11/22 엄마: 질문 없이 대답만 있는 짧은 문장(Yes, I did.)은 빼요 */
+const FT_CS=['trv','home','ipy','gj','gw'];
+function ftWith(c,fn){const o=S.course;if(o===c)return fn();S.course=c;activate(c);try{return fn()}finally{S.course=o;activate(o)}}
+async function ftOpen(){if(isKidN()&&LB().name!=='나'){toast('엄마 전용이에요');return}
+  const B=LB();B.ftg=B.ftg||{};const G=B.ftg;
+  if(!G.mix&&(!isIpy()||!FT_CS.includes(S.course))){toast('여행 · 생활 · 입영작 · 기적 과정에서 써요');return}
+  const CS=G.mix?FT_CS.filter(c=>DS[c]):[S.course];let flt=G.f||'all';
+  /* 문장 모으기 (과정별 결과는 그 과정 진도에 저장) */
+  const IT=[],RR={};let hasTrv=false;
+  for(const c of CS)ftWith(c,()=>{const l=L();l.ft=l.ft||{};l.ft.r=l.ft.r||{};RR[c]=l.ft.r;const TM=typeof trvM==='function'&&trvM();if(TM)hasTrv=true;const ess=TM&&G.ess!==0,N=TOTAL(),UN=ess?TRV_ORD.filter(x=>x<=N):[...Array(N).keys()].map(x=>x+1);
+    for(const u of UN){let it=[];try{it=ipyItems(u)}catch(e){}const ix=(ess?eligIdx(u):unitIdx(u,'st')).filter(i=>!isWord(i)&&it[i]&&it[i].en&&!(c!=="trv"&&FT_SHORT(it[i].en)));const ul=`${IPYC[c][1]} ${IPYC[c][0]} · ${lab(u)} · ${ttl(u)}`;for(const i of ix)IT.push({c,n:u,i,k:u+'-'+i,ko:it[i].ko,en:it[i].en,ul})}});
+  if(!IT.length){toast('문장이 없어요');return}
+  /* 순서: 섞기면 저장된 순서 (이어서 하려고) */
+  const id=x=>x.c+'|'+x.k,okey=CS.join(',')+'|'+(hasTrv&&G.ess!==0?'e':'a');let ORD=IT.map((x,j)=>j);
+  if(G.sh){const pos=new Map(IT.map((x,j)=>[id(x),j]));let seq=G.ord&&G.ord.key===okey?G.ord.seq.map(s=>pos.get(s)).filter(j=>j!=null):null;if(!seq||seq.length<IT.length*0.9){seq=shuffle(IT.map((x,j)=>j));G.ord={key:okey,seq:seq.map(j=>id(IT[j]))};save()}else{const has=new Set(seq);IT.forEach((x,j)=>{if(!has.has(j))seq.push(j)})}ORD=seq}
+  const V=k=>RR[IT[k].c][IT[k].k],PO=new Map(ORD.map((k,j)=>[k,j+1]));
+  const m=document.createElement('div');m.id='ftM';m.style.cssText='position:fixed;inset:0;z-index:240;background:#f6f1e7;overflow:auto';document.body.appendChild(m);
+  const tg=(id2,on,tx)=>`<button class="btn ghost sm" id="${id2}" style="${on?'background:#2f7d6d;color:#fff':''}">${tx}</button>`;
+  m.innerHTML=`<div style="position:sticky;top:0;z-index:2;background:#f6f1e7;padding:10px 14px;border-bottom:1px solid #e6dccb"><div style="max-width:640px;margin:0 auto"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:17px">📝 ${G.mix?'🌐 모든 과정':esc(CNAME())} · ${hasTrv&&G.ess!==0?'✈️ 필수 ':''}전체 테스트${G.sh?' · 🔀':''}</b><button class="btn ghost sm" id="ftX">닫기</button></div><div id="ftS" style="font-weight:800;margin:6px 0"></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn ghost sm" data-ff="all">전체</button><button class="btn ghost sm" data-ff="todo">아직</button><button class="btn ghost sm" data-ff="bad">❌ 틀린 것만</button><button class="btn ghost sm" id="ftGo">⬇ 이어서</button></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${tg('ftSh',G.sh,'🔀 섞기')}${G.sh?tg('ftRe',0,'🔄 다시 섞기'):''}${tg('ftMix',G.mix,'🌐 모든 과정 합치기')}${hasTrv?tg('ftEss',G.ess!==0,'✈️ 여행은 필수만'):''}</div></div></div><div id="ftL" style="max-width:640px;margin:0 auto;padding:10px 12px 80px"></div>`;
+  const L0=m.querySelector('#ftL');
+  const stat=()=>{let o=0,b=0;for(let k=0;k<IT.length;k++){const v=V(k);if(v===1)o++;else if(v===0)b++}const e=m.querySelector('#ftS');if(e)e.textContent=`⭕ ${o} · ❌ ${b} · 남은 ${IT.length-o-b} / ${IT.length}문장`};
+  const fx=new Set(); /* 틀린 것만 보다가 맞힌 것 (✅로 남겨 둬요) */
+  const pass=k=>{const v=V(k);return flt==='all'||(flt==='todo'&&v==null)||(flt==='bad'&&(v===0||fx.has(k)))};
+  let VIEW=[],shown=0;
+  const paint=c=>{const k=+c.dataset.x,v=V(k);c.style.borderColor=v===1?'#9bd3a9':v===0?'#f0a8a0':'#eee4d3';c.style.background=v===1?'#f3fbf5':v===0?'#fff5f3':'#fff';c.querySelector('.ftE').style.display=v!=null||c.dataset.sh?'':'none';c.querySelector('.ftMk').textContent=v===1?(fx.has(k)?'✅':'⭕'):v===0?'❌':''};
+  const card=(k,no)=>{const x=IT[k];return `<div class="ftC" data-x="${k}" style="background:#fff;border:2px solid #eee4d3;border-radius:14px;padding:10px 12px;margin-bottom:8px">${G.sh||G.mix?`<div style="font-size:11.5px;color:#a07a3c;margin:0 0 4px 44px">${esc(x.ul)}</div>`:''}<div style="display:flex;gap:10px;align-items:flex-start"><b style="color:#d35b2c;min-width:34px">${no}</b><div style="flex:1;font-size:16px">${esc(x.ko)}</div><span class="ftMk" style="font-size:20px"></span></div><div class="ftE" style="display:none;margin:6px 0 0 44px;font-weight:800;color:#2b4c7e">${esc(x.en)}</div><div class="ftG" style="margin-left:44px;font-size:12.5px;color:#888"></div><div style="display:flex;gap:5px;margin:8px 0 0 44px"><button class="btn sm green" data-a="mic" style="padding:6px 10px">🎤 말하기</button><button class="btn ghost sm" data-a="see" style="padding:6px 8px">👀 보기</button><button class="btn ghost sm" data-a="hear" style="padding:6px 8px">🔊</button><button class="btn ghost sm" data-a="ok" style="padding:6px 8px">⭕</button><button class="btn ghost sm" data-a="no" style="padding:6px 8px">❌</button></div></div>`};
+  let lastU='';
+  const more=(upto)=>{const end=Math.min(VIEW.length,Math.max(shown+150,upto||0));let h='';for(let q=shown;q<end;q++){const k=VIEW[q],x=IT[k];if(!G.sh){const uk=x.c+x.n;if(uk!==lastU){lastU=uk;h+=`<div style="text-align:center;color:#a07a3c;font-size:13px;margin:14px 0 6px">── ${esc(x.ul)} ──</div>`}}h+=card(k,PO.get(k))}
+    const s0=L0.querySelector('#ftMore');if(s0)s0.remove();L0.insertAdjacentHTML('beforeend',h);L0.querySelectorAll('.ftC:not([data-p])').forEach(c=>{c.dataset.p=1;paint(c)});shown=end;
+    if(shown<VIEW.length){L0.insertAdjacentHTML('beforeend',`<div id="ftMore" style="text-align:center;color:#999;padding:16px">⬇ 내리면 더 나와요 (${VIEW.length-shown}개 남음)</div>`);ob.observe(L0.querySelector('#ftMore'))}
+    else if(!VIEW.length)L0.insertAdjacentHTML('beforeend',`<div style="text-align:center;color:#999;padding:30px">${flt==='bad'?'틀린 문장이 없어요 🎉':'다 했어요 🎉'}</div>`)};
+  const ob=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting))more()},{root:m,rootMargin:'600px'});
+  const draw=()=>{ob.disconnect();L0.innerHTML='';shown=0;lastU='';VIEW=ORD.filter(pass);more()};
+  const set=(c,v)=>{const k=+c.dataset.x,x=IT[k];if(V(k)===0&&v===1&&flt==='bad')fx.add(k);RR[x.c][x.k]=v;if(v===0)ftWith(x.c,()=>{const l=L();l.wrong=l.wrong||{};if(!l.wrong[x.k]||typeof l.wrong[x.k]!=='object')l.wrong[x.k]={n:2,d:today()}});save();paint(c);stat()};
+  const hear=x=>{let p;try{p=ftWith(x.c,()=>playEn(x.n,x.i,x.en))}catch(e){}return p||Promise.resolve()};
+  const re=()=>{save();m.remove();ftOpen()};
+  m.querySelector('#ftX').onclick=()=>{ob.disconnect();m.remove()};
+  m.querySelector('#ftSh').onclick=()=>{G.sh=G.sh?0:1;re()};m.querySelector('#ftMix').onclick=()=>{G.mix=G.mix?0:1;re()};
+  {const e=m.querySelector('#ftRe');if(e)e.onclick=()=>{G.ord=null;re()}}{const e=m.querySelector('#ftEss');if(e)e.onclick=()=>{G.ess=G.ess===0?1:0;re()}}
+  const fb=()=>m.querySelectorAll('[data-ff]').forEach(x=>{const on=x.dataset.ff===flt;x.style.background=on?'#2f7d6d':'';x.style.color=on?'#fff':''});fb();
+  m.querySelectorAll('[data-ff]').forEach(b=>b.onclick=()=>{flt=G.f=b.dataset.ff;save();fb();fx.clear();draw()});
+  m.querySelector('#ftGo').onclick=()=>{const q=VIEW.findIndex(k=>V(k)==null);if(q<0){toast('다 했어요! 🎉');return}if(q>=shown)more(q+20);const c=L0.querySelector(`.ftC[data-x="${VIEW[q]}"]`);if(c)c.scrollIntoView({block:'center',behavior:'smooth'})};
+  L0.onclick=async e=>{const b=e.target.closest('[data-a]');if(!b)return;const c=b.closest('.ftC'),x=IT[+c.dataset.x],a=b.dataset.a;
+    if(a==='ok')set(c,1);else if(a==='no')set(c,0);else if(a==='see'){c.dataset.sh=1;paint(c)}else if(a==='hear')await hear(x);
+    else if(a==='mic'){if(b.dataset.busy)return;b.dataset.busy=1;b.textContent='🎙️ 듣는 중…';const alts=await ftHear();delete b.dataset.busy;b.textContent='🎤 말하기';if(alts==null){toast('여기선 음성 인식이 안 돼요 · 👀 보고 ⭕/❌ 눌러요');return}
+      const sc=alts.length?Math.max(...alts.map(y=>{try{return matchScore(x.en,y)}catch(z){return 0}})):0;c.querySelector('.ftG').textContent=alts[0]?'🎤 들린 말: '+alts[0]:'🎤 소리가 안 들렸어요';set(c,sc>=0.8?1:0);if(sc<0.8)await hear(x)}};
+  stat();draw()}
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#ftOpen'))ftOpen()});
+
 function spFirst(n,i,ok,en){try{const l=L(),td=today();if(!l.spDay||l.spDay.d!==td)l.spDay={d:td,r:{}};const k=n+'-'+i;if(!(k in l.spDay.r))l.spDay.r[k]=[ok?1:0,String(en)];save()}catch(e){}} /* 11/20 엄마: 그날 처음 쓴 스펠링만 점수로 */
 async function runWdRd(t,tok){const live=()=>SESS&&SESS.tok===tok,D=L().spDay,K=D&&D.d===today()?Object.keys(D.r).filter(k=>!D.r[k][0]):[];t.items=K.map(k=>k.split('-').map(Number));
   for(let q=0;q<K.length;q++){const [n,i]=K[q].split('-').map(Number);const it=(await getItems(n))[i];if(!it)continue;
