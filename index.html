@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.7</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.11</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -1190,7 +1190,7 @@ function wwMigrate(l){const t=today(),M={1:1,2:2,3:2,4:3,5:4,6:4};for(const [n,x
 function wwAdd(items){const W=wwSt(),f=L().wf||{};for(const [n,i] of items){const k=n+'-'+i;if(!W[k])W[k]={st:1,due:addDays(today(),1),sp:f[k]===1?1:0,d:today()}}save()}
 function wwAdv(k,ok,spelled){const W=wwSt(),w=W[k];if(!w)return;if(ok&&spelled)w.sp=(w.sp||0)+1;
   if(!ok){w.due=addDays(today(),1);return}
-  w.st=w.sp>=2&&w.st<4?4:w.st+1;if(w.st>4){w.st=5;w.due=null;w.m=today();return}w.due=addDays(w.d||today(),WW_GAP[w.st]);if(w.due<=today())w.due=addDays(today(),1)}
+  w.st=w.sp>=2&&w.st===2?4:w.st+1; /* 11/22 엄마: 1→7→40일 (21일만 건너뜀) */if(w.st>4){w.st=5;w.due=null;w.m=today();return}w.due=addDays(w.d||today(),WW_GAP[w.st]);if(w.due<=today())w.due=addDays(today(),1)}
 function wwDue(t){const W=wwSt();return Object.entries(W).filter(([k,w])=>w.st<=4&&w.due&&w.due<=t).sort((a,b)=>a[1].due<b[1].due?-1:a[1].due>b[1].due?1:a[1].st-b[1].st)}
 function wwPlan(add,t,canNew,carryN){const sp=[],qk=[];let used=0;for(const [k,w] of wwDue(t)){const c=(w.st===2||w.st===3)?0.5:1;if(used+c>WW_CAP-WW_NEW)break;used+=c;const [n,i]=k.split('-').map(Number);(c<1?qk:sp).push([n,i])}
   let nNew=0;if(canNew&&!carryN){nNew=Math.min(10,Math.max(WW_NEW,Math.round(WW_CAP-used)))}
@@ -1866,7 +1866,7 @@ function wrFb(q,a,o){o=o||{};a=String(a||'').trim();const good=[],next=[],jk=a.s
   if(/하나 들어|예를 들|우리 주변|나의 경험|내 생각|나라면|찾고,|쓰고,/.test(q)){const two=a.split(/[.!?。]\s*/).filter(x=>x.trim().length>3).length>=2;if(two)G(1,'물은 것 두 가지에 다 답했어요');else N(1,'질문이 두 가지예요 · 둘 다 나눠 쓰면 완벽해요')}
   const WHYW=wrWhyWeak(a),WHYG=()=>WHYW?N(2,wrWhyMsg(q)):G(2,'까닭을 분명하게 밝혀 썼어요');
   if(/까닭|이유|왜/.test(q)&&!(o.k||[]).some(g=>/까닭|때문/.test(g))){if(/때문|왜냐|까닭|이유|므로|어서|아서|니까/.test(a))WHYG();else N(2,'‘왜냐하면 ~ 때문이다’로 까닭을 밝히면 더 좋아요')}
-  (o.k||[]).forEach(g=>{const alt0=String(g).split('|'),alt=alt0.concat(...alt0.map(x=>WR_SYN[x]||[]),alt0.filter(x=>/다$/.test(x)&&x.length>2).map(x=>x.slice(0,-1)));if(alt.some(x=>a.includes(x))){if(/까닭|때문|왜냐/.test(g))WHYG();else G(3,`‘${alt[0]}’ 내용을 잘 넣었어요`)}else N(/까닭|때문|왜냐/.test(g)?2:3,/까닭|때문|왜냐/.test(g)?'‘왜냐하면 ~ 때문이다’로 까닭을 밝히면 더 좋아요':/언제|지난|어제/.test(g)?'언제 있었던 일인지 쓰면 더 생생해요':/느낌|재미|좋/.test(g)?'그때 어떤 느낌이었는지 쓰면 더 멋져요':`‘${alt[0]}’ 이야기까지 쓰면 완벽해요`)});
+  (o.k||[]).forEach(g=>{if(String(g).trim()==='?'){if(/[?？]/.test(a))G(3,'질문을 물음표(?)로 잘 만들었어요');else N(3,'질문은 물음표(?)로 끝내면 완벽해요');return} /* 11/22 엄마: ‘?’ 내용을 잘 넣었어요 → 이상해요 */const alt0=String(g).split('|'),alt=alt0.concat(...alt0.map(x=>WR_SYN[x]||[]),alt0.filter(x=>/다$/.test(x)&&x.length>2).map(x=>x.slice(0,-1)));if(alt.some(x=>a.includes(x))){if(/까닭|때문|왜냐/.test(g))WHYG();else G(3,`‘${alt[0]}’ 내용을 잘 넣었어요`)}else N(/까닭|때문|왜냐/.test(g)?2:3,/까닭|때문|왜냐/.test(g)?'‘왜냐하면 ~ 때문이다’로 까닭을 밝히면 더 좋아요':/언제|지난|어제/.test(g)?'언제 있었던 일인지 쓰면 더 생생해요':/느낌|재미|좋/.test(g)?'그때 어떤 느낌이었는지 쓰면 더 멋져요':`‘${alt[0]}’ 이야기까지 쓰면 완벽해요`)});
   (o.use||[]).forEach(w=>{if(a.includes(w))G(4,`‘${w}’ 낱말을 넣어 썼어요`);else N(4,`‘${w}’ 낱말을 넣으면 더 멋져요`)});
   if(hg>=need)G(5,`${hg}자로 자세히 썼어요`);else N(5,`한 문장만 더 자세히 쓰면 더 멋져요 (지금 ${hg}자)`);
   if(!/[다요!?.。]\s*$/.test(a))N(6,'문장을 ‘~다.’로 끝까지 맺으면 더 좋아요');
@@ -2217,11 +2217,13 @@ async function dlRun(done,onSkip){const st=dlSt(),m=document.createElement('div'
   const kRev=async(q,i,tot)=>{const x=q.x,r=q.r;const hd=`🔁 ${q.r.st===1?'어제 배운':'예전에 배운'} 문장 ${i+1}/${tot} · 따라 말하기 2번`;
     /* 11/11 엄마: 복습은 한글 발음 없이 — ① 💡 뜻만 보고 영어로 떠올려 말하기 → 원어민 소리로 확인 ② 🔤 영어 자막 보며 따라 말하기 */
     card(`<div style="font-size:15px;color:#f6c344;font-weight:700">💡 이 뜻을 영어로 말해 봐요</div>${kKo(x)}`);
-    $('dlB').innerHTML=`<div style="font-size:14px;color:#aab">${hd}</div><div style="margin-top:6px;font-size:17px">💡 뜻 보고 떠올리기</div>${kBar(0,2)}<div id="kRp" style="text-align:center;font-size:26px;font-weight:800;margin-top:12px;color:#7fd6a8">🗣️ 영어로 말해요!</div>`;
-    {const wait=Math.min(9000,Math.max(3500,dlDur(x)*1600+2000));let h=null;for(let t=0;t<3;t++){h=await dlHeard(wait);if(h!==false)break;const e=$('kRp');if(e)e.textContent='🗣️ 생각나는 만큼 소리 내서 말해요!'}if(h===null)await sleep(wait);
+    $('dlB').innerHTML=`<div style="font-size:14px;color:#aab">${hd}</div><div style="margin-top:6px;font-size:17px">💡 뜻 보고 떠올리기</div>${kBar(0,2)}<div id="kRp" style="text-align:center;font-size:26px;font-weight:800;margin-top:12px;color:#7fd6a8">🗣️ 영어로 말해요!</div><button class="btn ghost" id="kIdk" style="width:100%;margin-top:10px;color:#fff">🙋 몰라요 · 정답 듣기</button>`;
+    let got=true;{const wait=Math.min(9000,Math.max(3500,dlDur(x)*1600+2000));let idk=false;{const b=$('kIdk');if(b)b.onclick=()=>{idk=true}}
+      const lis=async ms=>{const t0=Date.now();while(Date.now()-t0<ms&&!idk){const r0=await dlHeard(300);if(r0===null){while(Date.now()-t0<ms&&!idk)await sleep(100);return null}if(r0)return true}return false};
+      let h=null;for(let t=0;t<2&&!idk;t++){h=await lis(wait);if(h!==false)break;const e=$('kRp');if(e)e.textContent='🗣️ 생각나는 만큼 소리 내서 말해요!'}got=!idk&&h!==false;{const b=$('kIdk');if(b)b.remove()} /* 11/21 엄마: 모르면 바로 정답 · 못 떠올리면 내일 다시 */
       const e=$('kRp');if(e){e.style.color='#aab';e.textContent='🎧 정답 들어요…'}card(`${bigEn(x)}<div style="font-size:16px;color:#ccd">${esc(x.ko)}</div>`);await dlPlay(v,x,0,1);kLog('sh');await sleep(600)}
     await kSh(x,1,bigEn(x),hd,'🔤 영어 자막 보며',2,2);
-    ok++;r.st=Math.min(r.st+1,dlMax());r.due=dnumT(today())+(DL_IVL[r.st]||60);st.td.tn++;save()};
+    ok++;if(got){r.st=Math.min(r.st+1,dlMax());r.due=dnumT(today())+(DL_IVL[r.st]||60)}else r.due=dnumT(today())+1;st.td.tn++;save()};
   /* 11/8 엄마: 글씨 볼 때는 영상 자리에 큰 글씨 카드 (영상은 안 보이고 소리는 나와요) */
   const card=html=>{const V=$('dlVid'),C=$('dlCover');if(!V||!C)return;bandOff();const h=Math.max(190,C.dataset.card?C.offsetHeight:V.offsetHeight||190);C.dataset.card=1;V.style.cssText='width:100%;position:absolute;left:0;top:0;height:8px;opacity:0;pointer-events:none';C.style.cssText=`display:flex;position:relative;min-height:${h}px;background:#1d2330;border-radius:12px;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:16px 14px;font-size:16px;color:#fff;gap:8px`;C.innerHTML=html};
   const bandOn=x=>{const ep=DL_EP[dlF(x)],band=$('dlBand'),bt=$('dlBandT');if(!ep||!band)return;band.style.top=ep[1]+'%';band.style.height=(ep[2]-ep[1])+'%';band.style.display='flex';bt.style.display='block'},bandOff=()=>{const band=$('dlBand'),bt=$('dlBandT');if(band)band.style.display='none';if(bt)bt.style.display='none'};
@@ -4137,6 +4139,8 @@ async function runFocus(t,tok){const live=()=>SESS&&SESS.tok===tok;
   t.q=t.items.length;
   if(live()){$('sMain').innerHTML=`<div class="endbox"><div class="stitle">🎯 집중 연습 끝!</div>${WO_STRIP}<div class="sbtns"><button class="btn green big" id="qNext">다음 ▶</button></div></div>`;await new Promise(r=>$('qNext').onclick=r)}
   return true}
+const qBlkOK=(t,i)=>t.kind==='wrong'&&kidMode()&&(S.course==='gj'||S.course==='gw')&&!isWord(i); /* 11/22 엄마: 틀린 것 다시에서 틀리면 순서부터 다시 */
+async function qBlk(n,i,tok){const T={type:'block',n,idx:[i],g:'wrong',title:'🧩 틀린 문장 · 블록으로 순서 다시 맞추기'};return await runBlock(T,tok)}
 async function runBlock(t,tok){
   if(S.voice&&!MIC.ok)await micInit();
   const n=t.n,items=await getItems(n);let queue=(t.idx||halfIdx(n,t.h)).slice(),q0=0,again=[];
@@ -6138,7 +6142,7 @@ async function runQuiz(t,tok){
     let fbK=false;if(useSR()){
       const r=await autoQuizItem(n,i,it,ui,tok);
       if(r===null)return false;
-      if(r!=='fallback'){if(r)good++;else{if(LB().name!=='나'&&foWill(n,i)&&!await focusOne(n,i,it,tok,`<div class="stitle">🚂 기차로 다시 연습</div><div class="sh">자꾸 틀리는 문장이에요 · 칸으로 쪼개 봐요</div><div class="ko" style="font-size:22px;font-weight:800;margin:10px 0">${esc(it.ko)}</div>`))return false;(t.wr=t.wr||[]).push(i);if(t.kind==='skiptest')(t.wrK=t.wrK||[]).push(n+'-'+i);if(S.course==='wd')(t.fails=t.fails||[]).push([n,i])}if(!isWord(i)){sTotal++;if(r)sGood++}continue}
+      if(r!=='fallback'){if(r)good++;else{if(LB().name!=='나'&&!foWill(n,i)&&qBlkOK(t,i)&&!await qBlk(n,i,tok))return false;if(LB().name!=='나'&&foWill(n,i)&&!await focusOne(n,i,it,tok,`<div class="stitle">🚂 기차로 다시 연습</div><div class="sh">자꾸 틀리는 문장이에요 · 칸으로 쪼개 봐요</div><div class="ko" style="font-size:22px;font-weight:800;margin:10px 0">${esc(it.ko)}</div>`))return false;(t.wr=t.wr||[]).push(i);if(t.kind==='skiptest')(t.wrK=t.wrK||[]).push(n+'-'+i);if(S.course==='wd')(t.fails=t.fails||[]).push([n,i])}if(!isWord(i)){sTotal++;if(r)sGood++}continue}
       ui.state('play');fbK=kidMode()&&LB().name!=='나'; /* 엄마는 못 알아들었을 때도 ⭕/❌ 직접 */
     }
     const need=Math.min(1.4,Math.max(0.35,enLen(n,i)*0.5));
@@ -6162,6 +6166,7 @@ async function runQuiz(t,tok){
     (t.wr=t.wr||[]).push(i);if(t.kind==='skiptest')(t.wrK=t.wrK||[]).push(n+'-'+i);if(S.course==='wd')(t.fails=t.fails||[]).push([n,i]);
     // 틀리면 정답을 한 번 따라 말하고 넘어가기
     $('qBtns').innerHTML='';
+    if(LB().name!=='나'&&!foWill(n,i)&&qBlkOK(t,i)){if(!await qBlk(n,i,tok))return false;continue}
     if(LB().name!=='나'&&foWill(n,i)){if(!await focusOne(n,i,it,tok,`<div class="stitle">🚂 기차로 다시 연습</div><div class="sh">자꾸 틀리는 문장이에요 · 칸으로 쪼개 봐요</div><div class="ko" style="font-size:22px;font-weight:800;margin:10px 0">${esc(it.ko)}</div>`))return false;continue}
     if(kidMode()){for(let k=0;k<2;k++){const u3=micUI();u3.prompt=`정답을 따라 말해요! (${k+1}/2)`;$('micBox').innerHTML='';$('micBox').appendChild(u3.el);if(S.voice&&!MIC.ok)await micInit();const o3=await speak(u3,0.35,null,tok);if(!o3)return false;u3.done(k?'잘했어요!':'좋아요! 한 번 더');await sleep(400)}continue} // 민채: 정답은 한 번만 듣고 따라 말하기 2번
     const ui2=micUI();ui2.prompt='정답을 따라 말해요!';$('micBox').innerHTML='';$('micBox').appendChild(ui2.el);
