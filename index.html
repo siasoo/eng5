@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.29</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.30</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -6058,13 +6058,13 @@ async function ftListen(W){let on=true,q=0,wl=null;try{if(navigator.wakeLock)wl=
 const FT_CS=['trv','home','ipy','gj','gw'];
 function ftWith(c,fn){const o=S.course;if(o===c)return fn();S.course=c;activate(c);try{return fn()}finally{S.course=o;activate(o)}}
 async function ftOpen(){if(isKidN()&&LB().name!=='나'){toast('엄마 전용이에요');return}
-  const B=LB();B.ftg=B.ftg||{};const G=B.ftg;
+  const B=LB();B.ftg=B.ftg||{};const G=B.ftg;if(G.sh==null)G.sh=1; /* 11/22 엄마: 처음부터 섞어서 */
   const AV=FT_CS.filter(c=>DS[c]);if(!AV.length){toast('과정 데이터가 없어요');return}const C1=AV.includes(G.c)?G.c:AV.includes(S.course)?S.course:AV[0];
   const CS=G.mix?AV:[C1],EM=G.em===1; /* 11/22 엄마: 🇰🇷 한글 뜻 보고 영어로 말하기 / 🔤 영어 자막 보고 뜻 알기 */ /* 11/22 엄마: 첫 화면에서 바로 · 과정은 위에서 골라요 */let flt=['todo','bad','all'].includes(G.f2)?G.f2:'todo';
   /* 문장 모으기 (과정별 결과는 그 과정 진도에 저장) */
   const IT=[],RR={};let hasTrv=false;
   for(const c of CS)ftWith(c,()=>{const l=L();l.ft=l.ft||{};l.ft.r=l.ft.r||{};l.ft.re=l.ft.re||{};RR[c]=EM?l.ft.re:l.ft.r;const TM=typeof trvM==='function'&&trvM();if(TM)hasTrv=true;const ess=TM&&G.ess!==0,N=TOTAL(),UN=ess?TRV_ORD.filter(x=>x<=N):[...Array(N).keys()].map(x=>x+1);
-    for(const u of UN){let it=[];try{it=ipyItems(u)}catch(e){}const ix=(ess?eligIdx(u):unitIdx(u,'st')).filter(i=>!isWord(i)&&it[i]&&it[i].en&&!(c!=="trv"&&FT_SHORT(it[i].en)));const ul=`${IPYC[c][1]} ${IPYC[c][0]} · ${lab(u)} · ${ttl(u)}`;for(const i of ix)IT.push({c,n:u,i,k:u+'-'+i,ko:it[i].ko,en:it[i].en,ul})}});
+    for(const u of UN){let it=[];try{it=ipyItems(u)}catch(e){}const ix=(ess?eligIdx(u):unitIdx(u,'st')).filter(i=>!isWord(i)&&it[i]&&it[i].en&&!(c!=="trv"&&FT_SHORT(it[i].en)));const ul=`${IPYC[c][1]} ${IPYC[c][0]} · ${lab(u)}`; /* 11/22 엄마: 단원 제목(패턴)이 힌트가 돼서 빼요 */for(const i of ix)IT.push({c,n:u,i,k:u+'-'+i,ko:it[i].ko,en:it[i].en,ul})}});
   if(!IT.length){toast('문장이 없어요');return}
   /* 순서: 섞기면 저장된 순서 (이어서 하려고) */
   const id=x=>x.c+'|'+x.k+(EM?'|e':''),okey=CS.join(',')+'|'+(hasTrv&&G.ess!==0?'e':'a');let ORD=IT.map((x,j)=>j);
