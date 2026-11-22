@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.23</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.24</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -2566,7 +2566,7 @@ async function ntfySend(R,test){const tp=(S.ntfy||'').trim();if(!tp)return false
   try{const r=await fetch('https://ntfy.sh/',{method:'POST',body:JSON.stringify({topic:tp,title:test?'영어방 알림 테스트':R.night?`${R.nm} 하루 정리`:R.second?`${R.nm} 오늘 할 일 모두 끝!`:`${R.nm} 공부 ${R.allDone?'끝!':'기록'}`,message:reportText(R).slice(0,3900),...(R.delayAt?{delay:String(R.delayAt)}:{}),tags:[test?'bell':R.night?'crescent_moon':R.second?'white_check_mark':R.allDone?'tada':'memo']})});return r.ok}catch(e){return false}}
 let ntfyBusy=false;
 /* 📮 11/16 엄마: 홈 화면에서 아이에게 피드백 보내기 + 읽음 확인 (엄마 '나' 화면만) */
-function fbRe(x){return fetch('https://ntfy.sh/',{method:'POST',body:JSON.stringify({topic:String(S.ntfy).trim(),title:`📮 ${x.k}에게 엄마 피드백 (다시)`,message:`${x.k}: ${x.tx}`,tags:['memo']})}).catch(()=>{})}
+function fbRe(x){return fetch('https://ntfy.sh/',{method:'POST',body:JSON.stringify({topic:String(S.ntfy).trim(),title:`📮 ${x.k}에게 엄마 피드백 (다시)`,message:`${x.k}: ${x.tx}`,tags:['memo'],priority:1} /* 11/22 엄마: 다시 보낼 땐 조용히 (소리·팝업 없이) */)}).catch(()=>{})}
 async function fbSendRender(){const el=$('fbSend');if(!el)return;if(LB().name!=='나'){el.innerHTML='';return}
   const kids=['민지','민채'],sent=(S.fbSent||[]).slice(-6);
   el.innerHTML=`<div style="margin-top:12px;padding:12px;border-radius:14px;background:#fff;border:1px solid var(--line,#e8e2d6)"><b style="font-size:17px">📮 아이에게 피드백 보내기</b>
@@ -2582,7 +2582,7 @@ async function fbSendRender(){const el=$('fbSend');if(!el)return;if(LB().name!==
   let rd=[];try{const r=await fetch('https://ntfy.sh/'+encodeURIComponent(String(S.ntfy).trim())+'/json?poll=1&since=48h');const tx=await r.text();rd=tx.split('\n').filter(Boolean).map(z=>{try{return JSON.parse(z)}catch(e){return null}}).filter(m=>m&&m.event==='message'&&/^✅ .+ 엄마 피드백 읽음/.test(m.message||''))}catch(e){}
   {let ch=false;(S.fbSent||[]).forEach(x=>{if(x.read)return;const R=rd.find(m=>m.message.startsWith(`✅ ${x.k} 엄마 피드백 읽음`)&&m.time*1000>=x.t-5000);if(R){x.read=R.message.replace(/^✅ \S+ 엄마 피드백 /,'');ch=true;return}
     const newer=(S.fbSent||[]).some(y=>y!==x&&y.k===x.k&&y.t>x.t);if(newer){if(!x.old){x.old=1;ch=true}return}
-    if(x.tx&&Date.now()-(x.last||x.t)>3600e3&&Date.now()-x.t<7*86400e3){x.last=Date.now();ch=true;fbRe(x)}}); /* 11/18 엄마: 안 읽은 피드백은 엄마 앱을 열 때마다(1시간 간격) 다시 보내기 · 같은 아이는 마지막 것만 */
+    if(x.tx&&Date.now()-(x.last||x.t)>10*3600e3&&Date.now()-x.t<7*86400e3){x.last=Date.now();ch=true;fbRe(x)}}); /* 11/18 엄마: 안 읽은 피드백은 엄마 앱을 열 때마다(1시간 간격) 다시 보내기 · 같은 아이는 마지막 것만 */
    if(ch)save()}
   const st=$('fbSt');if(!st)return;
   st.onclick=e=>{const B=e.target.closest('[data-fbre]');if(!B)return;const x=(S.fbSent||[]).find(y=>String(y.t)===B.dataset.fbre);if(!x)return;x.last=Date.now();save();fbRe(x);B.textContent='📮 다시 보냈어요';B.disabled=true};
