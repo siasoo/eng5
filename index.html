@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.30</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.32</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -6047,14 +6047,40 @@ function ftHear(){return new Promise(res=>{const R0=window.SpeechRecognition||wi
   r.onresult=e=>{try{got=[...e.results[0]].map(a=>a.transcript)}catch(x){}fin()};r.onerror=fin;r.onend=fin;setTimeout(fin,9000);try{r.start()}catch(e){fin()}})}
 const FT_SHORT=en=>/^\s*(yes|no|yeah|nope|sure|okay|ok)\b/i.test(en)&&String(en).trim().split(/\s+/).length<=5; /* 11/22 엄마: 질문 없이 대답만 있는 짧은 문장(Yes, I did.)은 빼요 */
 /* 🎧 틀린 문장 몰아듣기 (11/22 엄마: 자전거 탈 때처럼 손 안 쓰고 듣기) · 한글 뜻 → 영어 2번 → 다음 · 끝나면 처음부터 */
-async function ftListen(W){let on=true,q=0,wl=null;try{if(navigator.wakeLock)wl=await navigator.wakeLock.request('screen')}catch(e){}
+async function ftListen(W){const G=(LB().ftg=LB().ftg||{});let on=true,q=0,wl=null;
   const bx=document.createElement('div');bx.style.cssText='position:fixed;inset:0;z-index:260;background:#1f2a2e;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center';document.body.appendChild(bx);
-  const stop=()=>{on=false;try{speechSynthesis.cancel()}catch(e){}try{stopAudio()}catch(e){}try{wl&&wl.release()}catch(e){}bx.remove()};
+  /* 11/22 엄마: 듣기 방법 고르기 — 영어 몇 번 · 빠르기 */
+  const RP=[2,5,10],SP=[[1,'보통'],[1.25,'빠르게'],[1.5,'아주 빠르게']];let rp=RP.includes(G.lr)?G.lr:2,sp=SP.some(z=>z[0]===G.lsp)?G.lsp:1;
+  const ch=(on2,tx,attr)=>`<button class="btn ghost" ${attr} style="min-width:84px;font-size:17px;padding:10px 12px;${on2?'background:#8fd3ff;color:#123;border-color:#8fd3ff':'color:#fff'}">${tx}</button>`;
+  const pick=()=>{bx.innerHTML=`<div style="font-size:20px;font-weight:800">🎧 틀린 문장 ${W.length}개 몰아듣기</div><div style="opacity:.8;margin:6px 0 22px">한글 뜻 한 번 → 영어 여러 번</div>
+    <div style="margin-bottom:8px">영어 몇 번 들을까요?</div><div style="display:flex;gap:8px;justify-content:center">${RP.map(n=>ch(n===rp,n+'번',`data-lr="${n}"`)).join('')}</div>
+    <div style="margin:20px 0 8px">빠르기</div><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">${SP.map(([v,t])=>ch(v===sp,t,`data-ls="${v}"`)).join('')}</div>
+    <button class="btn green" id="flBg" style="margin-top:28px;min-width:260px;font-size:18px">📱 화면 꺼도 듣기<div style="font-size:12.5px;opacity:.85;font-weight:400">영어 녹음만 · 한글 뜻은 잠금 화면에 글자로</div></button><button class="btn ghost" id="flGo" style="margin-top:10px;min-width:260px;font-size:17px;color:#fff">▶ 화면 켜 두고 듣기<div style="font-size:12.5px;opacity:.8;font-weight:400">한글 소리 포함</div></button><button class="btn ghost" id="flX0" style="margin-top:10px;color:#fff">닫기</button>`;
+    bx.querySelectorAll('[data-lr]').forEach(b=>b.onclick=()=>{rp=+b.dataset.lr;pick()});bx.querySelectorAll('[data-ls]').forEach(b=>b.onclick=()=>{sp=+b.dataset.ls;pick()});
+    bx.querySelector('#flX0').onclick=()=>{on=false;bx.remove()};bx.querySelector('#flGo').onclick=()=>{G.lr=rp;G.lsp=sp;save();run()};bx.querySelector('#flBg').onclick=()=>{G.lr=rp;G.lsp=sp;save();runBg()}};
+  let AU=null;const stop=()=>{on=false;try{if(AU){AU.pause();AU.src=''}}catch(e){}try{navigator.mediaSession.metadata=null}catch(e){}try{speechSynthesis.cancel()}catch(e){}try{wl&&wl.release()}catch(e){}bx.remove()};
   const P=(x,f)=>{let p;try{p=ftWith(x.c,f)}catch(e){}return p||Promise.resolve()};
-  while(on){const x=W[q%W.length];bx.innerHTML=`<div style="font-size:14px;opacity:.7">🎧 틀린 문장 몰아듣기 · ${q%W.length+1} / ${W.length} · ${Math.floor(q/W.length)+1}바퀴</div><div style="font-size:24px;margin:28px 0 14px">${esc(x.ko)}</div><div id="flEn" style="font-size:28px;font-weight:800;color:#8fd3ff;min-height:40px"></div><div style="font-size:12px;opacity:.6;margin-top:10px">${esc(x.ul)}</div><button class="btn" id="flX" style="margin-top:40px;min-width:180px;font-size:18px">⏹ 그만 듣기</button>`;
-    bx.querySelector('#flX').onclick=stop;
-    await P(x,()=>playKo(x.n,x.i,x.ko));if(!on)break;await sleep(900);if(!on)break;const e=bx.querySelector('#flEn');if(e)e.textContent=x.en;
-    for(let t=0;t<2&&on;t++){await P(x,()=>playEn(x.n,x.i,x.en));if(!on)break;await sleep(1300)}q++;if(on)await sleep(600)}}
+  const run=async()=>{try{if(navigator.wakeLock)wl=await navigator.wakeLock.request('screen')}catch(e){}const gap=rp>=5?Math.round(700/sp):Math.round(1300/sp);
+    while(on){const x=W[q%W.length];bx.innerHTML=`<div style="font-size:14px;opacity:.7">🎧 틀린 문장 몰아듣기 · ${q%W.length+1} / ${W.length} · ${Math.floor(q/W.length)+1}바퀴 · 영어 ${rp}번${sp!==1?' · '+SP.find(z=>z[0]===sp)[1]:''}</div><div style="font-size:24px;margin:28px 0 14px">${esc(x.ko)}</div><div id="flEn" style="font-size:28px;font-weight:800;color:#8fd3ff;min-height:40px"></div><div id="flC" style="font-size:15px;opacity:.75;margin-top:8px"></div><div style="font-size:12px;opacity:.6;margin-top:10px">${esc(x.ul)}</div><button class="btn" id="flX" style="margin-top:40px;min-width:180px;font-size:18px">⏹ 그만 듣기</button>`;
+      bx.querySelector('#flX').onclick=stop;
+      await P(x,()=>playKo(x.n,x.i,x.ko));if(!on)break;await sleep(Math.round(900/sp));if(!on)break;const e=bx.querySelector('#flEn');if(e)e.textContent=x.en;
+      for(let t=0;t<rp&&on;t++){const c=bx.querySelector('#flC');if(c)c.textContent=`🔁 ${t+1} / ${rp}`;await P(x,()=>playEn(x.n,x.i,x.en,sp));if(!on)break;await sleep(gap)}q++;if(on)await sleep(Math.round(600/sp))}};
+  /* 📱 화면 꺼도 듣기 (11/22 엄마: 화면이 꺼지면 멈추거나 녹음이 쭉 흘러나와서) — 문장마다 영어 구간만 잘라 반복을 붙인 소리 파일을 만들어 한 곡씩 이어서 재생해요 */
+  const runBg=async()=>{bx.innerHTML=`<div style="font-size:18px">🎧 준비하는 중…</div>`;let AC;try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){toast('이 폰에서는 안 돼요 · 화면 켜 두고 들어요');run();return}
+    const cache=new Map(),dec=async key=>{if(cache.has(key))return cache.get(key);let b=null;try{const f=await getFile(key,'key');if(f)b=await AC.decodeAudioData(await f.arrayBuffer())}catch(e){}cache.set(key,b);return b};
+    const wav=(d,R)=>{const n=d.length,buf=new ArrayBuffer(44+n*2),v=new DataView(buf),ws=(o,t)=>{for(let k=0;k<t.length;k++)v.setUint8(o+k,t.charCodeAt(k))};ws(0,'RIFF');v.setUint32(4,36+n*2,true);ws(8,'WAVE');ws(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,R,true);v.setUint32(28,R*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);ws(36,'data');v.setUint32(40,n*2,true);for(let k=0;k<n;k++){const x=Math.max(-1,Math.min(1,d[k]));v.setInt16(44+k*2,x<0?x*0x8000:x*0x7fff,true)}return URL.createObjectURL(new Blob([buf],{type:'audio/wav'}))};
+    const mk=async x=>{const c=ftWith(x.c,()=>{try{const cc=clip(x.n,x.i);return cc&&cc[2]!=null&&hasSeg(x.n,cc)?cc:null}catch(e){return null}});if(!c)return null;const B=await dec(c[4]);if(!B)return null;const R=B.sampleRate,s0=Math.max(0,Math.floor((c[2]-0.05)*R)),e0=Math.min(B.length,Math.floor((c[3]+0.2)*R)),sg=e0-s0;if(sg<=0)return null;
+      const mono=new Float32Array(sg);for(let k=0;k<B.numberOfChannels;k++){const d=B.getChannelData(k);for(let j=0;j<sg;j++)mono[j]+=d[s0+j]/B.numberOfChannels}
+      const lead=Math.floor(1.2*R),gap=Math.floor((rp>=5?0.6:1.2)*R),out=new Float32Array(lead+rp*sg+(rp-1)*gap+Math.floor(0.8*R));let p=lead;for(let t=0;t<rp;t++){out.set(mono,p);p+=sg+gap}return wav(out,R)};
+    const L=[];for(const x of W){const u=await mk(x);if(u)L.push([x,u]);if(!on)return}
+    if(!L.length){toast('녹음이 있는 문장이 없어요 · 화면 켜 두고 들어요');run();return}
+    AU=new Audio();try{AU.preservesPitch=true}catch(e){}let k=0;
+    const show=()=>{const x=L[k%L.length][0];bx.innerHTML=`<div style="font-size:14px;opacity:.7">📱 화면 꺼도 들려요 · ${k%L.length+1} / ${L.length} · ${Math.floor(k/L.length)+1}바퀴 · 영어 ${rp}번${sp!==1?' · '+SP.find(z=>z[0]===sp)[1]:''}</div><div style="font-size:24px;margin:28px 0 14px">${esc(x.ko)}</div><div style="font-size:28px;font-weight:800;color:#8fd3ff">${esc(x.en)}</div>${L.length<W.length?`<div style="font-size:12.5px;opacity:.6;margin-top:10px">녹음이 없는 ${W.length-L.length}문장은 빠졌어요</div>`:''}<button class="btn" id="flX" style="margin-top:40px;min-width:180px;font-size:18px">⏹ 그만 듣기</button>`;bx.querySelector('#flX').onclick=stop;
+      try{navigator.mediaSession.metadata=new MediaMetadata({title:x.ko,artist:x.en,album:'🎧 틀린 문장 몰아듣기'})}catch(e){}};
+    const play=()=>{if(!on)return;AU.src=L[k%L.length][1];AU.playbackRate=sp;show();AU.play().catch(()=>{})};
+    AU.onended=()=>{k++;play()};try{navigator.mediaSession.setActionHandler('nexttrack',()=>{k++;play()});navigator.mediaSession.setActionHandler('previoustrack',()=>{k=Math.max(0,k-1);play()});navigator.mediaSession.setActionHandler('pause',()=>AU.pause());navigator.mediaSession.setActionHandler('play',()=>AU.play())}catch(e){}
+    play()};
+  pick()}
 const FT_CS=['trv','home','ipy','gj','gw'];
 function ftWith(c,fn){const o=S.course;if(o===c)return fn();S.course=c;activate(c);try{return fn()}finally{S.course=o;activate(o)}}
 async function ftOpen(){if(isKidN()&&LB().name!=='나'){toast('엄마 전용이에요');return}
