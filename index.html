@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.44</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.45</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -6189,6 +6189,8 @@ async function ftOpen(){if(isKidN()&&LB().name!=='나'){toast('엄마 전용이�
   G.ew=G.ew||{};const t0=today(),POS=new Map(IT.map((x,j)=>[id(x),j])),ewOld=k=>{const d=G.ew[id(IT[k])];return !!d&&d<t0},rk='ewR'+(EM?'e':'');
   /* 11/23 엄마: 맞힌 문장도 1주 뒤 · 한 달 뒤에 다시 (그때 맞히면 진짜 끝) */
   G.sr=G.sr||{};const srDue=k=>{const q=G.sr[id(IT[k])];return !!q&&q.st<3&&q.due<=t0},DUE=new Set();for(let k=0;k<IT.length;k++)if(srDue(k))DUE.add(id(IT[k]));
+  /* 11/23 엄마: 날짜 기록 없이 ❌로 남아 있던 예전 문장 → 어제 틀린 걸로 보고 다시 테스트 */
+  {let ch=0;for(let k=0;k<IT.length;k++){const z=id(IT[k]);if(V(k)===0&&!G.ew[z]){G.ew[z]=addDays(t0,-1);RR[IT[k].c][IT[k].k]=null;ch=1}}if(ch)save()}
   if(G[rk]!==t0){for(let k=0;k<IT.length;k++)if(ewOld(k)||srDue(k))RR[IT[k].c][IT[k].k]=null;G[rk]=t0;save()}
   const pri=k=>ewOld(k)||DUE.has(id(IT[k]));ORD=[...ORD.filter(pri),...ORD.filter(k=>!pri(k))];
   const BN=[20,30,40,50].includes(G.bn)?G.bn:20,bkey='bun'+(EM?'e':'')+'|'+okey;let BUN=null;
@@ -6214,7 +6216,7 @@ async function ftOpen(){if(isKidN()&&LB().name!=='나'){toast('엄마 전용이�
     const a1=L0.querySelector('#bnRc');if(a1)a1.onclick=()=>{const W=ORD.filter(k=>V(k)===0&&inB(k)&&inS(k)).map(k=>IT[k]);if(W.length)ftListen(W,()=>{G.f2='bad';re()})};
     const a0=L0.querySelector('#bnLn');if(a0)a0.onclick=()=>{const W=ORD.filter(k=>V(k)===0&&inB(k)&&inS(k)).map(k=>IT[k]);if(W.length)ftLearn(W,()=>{G.f2='bad';re()})};const a2=L0.querySelector('#bnBad');if(a2)a2.onclick=()=>{G.f2='bad';re()};const a3=L0.querySelector('#bnNx');if(a3)a3.onclick=()=>{G.f2='todo';re()}};
   const fx=new Set(); /* 틀린 것만 보다가 맞힌 것 (✅로 남겨 둬요) */
-  const pass=k=>{const v=V(k);return flt==='all'||(flt==='todo'&&v==null&&inB(k))||(flt==='bad'&&v===0&&inS(k))}; /* 11/22 엄마: 체크한 건(⭕·❌) 안 보이게 · 기본은 남은 것만 */
+  const pass=k=>{const v=V(k);return (flt==='all'&&inB(k))||(flt==='todo'&&v==null&&inB(k))||(flt==='bad'&&v===0&&inS(k))}; /* 11/22 엄마: 체크한 건(⭕·❌) 안 보이게 · 기본은 남은 것만 */
   let VIEW=[],shown=0;
   const paint=c=>{const k=+c.dataset.x,v=V(k);c.style.borderColor=v===1?'#9bd3a9':v===0?'#f0a8a0':'#eee4d3';c.style.background=v===1?'#f3fbf5':v===0?'#fff5f3':'#fff';{const E=c.querySelector('.ftE'),x=IT[k],op=v!=null||c.dataset.sh;E.style.border=op?'0':'2px dashed #d9cdb6';E.style.background=op?'transparent':'#faf6ee';E.style.padding=op?'2px 0':'8px 10px';E.innerHTML=op?(EM?`<span style="color:#555;font-size:16px">${esc(x.ko)}</span>`:`<span data-a="hear" style="font-weight:800;color:#2b4c7e;font-size:17px;cursor:pointer">${esc(x.en)} 🔊</span>`)+(x.pr?(G.prA||c.dataset.pr?`<div data-a="pr" style="font-size:14.5px;color:#7a6a4f;margin-top:3px;cursor:pointer">🗣️ ${esc(x.pr)}</div>`:`<div><span data-a="pr" style="display:inline-block;margin-top:5px;font-size:12.5px;color:#a07a3c;border:1px solid #e6dccb;border-radius:8px;padding:1px 8px;cursor:pointer">🗣️ 발음</span></div>`):''):`<span style="color:#a07a3c;font-size:14px">👆 ${EM?'한글 뜻 보기':'영어 문장 보기 · 🔊'}</span>`}c.querySelector('.ftMk').textContent=v===1?(fx.has(k)?'✅':'⭕'):v===0?'❌':''};
   const card=(k,no)=>{const x=IT[k];return `<div class="ftC" data-x="${k}" style="background:#fff;border:2px solid #eee4d3;border-radius:14px;padding:10px 12px;margin-bottom:8px">${G.sh||G.mix?`<div style="font-size:11.5px;color:#a07a3c;margin:0 0 4px 44px">${esc(x.ul)}</div>`:''}<div style="display:flex;gap:10px;align-items:flex-start"><b style="color:#d35b2c;min-width:34px">${no}${ewOld(k)?'<div style="font-size:10.5px;color:#e57373;font-weight:700">어제❌</div>':''}</b><div ${EM?'data-a="hear"':''} style="flex:1;font-size:${EM?'18px;font-weight:800;color:#2b4c7e;cursor:pointer':'16px'}">${esc(EM?x.en+' 🔊':x.ko)}</div><span class="ftMk" data-a="tog" title="눌러서 ⭕/❌ 바꾸기" style="font-size:22px;cursor:pointer;padding:0 4px"></span></div><div class="ftE" data-a="see" style="margin:8px 0 0 44px;padding:8px 10px;border-radius:10px;cursor:pointer"></div><div class="ftG" style="margin-left:44px;font-size:12.5px;color:#888"></div><div style="display:flex;gap:5px;margin:8px 0 0 44px">${EM?'<button class="btn sm green" data-a="know" style="padding:6px 10px">💡 뜻 알아요</button>':'<button class="btn sm green" data-a="mic" style="padding:6px 10px">🎤 말하기</button>'}</div></div>`};
