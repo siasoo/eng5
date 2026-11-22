@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.32</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.33</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -3747,7 +3747,7 @@ function micRelease(){try{if(MIC.stream)MIC.stream.getTracks().forEach(x=>x.stop
 /* 11/11 엄마: 블루투스 이어폰인데 휴대폰 스피커로 나와요 → 마이크가 켜져 있으면 폰이 '통화 모드'라서. 소리 내기 직전에 마이크를 끄고 0.6초 기다렸다가(이어폰이 음악 모드로 돌아오게) 재생. 따라 말할 땐 speak()/dlHeard가 다시 켜요 */
 let MIC_T=0;async function micFree(){if(!earOn())return; /* 11/11 엄마: 엄마('나')만 — 민지·민채는 보통 이어폰 없이 해요 */if(MIC.ok||MIC.stream){micRelease();MIC_T=Date.now();await sleep(600)}}
 /* 11/11 엄마: 🎧 이어폰 모드 — ① 그날 처음 소리 나기 전에 작은 '띵'으로 이어폰 확인 ② 공부 중 이어폰이 끊기면 소리를 멈추고 다시 확인 */
-const earOn=()=>{try{const b=LB();return b.ear!==undefined?!!b.ear:b.name==='나'}catch(e){return false}};
+const earOn=()=>{try{if(typeof SESS==='undefined'||!SESS)return false; /* 11/22 엄마: 이어폰 확인은 공부(말하기)할 때만 */const b=LB();return b.ear!==undefined?!!b.ear:b.name==='나'}catch(e){return false}};
 let EAR_OK=false,earP=null,earHold=[];
 function earBeep(){try{const C=new (window.AudioContext||window.webkitAudioContext)(),o=C.createOscillator(),g=C.createGain();o.frequency.value=880;g.gain.value=0.04;o.connect(g);g.connect(C.destination);o.start();setTimeout(()=>{o.stop();C.close()},280)}catch(e){}}
 function earModal(lost){return new Promise(res=>{const m=document.createElement('div');m.style.cssText='position:fixed;inset:0;z-index:2147483000;background:rgba(10,20,30,.78);display:flex;align-items:center;justify-content:center;padding:16px';
@@ -3761,7 +3761,7 @@ function earGate(lost){if(!earOn()||(EAR_OK&&!lost))return Promise.resolve();if(
 {const say0=say;say=async(...a)=>{await earGate();await micFree();return say0(...a)}}
 {const play0=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(){const el=this;if(earOn()&&(!EAR_OK||earP))return earGate().then(()=>micFree()).then(()=>play0.call(el));if(earOn()&&(MIC.ok||MIC.stream))return micFree().then(()=>play0.call(el));return play0.call(el)}}
 (()=>{const md=navigator.mediaDevices;if(!md||!md.enumerateDevices||!md.addEventListener)return;let n0=null;const cnt=async()=>{try{return (await md.enumerateDevices()).filter(d=>d.kind!=='videoinput').length}catch(e){return null}};cnt().then(n=>n0=n);
-  md.addEventListener('devicechange',async()=>{const n=await cnt();const was=n0;n0=n;if(!earOn()||was==null||n==null||n>=was)return;if(Date.now()-MIC_T<2500||(Date.now()-(MIC.t0||0))<2500)return; /* 마이크 켜고 끌 때 생기는 변화는 무시 */
+  md.addEventListener('devicechange',async()=>{const n=await cnt();const was=n0;n0=n;if(document.hidden||!earOn()|| /* 11/22 엄마: 화면이 꺼질 때 생기는 변화로 소리를 멈추지 않게 */was==null||n==null||n>=was)return;if(Date.now()-MIC_T<2500||(Date.now()-(MIC.t0||0))<2500)return; /* 마이크 켜고 끌 때 생기는 변화는 무시 */
     document.querySelectorAll('audio,video').forEach(v=>{if(!v.paused){v.pause();earHold.push(v)}});try{if(segA&&!segA.paused){segA.pause();earHold.push(segA)}}catch(e){}try{if(sAudio&&!sAudio.paused){sAudio.pause();earHold.push(sAudio)}}catch(e){}try{speechSynthesis.pause()}catch(e){}
     EAR_OK=false;earGate(true)})})();
 const CONTR={"i'm":"i am","you're":"you are","it's":"it is","what's":"what is","that's":"that is","don't":"do not","can't":"can not","cannot":"can not","i'd":"i would","i'll":"i will","let's":"let us","there's":"there is","here's":"here is","he's":"he is","she's":"she is","isn't":"is not","aren't":"are not","won't":"will not","didn't":"did not","doesn't":"does not","wasn't":"was not","we're":"we are","they're":"they are","i've":"i have","you've":"you have","you'll":"you will","we'll":"we will","where's":"where is","how's":"how is","who's":"who is","couldn't":"could not","wouldn't":"would not","shouldn't":"should not","haven't":"have not","hasn't":"has not","you'd":"you would","we've":"we have","weren't":"were not","mustn't":"must not","needn't":"need not","they'll":"they will","she'll":"she will","he'll":"he will","it'll":"it will","that'll":"that will","they've":"they have","they'd":"they would","she'd":"she would","he'd":"he would","what're":"what are","who're":"who are","where're":"where are","how're":"how are","there're":"there are","ain't":"is not","gotta":"got to","gonna":"going to","wanna":"want to","ok":"okay","mr":"mister","mrs":"missus","ms":"miss","dr":"doctor"};
