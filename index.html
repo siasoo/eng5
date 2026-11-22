@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.45</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.47</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -6139,7 +6139,7 @@ function ftWith(c,fn){const o=S.course;if(o===c)return fn();S.course=c;activate(
 async function ftOpen(){if(isKidN()&&LB().name!=='나'){toast('엄마 전용이에요');return}
   const B=LB();B.ftg=B.ftg||{};const G=B.ftg;if(G.sh==null)G.sh=1; /* 11/22 엄마: 처음부터 섞어서 */
   const AV=FT_CS.filter(c=>DS[c]);if(!AV.length){toast('과정 데이터가 없어요');return}const C1=AV.includes(G.c)?G.c:AV.includes(S.course)?S.course:AV[0];
-  const CS=G.mix?AV:[C1],EM=G.em===1; /* 11/22 엄마: 🇰🇷 한글 뜻 보고 영어로 말하기 / 🔤 영어 자막 보고 뜻 알기 */ /* 11/22 엄마: 첫 화면에서 바로 · 과정은 위에서 골라요 */let flt=['todo','bad','all'].includes(G.f2)?G.f2:'todo';
+  const CS=G.mix?AV:[C1],EM=G.em===1; /* 11/22 엄마: 🇰🇷 한글 뜻 보고 영어로 말하기 / 🔤 영어 자막 보고 뜻 알기 */ /* 11/22 엄마: 첫 화면에서 바로 · 과정은 위에서 골라요 */if(G.f2==='all'&&!window.__ftAll)G.f2='todo'; /* 11/23 엄마: 📋 전부 보기는 그때만 · 다시 열면 남은 것(체크하면 숨기기)으로 */let flt=['todo','bad','all'].includes(G.f2)?G.f2:'todo';window.__ftAll=0;
   /* 문장 모으기 (과정별 결과는 그 과정 진도에 저장) */
   const IT=[],RR={};let hasTrv=false;
   /* 11/23 엄마: ✈️ 여행만 할 때 '➕ 같은 패턴' 켜면 다른 과정(생활·입영작·기적)에서 같은 패턴 문장을 패턴마다 2개까지 같이 */
@@ -6196,7 +6196,7 @@ async function ftOpen(){if(isKidN()&&LB().name!=='나'){toast('엄마 전용이�
   const BN=[20,30,40,50].includes(G.bn)?G.bn:20,bkey='bun'+(EM?'e':'')+'|'+okey;let BUN=null;
   if(G.bm!==0){let bl=G[bkey];const full=bl&&bl.every(z=>{const j=POS.get(z);return j==null||V(j)===1});if(!bl||full){ /* 11/23 엄마: 자동 조절 — 지난 묶음에서 반 넘게 틀렸으면 10개로 · 거의 다 맞혔으면 원래 크기로 · 다시 볼 문장은 한 번에 30개까지 */
       G.bs=G.bs||{};G.bw=G.bw||{};if(full&&bl){const w=(G.bw[bkey]||[]).length,rt=w/Math.max(1,bl.length),pv=G.bs[bkey]||BN;G.bs[bkey]=rt>0.5?10:rt<=0.1?BN:Math.max(10,Math.min(BN,pv))}G.bw[bkey]=[];
-      const sz=Math.min(BN,G.bs[bkey]||BN),old=ORD.filter(k=>pri(k)&&V(k)!==1).slice(0,30),fr=ORD.filter(k=>V(k)==null&&!pri(k));bl=[...old,...fr].slice(0,Math.max(sz,old.length)).map(k=>id(IT[k]));G[bkey]=bl;save()}{const add=ORD.filter(k=>pri(k)&&V(k)!==1).map(k=>id(IT[k])).filter(z=>!bl.includes(z)).slice(0,30);if(add.length){bl=[...add,...bl];G[bkey]=bl;save()}} /* 11/23 엄마: 어제 틀린 게 안 보여요 → 하던 묶음에도 맨 앞에 */BUN=new Set(bl)}
+      const sz=Math.min(BN,G.bs[bkey]||BN),old=ORD.filter(k=>pri(k)&&V(k)!==1).slice(0,30),fr=ORD.filter(k=>V(k)==null&&!pri(k));bl=[...old,...fr].slice(0,sz) /* 11/23 엄마: 고른 개수(20·30·40·50) 딱 맞게 · 다시 볼 문장이 많으면 다음 묶음으로 */.map(k=>id(IT[k]));G[bkey]=bl;save()}{const add=ORD.filter(k=>pri(k)&&V(k)!==1).map(k=>id(IT[k])).filter(z=>!bl.includes(z)).slice(0,30);if(add.length){const rm=bl.filter(z=>{const j=POS.get(z);return j!=null&&V(j)==null&&!pri(j)}),n=Math.min(add.length,rm.length);if(n){const drop=new Set(rm.slice(-n));bl=[...add.slice(0,n),...bl.filter(z=>!drop.has(z))];G[bkey]=bl;save()}}} /* 11/23 엄마: 어제 틀린 게 안 보여요 → 하던 묶음에도 맨 앞에 */BUN=new Set(bl)}
   /* 틀린 게 8개 넘으면 7개씩 나눠서 연습 */
   const skey='sub'+bkey;let SUB=null;const wrB=()=>ORD.filter(k=>V(k)===0&&(!BUN||BUN.has(id(IT[k]))));
   const subMk=()=>{const W0=wrB();if(W0.length<=8){SUB=null;G[skey]=null;return}let cur=(G[skey]||[]).filter(z=>{const j=POS.get(z);return j!=null&&V(j)===0});if(!cur.length)cur=W0.slice(0,7).map(k=>id(IT[k]));G[skey]=cur;SUB=new Set(cur)};subMk();
@@ -6231,9 +6231,9 @@ async function ftOpen(){if(isKidN()&&LB().name!=='나'){toast('엄마 전용이�
   const set=(c,v)=>{const k=+c.dataset.x,x=IT[k];if(V(k)===0&&v===1&&flt==='bad')fx.add(k);RR[x.c][x.k]=v;{const bk=id(x);G.bw=G.bw||{};const bwl=(G.bw[bkey]=G.bw[bkey]||[]);if(v===0){G.ew[bk]=today();delete G.sr[bk];if(BUN&&BUN.has(bk)&&!bwl.includes(bk))bwl.push(bk)}else{if(c.dataset.rv==='1'&&CUR===c){{const ix=bwl.indexOf(bk);if(ix>=0)bwl.splice(ix,1)}if(c.dataset.ew0===today())G.ew[bk]=today();else delete G.ew[bk];try{const s0=JSON.parse(c.dataset.sr0||'null');if(s0)G.sr[bk]=s0}catch(e){}c.dataset.rv=''}else if(G.ew[bk]&&G.ew[bk]<today())delete G.ew[bk];
       if(!G.ew[bk]){const q=G.sr[bk];if(!q)G.sr[bk]={st:1,due:addDays(today(),7)};else if(DUE.has(bk)){q.st++;q.due=q.st>=3?'9999':addDays(today(),30);DUE.delete(bk)}}}} /* 처음 눌러 정답 보고 바로 ⭕로 고친 건 '안 틀림' */ /* 오늘 틀렸으면 내일 다시 · 어제 틀린 걸 오늘 맞히면 끝 */if(v===0&&!EM)ftWith(x.c,()=>{const l=L();l.wrong=l.wrong||{};if(!l.wrong[x.k]||typeof l.wrong[x.k]!=='object')l.wrong[x.k]={n:2,d:today()}});save();paint(c);{const prev=SUB?[...SUB]:null;subMk();if(prev&&v===1&&flt==='bad'&&prev.every(z=>{const j=POS.get(z);return j==null||V(j)!==0})){toast(SUB?'👏 다 맞혔어요! 다음 '+SUB.size+'개':'👏 다 맞혔어요!');setTimeout(draw,450)}}stat();if(!pass(k)&&(v===1||c!==CUR)){c.style.transition='opacity .35s';c.style.opacity='0';setTimeout(()=>{c.style.display='none';c.style.opacity=''},350)}};
   const hear=x=>{let p;try{p=ftWith(x.c,()=>playEn(x.n,x.i,x.en))}catch(e){}return p||Promise.resolve()};
-  const re=()=>{G.mo=0;save();ob.disconnect();m.remove();ftOpen()}; /* 고르면 메뉴는 다시 접어요 */
+  const re=()=>{G.mo=0;window.__ftAll=1;save();ob.disconnect();m.remove();ftOpen()}; /* 고르면 메뉴는 다시 접어요 */
   m.querySelector('#ftMn').onclick=()=>{G.mo=G.mo?0:1;save();m.querySelector('#ftCtl').style.display=G.mo?'block':'none'};m.querySelector('#ftGo2').onclick=()=>m.querySelector('#ftGo').click();m.querySelector('#ftX').onclick=()=>{ob.disconnect();m.remove()};
-  m.querySelector('#ftLs').onclick=()=>{const W=ORD.filter(k=>V(k)===0&&inB(k)&&inS(k)).map(k=>IT[k]);if(!W.length){toast('❌ 틀린 문장이 없어요');return}ftListen(W,()=>{G.f2='bad';re()})};m.querySelector('#ftBm').onclick=()=>{G.bm=G.bm===0?1:0;re()};m.querySelectorAll('[data-bn]').forEach(b=>b.onclick=()=>{G.bn=+b.dataset.bn;G[bkey]=null;re()});m.querySelector('#ftPg').onclick=()=>{G.pg=G.pg?0:1;re()};m.querySelector('#ftSh').onclick=()=>{G.sh=G.sh?0:1;re()};m.querySelectorAll('[data-fm]').forEach(b=>b.onclick=()=>{G.em=+b.dataset.fm;re()});m.querySelectorAll('[data-fc]').forEach(b=>b.onclick=()=>{if(b.dataset.fc==='all')G.mix=1;else{G.mix=0;G.c=b.dataset.fc}re()});
+  m.querySelector('#ftLs').onclick=()=>{const W=ORD.filter(k=>V(k)===0&&inB(k)&&inS(k)).map(k=>IT[k]);if(!W.length){toast('❌ 틀린 문장이 없어요');return}ftListen(W,()=>{G.f2='bad';re()})};m.querySelector('#ftBm').onclick=()=>{G.bm=G.bm===0?1:0;re()};m.querySelectorAll('[data-bn]').forEach(b=>b.onclick=()=>{G.bn=+b.dataset.bn;G[bkey]=null;if(G.bs)G.bs[bkey]=null;re()});m.querySelector('#ftPg').onclick=()=>{G.pg=G.pg?0:1;re()};m.querySelector('#ftSh').onclick=()=>{G.sh=G.sh?0:1;re()};m.querySelectorAll('[data-fm]').forEach(b=>b.onclick=()=>{G.em=+b.dataset.fm;re()});m.querySelectorAll('[data-fc]').forEach(b=>b.onclick=()=>{if(b.dataset.fc==='all')G.mix=1;else{G.mix=0;G.c=b.dataset.fc}re()});
   {const e=m.querySelector('#ftRe');if(e)e.onclick=()=>{G.ord=null;re()}}{const e=m.querySelector('#ftEss');if(e)e.onclick=()=>{G.ess=G.ess===0?1:0;re()}}{const e=m.querySelector('#ftPrA');if(e)e.onclick=()=>{G.prA=G.prA?0:1;save();re()}}{const e=m.querySelector('#ftTp');if(e)e.onclick=()=>{G.tp=G.tp?0:1;G.ord=null;re()}}
   const fb=()=>m.querySelectorAll('[data-ff]').forEach(x=>{const on=x.dataset.ff===flt;x.style.background=on?'#2f7d6d':'';x.style.color=on?'#fff':''});fb();
   m.querySelectorAll('[data-ff]').forEach(b=>b.onclick=()=>{flt=G.f2=b.dataset.ff;re()});
