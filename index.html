@@ -238,7 +238,7 @@ textarea{width:100%;min-height:80px;margin-top:6px;padding:10px;border:1px solid
 <body>
 <div class="wrap">
   <header>
-    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.48</span></div>
+    <div class="brand"><h1>말하는 <b>영어방</b></h1><span>소리 내서 말해야 넘어가요 · v10.42.50</span></div>
     <div class="learners" id="learners"></div>
   </header>
   <div id="kidToday"></div>
@@ -6211,8 +6211,8 @@ async function ftOpen(){if(isKidN()&&LB().name!=='나'){toast('엄마 전용이�
   const L0=m.querySelector('#ftL');
   const stat=()=>{let o=0,b=0;for(let k=0;k<IT.length;k++){const v=V(k);if(v===1)o++;else if(v===0)b++}let bo=0,bb=0,bn=0;if(BUN)for(const z of BUN){const j=POS.get(z);if(j==null)continue;const v=V(j);if(v===1)bo++;else if(v===0)bb++;else bn++}
     const e=m.querySelector('#ftS');if(e)e.innerHTML=(BUN?`📦 묶음 ⭕ ${bo} · ❌ ${bb} · 남은 ${bn} / ${BUN.size}<span style="font-weight:400;color:#888"> · 전체 ⭕ ${o} / ${IT.length}</span>`:`⭕ ${o} · ❌ ${b} · 남은 ${IT.length-o-b} / ${IT.length}문장`);ban(bo,bb,bn)};
-  const ban=(bo,bb,bn)=>{const old=L0.querySelector('#ftBan');if(old)old.remove();if(!BUN||bn>0)return;
-    L0.insertAdjacentHTML('afterbegin',`<div id="ftBan" style="background:${bb?'#fff4e5':'#eaf7e8'};border:2px solid ${bb?'#f0a04b':'#4caf50'};border-radius:14px;padding:12px;margin-bottom:10px;text-align:center"><b style="font-size:17px">${bb?`📦 묶음 테스트 끝! ❌ ${bb}개 남았어요`:'🎉 묶음 완성! 다 외웠어요'}</b>${bb&&SUB?`<div style="font-size:13.5px;color:#8a4b14;margin-top:4px">많아서 7개씩 나눠서 해요 · 지금 ${SUB.size}개</div>`:''}<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:8px">${bb?(bb*2>BUN.size?'<button class="btn green sm" id="bnLn">📖 처음부터 배우기</button>':'')+'<button class="btn sm" id="bnRc" style="background:#f0a04b;color:#1f2a2e;border-color:#f0a04b">🧠 틀린 것 떠올리기</button><button class="btn ghost sm" id="bnBad">❌ 틀린 것만 다시 테스트</button>':'<button class="btn green sm" id="bnNx">📦 다음 묶음 시작</button>'}</div></div>`);
+  const ban=(bo,bb,bn)=>{const old=L0.querySelector('#ftBan');if(old)old.remove();const BAD=flt==='bad'&&bb>0;L0.style.paddingBottom=(BUN&&(bn===0||BAD))?'200px':'80px';if(!BUN||(bn>0&&!BAD))return; /* 11/23 엄마: ❌ 틀린 것만 볼 땐 다 안 끝나도 연습 버튼 */
+    L0.insertAdjacentHTML('afterbegin',`<div id="ftBan" style="position:fixed;left:50%;transform:translateX(-50%);bottom:14px;width:calc(100% - 24px);max-width:616px;z-index:5;box-shadow:0 4px 16px rgba(0,0,0,.18);background:${bb?'#fff4e5':'#eaf7e8'};border:2px solid ${bb?'#f0a04b':'#4caf50'};border-radius:14px;padding:12px;margin-bottom:10px;text-align:center"><b style="font-size:17px">${bb?(bn>0?`❌ 틀린 ${bb}개 연습하기`:`📦 묶음 테스트 끝! ❌ ${bb}개 남았어요`):'🎉 묶음 완성! 다 외웠어요'}</b>${bb&&SUB?`<div style="font-size:13.5px;color:#8a4b14;margin-top:4px">많아서 7개씩 나눠서 해요 · 지금 ${SUB.size}개</div>`:''}<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:8px">${bb?(bb*2>BUN.size?'<button class="btn green sm" id="bnLn">📖 처음부터 배우기</button>':'')+'<button class="btn sm" id="bnRc" style="background:#f0a04b;color:#1f2a2e;border-color:#f0a04b">🧠 틀린 것 떠올리기</button><button class="btn ghost sm" id="bnBad">❌ 틀린 것만 다시 테스트</button>':'<button class="btn green sm" id="bnNx">📦 다음 묶음 시작</button>'}</div></div>`);
     const a1=L0.querySelector('#bnRc');if(a1)a1.onclick=()=>{const W=ORD.filter(k=>V(k)===0&&inB(k)&&inS(k)).map(k=>IT[k]);if(W.length)ftListen(W,()=>{G.f2='bad';re()})};
     const a0=L0.querySelector('#bnLn');if(a0)a0.onclick=()=>{const W=ORD.filter(k=>V(k)===0&&inB(k)&&inS(k)).map(k=>IT[k]);if(W.length)ftLearn(W,()=>{G.f2='bad';re()})};const a2=L0.querySelector('#bnBad');if(a2)a2.onclick=()=>{G.f2='bad';re()};const a3=L0.querySelector('#bnNx');if(a3)a3.onclick=()=>{G.f2='todo';re()}};
   const fx=new Set(); /* 틀린 것만 보다가 맞힌 것 (✅로 남겨 둬요) */
